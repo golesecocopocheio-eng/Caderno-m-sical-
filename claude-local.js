@@ -212,6 +212,42 @@
     return { db: local, usuario: usuarioLocal };
   }
 
+  /* ---------------- Importar dados (aba Ajustes) ----------------
+   * dados = { apps: { caixa: { cxdays: { id: {...} } }, portaria: {...}, estoque: {...} } }
+   * Grava cada documento no banco que a aba usa: no Firebase (se estiver ligado)
+   * ou no banco deste aparelho. Documentos com o mesmo id são substituídos. */
+  window.__barImportar = async function (dados) {
+    const apps = (dados && dados.apps) || {};
+    let total = 0;
+    const c = await iniciarCore().catch(() => null);
+    if (c) {
+      let lote = c.bar.firestore.batch();
+      let n = 0;
+      for (const [app, cols] of Object.entries(apps)) {
+        for (const [col, docs] of Object.entries(cols)) {
+          for (const [id, v] of Object.entries(docs)) {
+            lote.set(c.bar.collection(app + '_' + col).doc(id), v);
+            total++;
+            if (++n === 400) { await lote.commit(); lote = c.bar.firestore.batch(); n = 0; }
+          }
+        }
+      }
+      if (n) await lote.commit();
+      return { total, onde: 'nuvem' };
+    }
+    for (const [app, cols] of Object.entries(apps)) {
+      const KEY = 'app-bar-db:' + app + '.html';
+      let atual = {};
+      try { atual = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+      for (const [col, docs] of Object.entries(cols)) {
+        atual[col] = atual[col] || {};
+        for (const [id, v] of Object.entries(docs)) { atual[col][id] = v; total++; }
+      }
+      localStorage.setItem(KEY, JSON.stringify(atual));
+    }
+    return { total, onde: 'aparelho' };
+  };
+
   window.claude = {
     async use(what) {
       const m = await escolher();

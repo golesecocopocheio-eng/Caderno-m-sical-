@@ -57,6 +57,9 @@ nav button.on{color:#fff;font-weight:700}
     <div class="info" id="info"></div>
     <button class="sec" id="trocar">Trocar de bar ou de nome</button>
     <button class="sec" id="recarregar">Recarregar o aplicativo</button>
+    <button class="sec" id="importar">📥 Importar dados de um arquivo</button>
+    <input type="file" id="arquivo" accept=".json,application/json" hidden>
+    <p id="msgImport" style="margin-top:12px"></p>
   </div>
 </div>
 <nav id="nav">
@@ -107,6 +110,21 @@ $('#trocar').onclick=()=>{
   $('#entrar').classList.add('on');
 };
 $('#recarregar').onclick=()=>location.reload();
+$('#importar').onclick=()=>$('#arquivo').click();
+$('#arquivo').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const msg=$('#msgImport');
+  try{
+    const dados=JSON.parse(await f.text());
+    if(!dados||!dados.apps)throw new Error('formato');
+    const n=Object.values(dados.apps).reduce((s,cols)=>s+Object.values(cols).reduce((a,d)=>a+Object.keys(d).length,0),0);
+    if(!confirm('Importar '+n+' registros de Caixa, Portaria e Estoque?\n\nRegistros iguais que já estiverem no app serão substituídos.'))return;
+    msg.textContent='Importando…';
+    const r=await window.__barImportar(dados);
+    msg.textContent='✅ '+r.total+' registros importados '+(r.onde==='nuvem'?'na nuvem (todos os celulares do bar vão receber)':'neste aparelho')+'. Recarregando…';
+    setTimeout(()=>location.reload(),1800);
+  }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
+};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
 
 if(nuvem&&!codigo()){

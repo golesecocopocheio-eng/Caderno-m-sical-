@@ -90,14 +90,21 @@ label{font-size:13px;color:var(--mut);flex:1}
   <div class="card" style="text-align:center">
     <button class="btn" id="qrBtn" style="margin-top:0">📱 QR Code para a equipe</button>
     <div id="qrBox" hidden>
-      <div class="sub" style="margin:10px 0">Aponte a câmera do celular para abrir a portaria</div>
+      <div class="sub" style="margin:10px 0">Aponte a câmera do celular (iPhone ou Android) para abrir só a portaria</div>
       <div id="qrImg" style="display:inline-block;background:#fff;padding:12px;border-radius:12px"></div>
-      <div class="sub" style="margin:8px 0 0;word-break:break-all">https://claude.ai/artifact/6Bytk959ZBPn6GbS1eNGd4</div>
+      <div class="sub" id="qrLink" style="margin:8px 0 0;word-break:break-all"></div>
+      <button class="btn" id="qrShare">📤 Compartilhar link</button>
+      <div class="msg" id="qrMsg"></div>
     </div>
   </div>
 </main>
 <script src="claude-local.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script>
+// Link que o QR Code abre: só a Portaria, no site do app (funciona no iPhone e no Android).
+// Se o bar estiver sincronizando, o link leva o código do bar para a pessoa entrar direto.
+window.LINK_PORTARIA=(()=>{const base="https://golesecocopocheio-eng.github.io/Caderno-m-sical-/porta.html";let c="";try{c=localStorage.getItem("bar-codigo")||""}catch(e){}return c&&window.FIREBASE_CONFIG!==null?base+"#bar="+encodeURIComponent(c):base})();
+</script>
 <script>
 const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"]];
 const PGS=[["dinheiro","Dinheiro"],["pix","Pix"],["cartao","Cartão"],["cortesia","Cortesia"]];
@@ -143,7 +150,8 @@ function conf(key,msg){
 document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button");if(!t)return;
   if(t.dataset.pg){pg=t.dataset.pg;render();return}
-  if(t.id==="qrBtn"){const b=$("#qrBox");b.hidden=!b.hidden;if(!b.hidden&&!b.dataset.ok){try{const qr=qrcode(0,"M");qr.addData("https://claude.ai/artifact/6Bytk959ZBPn6GbS1eNGd4");qr.make();$("#qrImg").innerHTML=qr.createImgTag(6,0);const im=$("#qrImg img");im.style.width="220px";im.style.height="220px";im.style.imageRendering="pixelated";b.dataset.ok=1}catch(e){$("#qrImg").textContent="Não foi possível gerar o QR Code."}}return}
+  if(t.id==="qrShare"){const u=LINK_PORTARIA;try{if(navigator.share){await navigator.share({title:"Portaria do Bar",text:"Abra a portaria do bar:",url:u});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(u);$("#qrMsg").textContent="✅ Link copiado. Cole no WhatsApp para mandar."}catch(e){$("#qrMsg").textContent="Copie o link acima e mande para a pessoa."}return}
+  if(t.id==="qrBtn"){const b=$("#qrBox");b.hidden=!b.hidden;if(!b.hidden&&!b.dataset.ok){try{const qr=qrcode(0,"M");qr.addData(LINK_PORTARIA);$("#qrLink").textContent=LINK_PORTARIA;qr.make();$("#qrImg").innerHTML=qr.createImgTag(6,0);const im=$("#qrImg img");im.style.width="220px";im.style.height="220px";im.style.imageRendering="pixelated";b.dataset.ok=1}catch(e){$("#qrImg").textContent="Não foi possível gerar o QR Code."}}return}
   if(!db){$("#status").textContent="Sem conexão com o banco de dados. Abra o link pelo Claude.";return}
   try{
     if(t.dataset.cat){

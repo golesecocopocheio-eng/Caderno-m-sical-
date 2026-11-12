@@ -38,15 +38,6 @@ label{font-size:13px;color:var(--mut);flex:1}
   <input type="date" id="dia" style="margin-bottom:10px" aria-label="Escolher data">
   <div class="msg" id="status">Conectando…</div>
   <div class="msg" id="msgDono" hidden>Somente o dono pode apagar entradas e mudar os valores.</div>
-  <div class="card">
-    <b>♻️ Backup</b>
-    <div class="sub" style="margin:4px 0 0">Restaurar aceita qualquer backup: do Caixa, da Portaria, do Estoque ou o arquivo dados-do-bar.json. Cada parte volta para a aba certa.</div>
-    <div class="row" style="margin-top:8px">
-      <button class="btn" id="bkRest" style="margin-top:0;background:var(--ac)">Restaurar backup</button>
-      <button class="btn" id="bkCopiar" style="margin-top:0">Copiar backup da portaria</button>
-    </div>
-    <div id="bkBox"></div>
-  </div>
 
   <div class="card">
     <div class="sub" style="margin:0 0 6px">Forma de pagamento</div>
@@ -86,6 +77,16 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div id="lista"></div>
   </div>
 
+  <div class="card">
+    <b>♻️ Backup</b>
+    <div class="sub" style="margin:4px 0 0">Restaurar aceita qualquer backup: do Caixa, da Portaria, do Estoque ou o arquivo dados-do-bar.json. Cada parte volta para a aba certa.</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="bkRest" style="margin-top:0;background:var(--ac)">Restaurar backup</button>
+      <button class="btn" id="bkCopiar" style="margin-top:0">Copiar backup da portaria</button>
+    </div>
+    <div id="bkBox"></div>
+  </div>
+
   <div class="card" style="text-align:center">
     <button class="btn" id="qrBtn" style="margin-top:0">📱 QR Code para a equipe</button>
     <div id="qrBox" hidden>
@@ -112,9 +113,7 @@ const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 // A noite vira só às 6h da manhã, para o movimento depois da meia-noite contar na mesma noite
 const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString("sv-SE");
 let db=null,precos={turista:0,morador:0,clan:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false;
-const ACRESC=5;
-const madrugada=()=>new Date().getHours()<6;
-const preco=k=>k==="clan"?0:(Number(precos[k])||0)+(madrugada()?ACRESC:0);
+const preco=k=>k==="clan"?0:(Number(precos[k])||0);
 
 function render(){
   $("#noite").textContent=(ver===noite?"Hoje · noite de ":"Noite de ")+ver.split("-").reverse().join("/");
@@ -125,7 +124,7 @@ function render(){
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
   $("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
   $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(ents.filter(e=>e.pg===k).reduce((s,e)=>s+e.valor,0))}</b><span>${n}</span></div>`).join("");
-  $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"?"Grátis":brl(precos[k]))).join(" · ")+(madrugada()?" · Agora na madrugada: +":" · Após a meia-noite: +")+brl(ACRESC);
+  $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"?"Grátis":brl(precos[k]))).join(" · ");
   const rec=[...ents].sort((a,b)=>b.ts-a.ts).slice(0,15);
   $("#lista").innerHTML=rec.length?rec.map(e=>{
     const h=new Date(e.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});

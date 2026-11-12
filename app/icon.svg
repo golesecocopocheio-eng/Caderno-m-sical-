@@ -1,4 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#161826"/>
-  <text x="256" y="330" font-size="240" text-anchor="middle">🍸</text>
+  <rect width="512" height="512" fill="#6d28d9"/>
+  <path d="M136 150h240l-120 130z" fill="#fff"/>
+  <path d="M168 185h176l-88 95z" fill="#f472b6"/>
+  <rect x="244" y="276" width="24" height="100" fill="#fff"/>
+  <rect x="186" y="370" width="140" height="22" rx="11" fill="#fff"/>
+  <circle cx="338" cy="140" r="26" fill="#a3e635"/>
+  <path d="M300 120l70-50" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
 </svg>

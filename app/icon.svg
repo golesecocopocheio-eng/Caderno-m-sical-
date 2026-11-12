@@ -1,7 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0f172a"/>
-  <rect x="96" y="150" width="200" height="230" rx="20" fill="#22c55e"/>
-  <text x="196" y="300" font-family="Arial, sans-serif" font-size="140" font-weight="700" fill="#0f172a" text-anchor="middle">$</text>
-  <rect x="316" y="110" width="110" height="270" rx="14" fill="#38bdf8"/>
-  <circle cx="400" cy="250" r="12" fill="#0f172a"/>
+  <rect width="512" height="512" rx="96" fill="#161826"/>
+  <text x="256" y="330" font-size="240" text-anchor="middle">🍸</text>
 </svg>

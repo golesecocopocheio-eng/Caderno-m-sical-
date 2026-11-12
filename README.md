@@ -41,6 +41,11 @@ python3 -m http.server 8080
 ```
 
 Abra `http://localhost:8080` e use "Instalar aplicativo" ou "Adicionar à tela inicial".
-Para usar no celular, publique a pasta `app/` (por exemplo, no GitHub Pages).
+### Publicação (GitHub Pages)
+
+O workflow `.github/workflows/pages.yml` publica a pasta `app/` a cada push no `main`.
+Na primeira vez, ative em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+O app fica em `https://golesecocopocheio-eng.github.io/Caderno-m-sical-/`. No celular, abra o
+link e toque em "Adicionar à tela inicial".
 
 Os dados ficam salvos apenas no aparelho (localStorage). Faça backups pela aba **Mais**.

@@ -25,6 +25,25 @@
     });
   }
 
+  /* ---------------- Histórico de alterações ----------------
+   * Cada gravação (criar, mudar ou apagar) guarda uma cópia do documento como ficou (ou, ao
+   * apagar, como era antes), com data, hora e quem fez. Com o Firebase ligado, o histórico fica
+   * na nuvem (bares/{codigo}/historico); sem ele, fica neste aparelho (últimas alterações). */
+  const HIST_KEY = 'bar-historico';
+  const HIST_MAX = 400, HIST_BYTES = 1500000;
+  function histLocal(entrada) {
+    let h = [];
+    try { h = JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch (e) {}
+    const ult = [...h].reverse().find((x) => x.app === entrada.app && x.col === entrada.col && x.id === entrada.id);
+    if (ult && ult.op === entrada.op && ult.dados === entrada.dados) return;
+    h.push(entrada);
+    while (h.length > HIST_MAX) h.shift();
+    let txt = JSON.stringify(h);
+    while (txt.length > HIST_BYTES && h.length > 1) { h.shift(); txt = JSON.stringify(h); }
+    try { localStorage.setItem(HIST_KEY, txt); } catch (e) {}
+  }
+  const quem = () => nome() || 'Este aparelho';
+
   /* ---------------- Modo nuvem (Firebase) ---------------- */
   // A conexão (login e dono do bar) é feita uma única vez, na tela principal do app,
   // e as abas (Caixa, Portaria, Estoque) usam essa mesma conexão. Assim o aparelho
@@ -84,12 +103,18 @@
     // O Firebase roda na tela principal; os dados criados nesta aba são copiados para lá
     // antes de gravar, senão o Firebase não os reconhece como objetos simples.
     const copiar = pai ? (v) => (v === undefined ? v : window.parent.structuredClone(v)) : (v) => v;
+    const colNome = (ref) => ref.parent.id.slice(APP.length + 1);
+    const hist = (ref, op, dados) => {
+      const e = { app: APP, col: colNome(ref), id: ref.id, op, dados: JSON.stringify(dados ?? null), quem: quem(), uid: user.uid, t: Date.now() };
+      bar.collection('historico').add(copiar(e)).catch(() => {});
+    };
+    const depois = (ref, op) => ref.get().then((s) => hist(ref, op, s.exists ? s.data() : null)).catch(() => {});
     const doc = (ref) => ({
       id: ref.id,
       get: () => ref.get(),
-      set: (v, o) => ref.set(copiar(v), copiar(o)),
-      update: (v) => ref.update(copiar(v)),
-      delete: () => ref.delete(),
+      set: (v, o) => ref.set(copiar(v), copiar(o)).then((r) => { if (o && o.merge) depois(ref, 'set'); else hist(ref, 'set', v); return r; }),
+      update: (v) => ref.update(copiar(v)).then((r) => { depois(ref, 'update'); return r; }),
+      delete: async () => { let antes = null; try { const s = await ref.get(); antes = s.exists ? s.data() : null; } catch (e) {} await ref.delete(); hist(ref, 'delete', antes); },
       onSnapshot: (...a) => ref.onSnapshot(...a),
     });
     const query = (q) => ({
@@ -103,7 +128,7 @@
       const ref = bar.collection(APP + '_' + n);
       return Object.assign(query(ref), {
         doc: (id) => doc(id ? ref.doc(id) : ref.doc()),
-        add: (v) => ref.add(copiar(v)).then(doc),
+        add: (v) => ref.add(copiar(v)).then((r) => { hist(r, 'add', v); return doc(r); }),
       });
     };
     const db = {
@@ -139,6 +164,8 @@
     const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     const coll = (name) => (data[name] = data[name] || {});
     const clone = (o) => JSON.parse(JSON.stringify(o));
+    const APPL = KEY.slice('app-bar-db:'.length).replace(/\.html?$/, '');
+    const registrar = (c, id, op, dados) => histLocal({ app: APPL, col: c, id, op, dados: JSON.stringify(dados ?? null), quem: quem(), t: Date.now() });
     const docSnap = (c, id) => {
       const v = (data[c] || {})[id];
       return { id, exists: v !== undefined, data: () => (v === undefined ? undefined : clone(v)) };
@@ -157,9 +184,9 @@
       return {
         id,
         async get() { return docSnap(c, id); },
-        async set(v, opt) { coll(c)[id] = opt && opt.merge ? { ...(coll(c)[id] || {}), ...clone(v) } : clone(v); persist(); },
-        async update(v) { coll(c)[id] = { ...(coll(c)[id] || {}), ...clone(v) }; persist(); },
-        async delete() { delete coll(c)[id]; persist(); },
+        async set(v, opt) { coll(c)[id] = opt && opt.merge ? { ...(coll(c)[id] || {}), ...clone(v) } : clone(v); persist(); registrar(c, id, 'set', coll(c)[id]); },
+        async update(v) { coll(c)[id] = { ...(coll(c)[id] || {}), ...clone(v) }; persist(); registrar(c, id, 'update', coll(c)[id]); },
+        async delete() { const antes = (data[c] || {})[id]; delete coll(c)[id]; persist(); registrar(c, id, 'delete', antes); },
         onSnapshot(cb) { return listen(() => docSnap(c, id), cb); },
       };
     }
@@ -186,7 +213,7 @@
       collection(c) {
         return Object.assign(query(c), {
           doc: (id) => docRef(c, id || newId()),
-          async add(v) { const id = newId(); coll(c)[id] = clone(v); persist(); return docRef(c, id); },
+          async add(v) { const id = newId(); coll(c)[id] = clone(v); persist(); registrar(c, id, 'add', coll(c)[id]); return docRef(c, id); },
         });
       },
       doc(path) { const [c, id] = path.split('/'); return docRef(c, id); },
@@ -280,6 +307,17 @@
       }
     }
     return { tipo: 'bar-backup', versao: 1, criado: new Date().toISOString(), apps };
+  };
+
+  window.__barHistorico = async function (limite = 200) {
+    const c = await iniciarCore().catch(() => null);
+    if (c) {
+      const s = await c.bar.collection('historico').orderBy('t', 'desc').limit(limite).get();
+      return { onde: 'nuvem', dono: c.dono, itens: s.docs.map((d) => ({ hid: d.id, ...d.data() })) };
+    }
+    let h = [];
+    try { h = JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch (e) {}
+    return { onde: 'aparelho', dono: true, itens: h.slice(-limite).reverse().map((x, i) => ({ hid: 'l' + i, ...x })) };
   };
 
   window.claude = {

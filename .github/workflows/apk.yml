@@ -38,6 +38,7 @@ jobs:
         run: |
           rm -rf www && cp -r ../app www
           echo "1.${{ github.run_number }}" > www/versao.txt
+          cp dados-iniciais.json www/dados-iniciais.json
 
       - name: Criar o projeto Android
         run: npx cap add android

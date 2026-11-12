@@ -49,6 +49,13 @@ dados ficam salvos só no aparelho.
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
 
+### Dados iniciais do APK
+
+`android-build/dados-iniciais.json` vai **só dentro do APK** (não vai para o site). Na primeira abertura
+de cada versão desse pacote, o app **preenche o que falta** no aparelho, sem substituir nada que já foi
+lançado: no Caixa, dias que faltam e campos vazios; na Portaria, noites sem nenhuma entrada; no
+Estoque, itens e registros que faltam. Atenção: este repositório é público, então esse arquivo também é.
+
 ### Publicação
 
 O site é publicado a partir do branch `gh-pages` em

@@ -11,13 +11,16 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
+/* Área segura: no APK (Android com tela de ponta a ponta) o Capacitor informa a altura da barra de
+   status e da barra de navegação em --safe-area-inset-*; no navegador vale o env(). */
+:root{--sat:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
 html,body{margin:0;height:100%;background:#f2f3f7;color:#161826;font:16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
 @media (prefers-color-scheme:dark){html,body{background:#0f1018;color:#ecedf6}}
-body{display:flex;flex-direction:column}
+body{display:flex;flex-direction:column;padding-top:var(--sat);box-sizing:border-box}
 .frames{flex:1;position:relative}
 iframe,.painel{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;box-sizing:border-box}
 iframe.on,.painel.on{display:block}
-.painel{overflow:auto;padding:24px 18px;max-width:480px;margin:0 auto;left:0;right:0}
+.painel{overflow:auto;padding:28px 18px 24px;max-width:480px;margin:0 auto;left:0;right:0}
 .painel h1{font-size:22px;margin:0 0 6px}
 .painel p{color:#667085;font-size:14px;margin:0 0 16px}
 .painel label{display:block;font-size:13px;color:#667085;margin:12px 0 4px}
@@ -26,11 +29,13 @@ iframe.on,.painel.on{display:block}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(5,1fr);background:#161826;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px 8px calc(8px + var(--sab));background:#161826;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
-nav button{border:0;background:none;color:#9aa0b5;padding:8px 0 10px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button span{font-size:22px}
-nav button.on{color:#fff;font-weight:700}
+nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 12px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
+nav button span{font-size:25px;line-height:1;transition:transform .2s}
+nav button.on{color:#fff;background:rgba(167,139,250,.22)}
+nav button.on span{transform:translateY(-1px) scale(1.08)}
+nav button:active{background:rgba(255,255,255,.08)}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
@@ -71,6 +76,12 @@ nav button.on{color:#fff;font-weight:700}
     <h1>⚙️ Ajustes</h1>
     <div class="info" id="info"></div>
     <p id="versao" style="margin-top:10px"></p>
+    <label style="margin-top:18px">Tamanho da letra</label>
+    <div id="zoom" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <button class="sec" data-z="1" style="margin-top:0">Normal</button>
+      <button class="sec" data-z="1.12" style="margin-top:0;font-size:18px">Grande</button>
+      <button class="sec" data-z="1.25" style="margin-top:0;font-size:20px">Muito grande</button>
+    </div>
     <button class="sec" id="trocar">Trocar de bar ou de nome</button>
     <button class="sec" id="recarregar">Recarregar o aplicativo</button>
     <button class="sec" id="importar">📥 Importar dados de um arquivo</button>
@@ -96,8 +107,14 @@ function abrir(t){
   document.querySelectorAll('iframe,.painel').forEach(f=>f.classList.toggle('on',f.id==='f-'+t));
   localStorage.setItem('bar-aba',t);
 }
+/* Tamanho da letra: aplica um zoom em cada aba (padrão: Grande) */
+const zoomAtual=()=>parseFloat(localStorage.getItem('bar-zoom')||'1.12')||1.12;
+function aplicarZoom(f){try{f.contentDocument.documentElement.style.zoom=zoomAtual()}catch(e){}}
+function aplicarZoomTudo(){document.querySelectorAll('iframe').forEach(aplicarZoom);document.querySelectorAll('.painel').forEach(p=>p.style.zoom=zoomAtual());
+  document.querySelectorAll('#zoom [data-z]').forEach(b=>{const on=parseFloat(b.dataset.z)===zoomAtual();b.style.background=on?'#6d28d9':'';b.style.color=on?'#fff':''})}
 function carregarAbas(){
-  document.querySelectorAll('iframe').forEach(f=>{if(!f.src)f.src=f.dataset.src});
+  document.querySelectorAll('iframe').forEach(f=>{if(!f.src){f.addEventListener('load',()=>aplicarZoom(f));f.src=f.dataset.src}});
+  aplicarZoomTudo();
 }
 function mostrarInfo(){
   $('#info').innerHTML=nuvem&&codigo()
@@ -173,6 +190,7 @@ $('#arquivo').onchange=async e=>{
   }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
 };
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
+document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStorage.setItem('bar-zoom',b.dataset.z);aplicarZoomTudo()});
 /* ---- aba Backup ---- */
 async function textoBackup(){const b=await window.__barExportar();return JSON.stringify(b)}
 function contarBackup(b){const n=a=>Object.values(b.apps[a]||{}).reduce((s,d)=>s+Object.keys(d).length,0);let dias=0;try{Object.values(b.apps.caixa.cxdays).forEach(m=>dias+=Object.keys(JSON.parse(m.j)).length)}catch(e){}

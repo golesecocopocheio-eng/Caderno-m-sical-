@@ -9,8 +9,8 @@ celular e funciona sem internet.
 
 - `app/caixa.html`: o Caixa bar original. A única mudança é uma linha que carrega
   `claude-local.js`, para usar a sincronização.
-- `app/portaria.html`: a Portaria do Bar original. A única mudança é uma linha que carrega
-  `claude-local.js`.
+- `app/portaria.html`: a Portaria do Bar original, com uma linha que carrega `claude-local.js`
+  e o bloco **Backup da portaria** (copiar e restaurar backup; aceita também o `dados-do-bar.json`).
 - `app/estoque.html`: o Estoque do Bar original. A única mudança é a mesma linha que carrega
   `claude-local.js`.
 - `app/claude-local.js`: substitui o banco de dados do Claude (`claude.use("db")` e

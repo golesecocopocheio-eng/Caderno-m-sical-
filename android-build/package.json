@@ -1,0 +1,13 @@
+{
+  "name": "bar-caixa-portaria-estoque-android",
+  "private": true,
+  "description": "Gera o APK Android do aplicativo do bar (pasta app/) com o Capacitor.",
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0"
+  }
+}

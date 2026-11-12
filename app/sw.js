@@ -1,6 +1,6 @@
 // Funciona offline: usa a versão da rede quando há internet e a cópia salva quando não há.
-const CACHE = 'bar-caixa-portaria-v2';
-const ASSETS = ['./', './index.html', './caixa.html', './portaria.html', './claude-local.js', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'bar-caixa-portaria-v3';
+const ASSETS = ['./', './index.html', './caixa.html', './portaria.html', './estoque.html', './claude-local.js', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

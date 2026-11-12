@@ -12,6 +12,8 @@ celular e funciona sem internet.
 - `app/portaria.html`: a Portaria do Bar original, com uma linha que carrega `claude-local.js`
   e o bloco **♻️ Backup** no fim da tela (acima do QR Code): copiar o backup da portaria e **restaurar qualquer backup** (do Caixa,
   da Portaria, do Estoque ou o `dados-do-bar.json`), gravando cada parte na aba certa.
+  Também aceita o **resumo da noite em texto** ("Portaria do Bar · noite de …"): recria a noite com
+  os mesmos totais e substitui o que já existia nela.
   Sem o acréscimo de R$ 5 depois da meia-noite: o preço é sempre o de "Valores da portaria".
 - `app/estoque.html`: o Estoque do Bar original, com a mesma linha que carrega `claude-local.js`
   e o bloco **Backup do estoque** (copiar e restaurar backup; aceita também o `dados-do-bar.json`).

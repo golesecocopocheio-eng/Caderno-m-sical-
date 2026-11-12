@@ -79,7 +79,7 @@ label{font-size:13px;color:var(--mut);flex:1}
 
   <div class="card">
     <b>♻️ Backup</b>
-    <div class="sub" style="margin:4px 0 0">Restaurar aceita qualquer backup: do Caixa, da Portaria, do Estoque ou o arquivo dados-do-bar.json. Cada parte volta para a aba certa.</div>
+    <div class="sub" style="margin:4px 0 0">Restaurar aceita qualquer backup (do Caixa, da Portaria, do Estoque ou o dados-do-bar.json) e também o resumo da noite da portaria em texto. Cada parte volta para a aba certa.</div>
     <div class="row" style="margin-top:8px">
       <button class="btn" id="bkRest" style="margin-top:0;background:var(--ac)">Restaurar backup</button>
       <button class="btn" id="bkCopiar" style="margin-top:0">Copiar backup da portaria</button>
@@ -206,7 +206,7 @@ document.addEventListener("click",async ev=>{
    dados-do-bar.json, e grava cada parte no banco da aba certa. Só o dono restaura. */
 (function(){
   const COLS=['entradas','log','config'];
-  const caixaTexto=(v,ro)=>`<textarea id="bkTxt" rows="5" style="width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:13px" ${ro?'readonly':''} placeholder="Cole aqui o backup copiado (Caixa, Portaria ou Estoque)">${v||''}</textarea>`;
+  const caixaTexto=(v,ro)=>`<textarea id="bkTxt" rows="5" style="width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:13px" ${ro?'readonly':''} placeholder="Cole aqui o backup copiado (Caixa, Portaria ou Estoque) ou o resumo da noite da portaria">${v||''}</textarea>`;
   async function copiarTexto(t){
     try{await navigator.clipboard.writeText(t);return true}catch(e){}
     const el=$('#bkTxt');if(el){el.select();try{return document.execCommand('copy')}catch(e){}}
@@ -222,6 +222,53 @@ document.addEventListener("click",async ev=>{
     $('#bkMsg').textContent=(ok?'✅ Backup copiado. ':'Copie o texto acima. ')+Object.keys(out.entradas).length+' entradas e '+Object.keys(out.log).length+' registros de lançadas/apagadas. Cole em um lugar seguro (e-mail, WhatsApp para você mesmo).';
   };
   // Converte qualquer backup no formato {apps:{caixa,portaria,estoque}}
+  // Recria uma noite a partir do RESUMO em texto ("Portaria do Bar · noite de 11/11/2026 ... Pix: 11 · R$ 100,00").
+  // Os totais por categoria e por forma de pagamento ficam exatos; horários e valores de cada
+  // entrada são aproximados (o resumo não traz cada entrada).
+  function lerResumo(txt){
+    const m=txt.match(/noite de\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);if(!m)return null;
+    const noite=m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+    const val=s=>{s=String(s||'0').trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return Math.round((Number(s)||0)*100)};
+    const linha=re=>{const r=txt.match(new RegExp('^\\s*'+re+'\\s*:\\s*(\\d+)\\s*[·•\\-]\\s*R\\$\\s*([\\d.,]+)','im'));return r?{n:+r[1],v:val(r[2])}:{n:0,v:0}};
+    const cat={turista:linha('Turista'),morador:linha('Morador'),clan:linha('Cl[aã]')};
+    const pag={dinheiro:linha('Dinheiro'),pix:linha('Pix'),cartao:linha('Cart[aã]o'),cortesia:linha('Cortesia')};
+    const soma=(o,k)=>Object.values(o).reduce((a,x)=>a+x[k],0);
+    if(!soma(cat,'n')||soma(cat,'n')!==soma(pag,'n')||soma(cat,'v')!==soma(pag,'v'))return {erro:'Os totais do resumo não batem (pessoas ou valores por categoria × por forma de pagamento).'};
+    // quantas entradas pagas em cada categoria
+    const P=pag.dinheiro.n+pag.pix.n+pag.cartao.n,pg={clan:cat.clan.v>0?cat.clan.n:0};
+    const preco={turista:Number(precos.turista)||0,morador:Number(precos.morador)||0};
+    ['turista','morador'].forEach(k=>{const c=cat[k];pg[k]=c.v>0?Math.min(c.n,Math.max(1,preco[k]?Math.round(c.v/100/preco[k]):c.n)):0});
+    let falta=P-pg.clan-pg.turista-pg.morador,g=0;
+    while(falta!==0&&g++<1000){const ord=falta>0?['turista','morador']:['morador','turista'];let mudou=false;
+      for(const k of ord){if(falta>0&&cat[k].v>0&&pg[k]<cat[k].n){pg[k]++;falta--;mudou=true;break}if(falta<0&&pg[k]>(cat[k].v>0?1:0)){pg[k]--;falta++;mudou=true;break}}
+      if(!mudou)break}
+    if(falta!==0)return {erro:'Não consegui distribuir as entradas pagas entre as categorias.'};
+    // valores (em centavos, arredondados em reais) de cada entrada paga
+    const pagas=[];
+    ['turista','morador','clan'].forEach(k=>{const n=pg[k];if(!n)return;const tot=cat[k].v,base=Math.floor(tot/100/n)*100;let resto=tot-base*n;
+      for(let i=0;i<n;i++){let v=base;const extra=Math.min(resto,100);v+=extra;resto-=extra;pagas.push({cat:k,v})}
+      if(resto)pagas[pagas.length-1].v+=resto});
+    // distribui as pagas entre dinheiro, pix e cartão: primeiro pela quantidade, depois acerta os valores
+    const grupos=['dinheiro','pix','cartao'].map(k=>({k,n:pag[k].n,alvo:pag[k].v,itens:[]}));
+    pagas.sort((a,b)=>b.v-a.v);
+    for(const e of pagas){const gr=grupos.filter(x=>x.itens.length<x.n).sort((a,b)=>((b.alvo-b.itens.reduce((s,y)=>s+y.v,0))/(b.n-b.itens.length))-((a.alvo-a.itens.reduce((s,y)=>s+y.v,0))/(a.n-a.itens.length)))[0];gr.itens.push(e)}
+    const tot=x=>x.itens.reduce((s,y)=>s+y.v,0);
+    for(let i=0;i<grupos.length-1;i++){const A=grupos[i];let d=A.alvo-tot(A),voltas=0;
+      while(d!==0&&voltas++<500){let feito=false;
+        for(const B of grupos.slice(i+1))for(const a of A.itens)for(const b of B.itens){if(a.cat!==b.cat)continue;
+          const t=d>0?Math.min(d,b.v):-Math.min(-d,a.v);if(!t)continue;a.v+=t;b.v-=t;d-=t;feito=true;break}
+        if(!feito)break}
+      if(d!==0)return {erro:'Não consegui fechar o valor de '+A.k+' exatamente.'}}
+    // cortesias (grátis)
+    const gratis=[];['turista','morador','clan'].forEach(k=>{for(let i=pg[k];i<cat[k].n;i++)gratis.push({cat:k,v:0})});
+    if(gratis.length!==pag.cortesia.n)return {erro:'A quantidade de cortesias não bate com as categorias.'};
+    const todas=[...grupos.flatMap(G=>G.itens.map(e=>({...e,pg:G.k}))),...gratis.map(e=>({...e,pg:'cortesia'}))];
+    for(let i=todas.length-1;i>0;i--){const j=(i*7919+13)%(i+1);[todas[i],todas[j]]=[todas[j],todas[i]]}
+    const [a,mm,d]=noite.split('-').map(Number),ini=new Date(a,mm-1,d,21,0).getTime(),passo=270*60000/Math.max(1,todas.length);
+    const entradas={},log={};
+    todas.forEach((e,i)=>{const en={cat:e.cat,pg:e.pg,valor:e.v/100,noite,ts:Math.round(ini+i*passo)};entradas['res'+noite+'_'+i]=en;log['res'+noite+'_log_'+i]={...en,tipo:'lancou'}});
+    return {tipo:'portaria-backup',versao:1,resumo:true,noite,entradas,log};
+  }
   function normalizar(o){
     if(!o||typeof o!=='object')return null;
     if(o.apps)return o.apps;
@@ -248,13 +295,17 @@ document.addEventListener("click",async ev=>{
     $('#bkGo').onclick=async()=>{
       const msg=$('#bkMsg');
       if(!owner){msg.textContent='Somente o dono pode restaurar o backup.';return}
-      let o;try{o=JSON.parse($('#bkTxt').value.trim())}catch(e){msg.textContent='Backup inválido. Cole o texto completo ou escolha o arquivo.';return}
+      const txt=$('#bkTxt').value.trim();let o;
+      try{o=JSON.parse(txt)}catch(e){o=lerResumo(txt);if(!o){msg.textContent='Backup inválido. Cole o texto completo do backup, o resumo da noite da portaria, ou escolha o arquivo.';return}if(o.erro){msg.textContent='Resumo da noite: '+o.erro;return}}
       const apps=normalizar(o);
       if(!apps){msg.textContent='Não reconheci esse backup. Use o texto do "Copiar backup" do Caixa, da Portaria ou do Estoque, ou o dados-do-bar.json.';return}
       const resumo=Object.entries(apps).map(([a,c])=>NOMES[a]+' '+contar(c)).join(', ');
-      if(!armado){armado=true;msg.textContent='Restaurar: '+resumo+' registros? Registros iguais serão substituídos. Toque em Restaurar de novo para confirmar.';return}
+      if(!armado){armado=true;msg.textContent=(o.resumo?'Resumo da noite de '+o.noite.split('-').reverse().join('/')+': vou SUBSTITUIR a noite inteira por '+Object.keys(o.entradas).length+' entradas com os mesmos totais (horários e valor de cada entrada aproximados). ':'')+'Restaurar: '+resumo+' registros? Registros iguais serão substituídos. Toque em Restaurar de novo para confirmar.';return}
       armado=false;msg.textContent='Restaurando…';
       try{
+        if(o.resumo){ // o resumo substitui a noite inteira: apaga o que já existe nessa noite antes
+          for(const c of ['entradas','log']){const q=await db.collection(c).where('noite','==',o.noite).get();for(const d of q.docs)await db.collection(c).doc(d.id).delete()}
+        }
         let imp=null;try{imp=window.parent!==window&&window.parent.__barImportar}catch(e){}
         imp=imp||window.__barImportar;
         if(imp){await imp({apps})}

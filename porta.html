@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c2410c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Portaria">
+<title>Portaria do Bar</title>
+<link rel="manifest" href="porta.webmanifest">
+<link rel="icon" href="icons/porta-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/porta-apple.png">
+<style>
+html,body{margin:0;height:100%;background:#f6f4ef;color:#1d1b18;font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){html,body{background:#16140f;color:#f2eee6}}
+iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+form{max-width:440px;margin:0 auto;padding:28px 18px}
+h1{font-size:22px;margin:0 0 6px}
+p{color:#6f6a62;font-size:14px;margin:0 0 14px}
+label{display:block;font-size:13px;color:#6f6a62;margin:12px 0 4px}
+input{width:100%;box-sizing:border-box;padding:12px;font-size:17px;border:1px solid #e3ded4;border-radius:12px;background:#fff;color:#1d1b18}
+button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#c2410c;color:#fff;font-size:16px;font-weight:700}
+@media (prefers-color-scheme:dark){input{background:#211e18;color:#f2eee6;border-color:#38332a}p,label{color:#a39d90}}
+</style>
+<script src="firebase-config.js"></script>
+<script src="claude-local.js"></script>
+</head>
+<body>
+<form id="entrar" hidden>
+  <h1>🚪 Portaria do Bar</h1>
+  <p>Digite o código do bar (o mesmo da equipe) e o seu nome para começar.</p>
+  <label for="codigo">Código do bar</label>
+  <input id="codigo" required minlength="6" autocomplete="off" autocapitalize="none">
+  <label for="nome">Seu nome</label>
+  <input id="nome" required autocomplete="name">
+  <button type="submit">Entrar</button>
+</form>
+<script>
+// Página só com a Portaria, para abrir pelo QR Code ou link (iPhone e Android).
+const $=s=>document.querySelector(s);
+const nuvem=!!window.FIREBASE_CONFIG;
+const doLink=decodeURIComponent((location.hash.match(/bar=([^&]+)/)||[])[1]||'');
+if(doLink&&doLink!==localStorage.getItem('bar-codigo')){localStorage.removeItem('bar-codigo')}
+const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
+function abrir(){
+  const f=document.createElement('iframe');f.title='Portaria do Bar';f.src='portaria.html';document.body.appendChild(f);
+}
+if(nuvem&&!codigo()){
+  $('#entrar').hidden=false;$('#codigo').value=doLink;$('#nome').value=localStorage.getItem('bar-nome')||'';
+  ($('#codigo').value?$('#nome'):$('#codigo')).focus();
+  $('#entrar').onsubmit=e=>{
+    e.preventDefault();
+    localStorage.setItem('bar-codigo',$('#codigo').value.trim().toLowerCase().replace(/\s+/g,'-').replace(/\//g,'-'));
+    localStorage.setItem('bar-nome',$('#nome').value.trim());
+    location.replace('porta.html');
+  };
+}else abrir();
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

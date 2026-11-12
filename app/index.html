@@ -55,6 +55,7 @@ nav button.on{color:#fff;font-weight:700}
   <div class="painel" id="f-ajustes">
     <h1>⚙️ Ajustes</h1>
     <div class="info" id="info"></div>
+    <p id="versao" style="margin-top:10px"></p>
     <button class="sec" id="trocar">Trocar de bar ou de nome</button>
     <button class="sec" id="recarregar">Recarregar o aplicativo</button>
     <button class="sec" id="importar">📥 Importar dados de um arquivo</button>
@@ -110,6 +111,7 @@ $('#trocar').onclick=()=>{
   $('#entrar').classList.add('on');
 };
 $('#recarregar').onclick=()=>location.reload();
+fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').then(v=>{$('#versao').textContent=(window.Capacitor?'📱 App Android · versão ':'🌐 Site · versão ')+(v.trim()||'em teste')});
 $('#importar').onclick=()=>$('#arquivo').click();
 $('#arquivo').onchange=async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -132,7 +134,9 @@ if(nuvem&&!codigo()){
   $('#entrar').classList.add('on');
 }else iniciar();
 
-if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+// No APK (Capacitor) os arquivos já estão no celular: não usa cache offline e limpa caches antigos.
+if('serviceWorker' in navigator&&window.Capacitor){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});if(window.caches)caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{})}
+else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>

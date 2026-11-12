@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#161826">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Bar">
-<title>Bar · Caixa, Portaria e Estoque</title>
+<meta name="apple-mobile-web-app-title" content="Bar Conect">
+<title>Bar Conect · Caixa, Portaria e Estoque</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -52,7 +52,7 @@ nav button:active{background:rgba(255,255,255,.08)}
   <iframe id="f-estoque" title="Estoque do Bar" data-src="estoque.html"></iframe>
 
   <form class="painel" id="entrar">
-    <h1>🍸 Entrar no bar</h1>
+    <h1>🍸 Bar Conect</h1>
     <p>Use o mesmo código do bar em todos os celulares da equipe para os dados sincronizarem. Quem cria o código primeiro vira o dono.</p>
     <label for="codigo">Código do bar</label>
     <input id="codigo" required minlength="6" autocomplete="off" autocapitalize="none" placeholder="ex.: barzinho-centro-2026">
@@ -190,7 +190,7 @@ $('#trocar').onclick=()=>{
   $('#entrar').classList.add('on');
 };
 $('#recarregar').onclick=()=>location.reload();
-fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').then(v=>{$('#versao').textContent=(window.Capacitor?'📱 App Android · versão ':'🌐 Site · versão ')+(v.trim()||'em teste')});
+fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').then(v=>{$('#versao').textContent=(window.Capacitor?'📱 Bar Conect · Android · versão ':'🌐 Bar Conect · site · versão ')+(v.trim()||'em teste')});
 $('#importar').onclick=()=>$('#arquivo').click();
 $('#arquivo').onchange=async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;

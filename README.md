@@ -1,51 +1,31 @@
 # Caderno-m-sical-
 Cardeno músical
 
-## Caixa & Portaria (aplicativo)
+## Bar · Caixa e Portaria (aplicativo)
 
-Aplicativo único que junta o **controle de caixa** e o **controle de portaria**.
-Fica na pasta [`app/`](app/). É um PWA: funciona no navegador, pode ser
-instalado na tela inicial do celular ou do computador e funciona sem internet.
+Aplicativo que junta os projetos **Caixa bar** e **Portaria do Bar** em um só, com uma aba
+para cada. Fica na pasta [`app/`](app/). É um PWA: pode ser instalado na tela inicial do
+celular e funciona sem internet.
 
-### Funcionalidades
+- `app/caixa.html`: o Caixa bar original, sem nenhuma alteração.
+- `app/portaria.html`: a Portaria do Bar original. A única mudança é uma linha que carrega
+  `claude-local.js`.
+- `app/claude-local.js`: substitui o banco de dados do Claude (`claude.use("db")`) por um banco
+  local, para a Portaria funcionar fora do claude.ai. Dentro do claude.ai ele não faz nada.
+- `app/index.html`: a tela que junta os dois, com as abas Caixa e Portaria.
 
-**Caixa**
-- Abrir caixa com suprimento inicial (troco)
-- Lançar entradas e saídas com forma de pagamento, categoria e descrição
-- Estorno de lançamentos
-- Fechar caixa com conferência do valor contado (sobra ou falta vira lançamento de ajuste)
-- Resumo diário de entradas, saídas e resultado
+**Atenção:** no aplicativo, os dados ficam salvos só no aparelho e não sincronizam com a
+equipe. Para sincronizar ao vivo, use os links dos artefatos no claude.ai.
 
-**Portaria**
-- Registrar entrada de visitantes, prestadores, entregadores, moradores e funcionários
-- Lista de quem está no local agora, com busca e tempo de permanência
-- Registrar saída
-- Controle de encomendas (recebimento e retirada)
-- Histórico por dia e preenchimento automático de visitantes já cadastrados
+### Publicação
 
-**Integração entre os dois**
-- Na saída de um visitante com veículo, o app sugere cobrar o estacionamento
-  (horas × valor por hora configurado). O valor entra direto no caixa.
-- O painel mostra saldo, entradas e saídas do dia, visitas, pessoas no local e encomendas pendentes
+O site é publicado a partir do branch `gh-pages` em
+https://golesecocopocheio-eng.github.io/Caderno-m-sical-/
+Para atualizar, copie o conteúdo de `app/` para a raiz do branch `gh-pages`.
 
-**Outros**
-- Relatório do dia, exportação em CSV (caixa e portaria), backup e restauração em JSON
-
-### Como usar
-
-Sirva a pasta `app/` com qualquer servidor estático. Exemplo:
+### Rodar no computador
 
 ```bash
 cd app
 python3 -m http.server 8080
 ```
-
-Abra `http://localhost:8080` e use "Instalar aplicativo" ou "Adicionar à tela inicial".
-### Publicação (GitHub Pages)
-
-O workflow `.github/workflows/pages.yml` publica a pasta `app/` a cada push no `main`.
-Na primeira vez, ative em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-O app fica em `https://golesecocopocheio-eng.github.io/Caderno-m-sical-/`. No celular, abra o
-link e toque em "Adicionar à tela inicial".
-
-Os dados ficam salvos apenas no aparelho (localStorage). Faça backups pela aba **Mais**.

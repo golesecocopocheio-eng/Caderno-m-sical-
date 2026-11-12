@@ -1,12 +1,12 @@
 {
-  "name": "Caixa & Portaria",
-  "short_name": "Caixa&Portaria",
-  "description": "Controle de caixa e portaria em um só aplicativo",
+  "name": "Bar · Caixa e Portaria",
+  "short_name": "Bar",
+  "description": "Caixa bar e Portaria do Bar em um só aplicativo",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#161826",
+  "theme_color": "#161826",
   "lang": "pt-BR",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }

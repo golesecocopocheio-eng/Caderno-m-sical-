@@ -1,0 +1,18 @@
+{
+  "id": "./porta.html",
+  "name": "Portaria do Bar",
+  "short_name": "Portaria",
+  "description": "Portaria do Bar: lançar entradas da noite",
+  "start_url": "./porta.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#c2410c",
+  "theme_color": "#c2410c",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icons/porta-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/porta-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/porta-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

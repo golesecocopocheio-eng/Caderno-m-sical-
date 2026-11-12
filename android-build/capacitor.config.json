@@ -1,0 +1,8 @@
+{
+  "appId": "br.bar.caixaportaria",
+  "appName": "Bar",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

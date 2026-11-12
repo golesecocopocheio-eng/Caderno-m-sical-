@@ -26,9 +26,9 @@ iframe.on,.painel.on{display:block}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(4,1fr);background:#161826;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);background:#161826;padding-bottom:env(safe-area-inset-bottom,0px)}
 nav[hidden]{display:none}
-nav button{border:0;background:none;color:#9aa0b5;padding:8px 0 10px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button{border:0;background:none;color:#9aa0b5;padding:8px 0 10px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
 nav button span{font-size:22px}
 nav button.on{color:#fff;font-weight:700}
 </style>
@@ -52,6 +52,21 @@ nav button.on{color:#fff;font-weight:700}
     <p style="margin-top:14px">Escolha um código difícil de adivinhar: quem souber o código consegue ver e mudar os dados.</p>
   </form>
 
+  <div class="painel" id="f-backup">
+    <h1>💾 Backup</h1>
+    <p>Guarde uma cópia de tudo (Caixa, Portaria e Estoque) ou traga de volta uma cópia salva.</p>
+    <button id="bkTudo">📋 Copiar backup completo</button>
+    <button class="sec" id="bkBaixar">⬇️ Baixar arquivo de backup</button>
+    <p id="bkInfo" style="margin-top:12px"></p>
+    <textarea id="bkSaida" rows="4" readonly hidden style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #dcdfe8;border-radius:12px;font:12px monospace"></textarea>
+    <h1 style="margin-top:26px">♻️ Restaurar</h1>
+    <p>Aceita o backup completo, o do Caixa, da Portaria ou do Estoque, o arquivo dados-do-bar.json ou o resumo da noite da Portaria. Cada parte volta para a aba certa.</p>
+    <textarea id="bkEntrada" rows="5" placeholder="Cole aqui o backup ou o resumo da noite" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #dcdfe8;border-radius:12px;font:13px system-ui"></textarea>
+    <label>ou escolha um arquivo<input type="file" id="bkArquivo" accept=".json,application/json,text/plain"></label>
+    <button id="bkRestaurar" style="background:#c2410c">Restaurar</button>
+    <p id="bkMsg2" style="margin-top:12px"></p>
+  </div>
+
   <div class="painel" id="f-ajustes">
     <h1>⚙️ Ajustes</h1>
     <div class="info" id="info"></div>
@@ -67,6 +82,7 @@ nav button.on{color:#fff;font-weight:700}
   <button data-tab="caixa"><span>🍸</span>Caixa</button>
   <button data-tab="portaria"><span>🚪</span>Portaria</button>
   <button data-tab="estoque"><span>📦</span>Estoque</button>
+  <button data-tab="backup"><span>💾</span>Backup</button>
   <button data-tab="ajustes"><span>⚙️</span>Ajustes</button>
 </nav>
 <script>
@@ -128,6 +144,38 @@ $('#arquivo').onchange=async e=>{
   }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
 };
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
+/* ---- aba Backup ---- */
+async function textoBackup(){const b=await window.__barExportar();return JSON.stringify(b)}
+function contarBackup(b){const n=a=>Object.values(b.apps[a]||{}).reduce((s,d)=>s+Object.keys(d).length,0);let dias=0;try{Object.values(b.apps.caixa.cxdays).forEach(m=>dias+=Object.keys(JSON.parse(m.j)).length)}catch(e){}
+  return dias+' dias do Caixa, '+Object.keys((b.apps.portaria||{}).entradas||{}).length+' entradas da Portaria e '+Object.keys((b.apps.estoque||{}).items||{}).length+' itens do Estoque'}
+async function copiar(t){try{await navigator.clipboard.writeText(t);return true}catch(e){}const a=$('#bkSaida');a.hidden=false;a.value=t;a.select();try{return document.execCommand('copy')}catch(e){return false}}
+$('#bkTudo').onclick=async()=>{
+  $('#bkInfo').textContent='Juntando…';
+  try{const t=await textoBackup(),b=JSON.parse(t);const ok=await copiar(t);$('#bkSaida').hidden=false;$('#bkSaida').value=t;
+    $('#bkInfo').textContent=(ok?'✅ Backup completo copiado: ':'Copie o texto abaixo: ')+contarBackup(b)+'. Cole num lugar seguro (WhatsApp para você mesmo, e-mail).'}
+  catch(e){$('#bkInfo').textContent='Não consegui juntar o backup: '+(e.message||e)}
+};
+$('#bkBaixar').hidden=!!window.Capacitor;
+$('#bkBaixar').onclick=async()=>{
+  try{const t=await textoBackup(),nome='backup-bar-'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json';
+    const f=new File([t],nome,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Backup do bar'});return}catch(e){if(e&&e.name==='AbortError')return}}
+    const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=nome;document.body.appendChild(a);a.click();a.remove();
+    $('#bkInfo').textContent='✅ Arquivo '+nome+' baixado: '+contarBackup(JSON.parse(t))+'.'}
+  catch(e){$('#bkInfo').textContent='Não consegui gerar o arquivo: '+(e.message||e)}
+};
+$('#bkArquivo').onchange=async e=>{const f=e.target.files[0];if(f)$('#bkEntrada').value=await f.text()};
+let preparado=null;
+$('#bkEntrada').oninput=()=>{preparado=null};
+$('#bkRestaurar').onclick=async()=>{
+  const msg=$('#bkMsg2'),w=document.getElementById('f-portaria').contentWindow;
+  if(!w||!w.__barPreparar){msg.textContent='A aba Portaria ainda está carregando. Tente de novo em alguns segundos.';return}
+  try{
+    if(!preparado){const p=await w.__barPreparar($('#bkEntrada').value);if(p.erro){msg.textContent=p.erro;return}preparado=p;msg.textContent=p.aviso+' Toque em Restaurar de novo para confirmar.';return}
+    const p=preparado;preparado=null;msg.textContent='Restaurando…';msg.textContent=await w.__barExecutar(p);
+  }catch(e){preparado=null;msg.textContent='Não consegui restaurar: '+(e.message||e)}
+};
+
 
 if(nuvem&&!codigo()){
   $('#nav').hidden=true;$('#nome').value=nome();

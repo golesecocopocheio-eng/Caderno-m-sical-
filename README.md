@@ -12,6 +12,8 @@ celular e funciona sem internet.
 - `app/portaria.html`: a Portaria do Bar original, com uma linha que carrega `claude-local.js`
   e o bloco **♻️ Backup** no fim da tela (acima do QR Code): copiar o backup da portaria e **restaurar qualquer backup** (do Caixa,
   da Portaria, do Estoque ou o `dados-do-bar.json`), gravando cada parte na aba certa.
+  Também aceita o **resumo da noite em texto** ("Portaria do Bar · noite de …"): recria a noite com
+  os mesmos totais e substitui o que já existia nela.
   Sem o acréscimo de R$ 5 depois da meia-noite: o preço é sempre o de "Valores da portaria".
 - `app/estoque.html`: o Estoque do Bar original, com a mesma linha que carrega `claude-local.js`
   e o bloco **Backup do estoque** (copiar e restaurar backup; aceita também o `dados-do-bar.json`).
@@ -21,7 +23,9 @@ celular e funciona sem internet.
 - `app/porta.html`: página só com a Portaria, aberta pelo **QR Code para a equipe** ou pelo botão
   **Compartilhar link** da Portaria. Funciona no iPhone e no Android e pode ser instalada como app
   próprio ("Portaria"). Com a sincronização ligada, o link leva o código do bar.
-- `app/index.html`: a tela que junta os três, com as abas Caixa, Portaria, Estoque e Ajustes.
+- `app/index.html`: a tela que junta os três, com as abas Caixa, Portaria, Estoque, **Backup** e Ajustes.
+  A aba **💾 Backup** copia (ou baixa) o backup completo de Caixa, Portaria e Estoque num texto só,
+  e restaura qualquer backup do app, o `dados-do-bar.json` ou o resumo da noite da Portaria.
 
 ### Sincronização entre celulares (Firebase)
 
@@ -44,6 +48,13 @@ dados ficam salvos só no aparelho.
 5. Em **Configurações do projeto (⚙️) → Seus apps → Web (</>)**, registre um app e copie o
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
+
+### Dados iniciais do APK
+
+`android-build/dados-iniciais.json` vai **só dentro do APK** (não vai para o site). Na primeira abertura
+de cada versão desse pacote, o app **preenche o que falta** no aparelho, sem substituir nada que já foi
+lançado: no Caixa, dias que faltam e campos vazios; na Portaria, noites sem nenhuma entrada; no
+Estoque, itens e registros que faltam. Atenção: este repositório é público, então esse arquivo também é.
 
 ### Publicação
 

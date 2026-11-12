@@ -248,6 +248,40 @@
     return { total, onde: 'aparelho' };
   };
 
+  /* ---------------- Exportar tudo (aba Backup) ----------------
+   * Junta Caixa, Portaria e Estoque no mesmo formato que __barImportar aceita.
+   * O Caixa vem do próprio celular (é onde ele grava primeiro); Portaria e Estoque vêm
+   * do Firebase, se estiver ligado, ou do banco deste aparelho. */
+  const COLECOES = { portaria: ['entradas', 'log', 'config'], estoque: ['items', 'mov', 'meta', 'price', 'pg'] };
+  window.__barExportar = async function () {
+    const apps = {};
+    const t = Date.now();
+    let days = {}, meta = {};
+    try { days = JSON.parse(localStorage.getItem('caixa-bar') || '{}'); } catch (e) {}
+    try { meta = JSON.parse(localStorage.getItem('caixa-bar-meta') || '{}'); } catch (e) {}
+    const cxdays = {}, cxmeta = {};
+    Object.keys(days).forEach((k) => { const m = k.slice(0, 7); (cxdays[m] = cxdays[m] || {})[k] = days[k]; });
+    Object.keys(cxdays).forEach((m) => { cxdays[m] = { j: JSON.stringify(cxdays[m]), t }; });
+    Object.keys(meta).forEach((k) => { const j = JSON.stringify(meta[k]); if (j !== undefined) cxmeta[k] = { j, t }; });
+    apps.caixa = { cxdays, cxmeta };
+    const c = await iniciarCore().catch(() => null);
+    for (const [app, cols] of Object.entries(COLECOES)) {
+      apps[app] = {};
+      if (c) {
+        for (const col of cols) {
+          const s = await c.bar.collection(app + '_' + col).get();
+          apps[app][col] = {};
+          s.docs.forEach((d) => { apps[app][col][d.id] = d.data(); });
+        }
+      } else {
+        let local = {};
+        try { local = JSON.parse(localStorage.getItem('app-bar-db:' + app + '.html')) || {}; } catch (e) {}
+        cols.forEach((col) => { apps[app][col] = local[col] || {}; });
+      }
+    }
+    return { tipo: 'bar-backup', versao: 1, criado: new Date().toISOString(), apps };
+  };
+
   window.claude = {
     async use(what) {
       const m = await escolher();

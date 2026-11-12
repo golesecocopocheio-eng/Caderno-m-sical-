@@ -36,7 +36,7 @@ label.lb{flex:1;font-size:12px;color:var(--mu);display:block}
 pre{white-space:pre-wrap;font:inherit;margin:0}
 .big{font-weight:800;font-size:17px;padding-top:10px}
 #t{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:20px;display:none}
-</style></head><body><div id="app"><h1>📦 Estoque do Bar</h1><p class="mu">Carregando…</p></div><div id="bkEst" hidden style="max-width:560px;margin:-24px auto 24px;padding:0 12px;box-sizing:border-box"><div style="background:var(--cd);border-radius:14px;padding:12px;box-shadow:0 1px 2px var(--ln)"><b>Backup do estoque</b><p class="mu" style="margin:4px 0 8px">Guarde uma cópia de todos os itens, movimentações, preços e compras, ou traga de volta uma cópia salva.</p><div class="row" style="display:flex;gap:8px"><button id="bkCopiar" class="pri" style="flex:1">Copiar backup</button><button id="bkRest" style="flex:1" hidden>Restaurar backup</button></div><div id="bkBox"></div></div></div><div id="t"></div>
+</style></head><body><div id="app"><h1>📦 Estoque do Bar</h1><p class="mu">Carregando…</p></div><div id="bkEst" hidden style="max-width:560px;margin:-24px auto 24px;padding:0 12px;box-sizing:border-box"><div style="background:var(--cd);border-radius:14px;padding:12px;box-shadow:0 1px 2px var(--ln)"><b>Backup do estoque</b><p class="mu" style="margin:4px 0 8px">Guarde uma cópia de todos os itens, movimentações, preços e compras, ou traga de volta uma cópia salva.</p><div class="row" style="display:flex;gap:8px"><button id="bkCopiar" class="pri" style="flex:1">Copiar backup</button><button id="bkRest" style="flex:1">Restaurar backup</button></div><div id="bkBox"></div></div></div><div id="t"></div>
 <script src="claude-local.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -120,7 +120,7 @@ db.collection('pg').onSnapshot(s=>{pgs=s.docs.map(d=>({id:d.id,...d.data()}));re
 (function(){
   const COLS=['items','mov','meta','price','pg'];
   const B=s=>document.querySelector('#bkEst '+s);
-  setInterval(()=>{const box=document.getElementById('bkEst');box.hidden=!db;B('#bkRest').hidden=!adm},800);
+  setInterval(()=>{document.getElementById('bkEst').hidden=!db},800);
   const area=(v,ro)=>`<textarea id="bkTxt" rows="5" style="width:100%;box-sizing:border-box;margin-top:8px;font:13px monospace;color:var(--fg);background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:9px" ${ro?'readonly':''} placeholder="Cole aqui o backup copiado">${v||''}</textarea>`;
   async function copiarTexto(t){
     try{await navigator.clipboard.writeText(t);return true}catch(e){}

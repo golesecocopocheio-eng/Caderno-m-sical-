@@ -38,6 +38,15 @@ label{font-size:13px;color:var(--mut);flex:1}
   <input type="date" id="dia" style="margin-bottom:10px" aria-label="Escolher data">
   <div class="msg" id="status">Conectando…</div>
   <div class="msg" id="msgDono" hidden>Somente o dono pode apagar entradas e mudar os valores.</div>
+  <div class="card">
+    <b>♻️ Backup</b>
+    <div class="sub" style="margin:4px 0 0">Restaurar aceita qualquer backup: do Caixa, da Portaria, do Estoque ou o arquivo dados-do-bar.json. Cada parte volta para a aba certa.</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="bkRest" style="margin-top:0;background:var(--ac)">Restaurar backup</button>
+      <button class="btn" id="bkCopiar" style="margin-top:0">Copiar backup da portaria</button>
+    </div>
+    <div id="bkBox"></div>
+  </div>
 
   <div class="card">
     <div class="sub" style="margin:0 0 6px">Forma de pagamento</div>
@@ -75,16 +84,6 @@ label{font-size:13px;color:var(--mut);flex:1}
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center"><b>Últimas entradas</b><button class="link dono" id="limpar" hidden>Apagar todas</button></div>
     <div id="lista"></div>
-  </div>
-
-  <div class="card">
-    <b>Backup da portaria</b>
-    <div class="sub" style="margin:4px 0 0">Guarde uma cópia de todas as noites (entradas, apagadas e valores) ou traga de volta uma cópia salva.</div>
-    <div class="row" style="margin-top:8px">
-      <button class="btn" id="bkCopiar" style="margin-top:0">Copiar backup</button>
-      <button class="btn" id="bkRest" style="margin-top:0;background:var(--ac)">Restaurar backup</button>
-    </div>
-    <div id="bkBox"></div>
   </div>
 
   <div class="card" style="text-align:center">
@@ -203,11 +202,12 @@ document.addEventListener("click",async ev=>{
 })();
 </script>
 <script>
-/* Backup da portaria: copia todas as entradas, o histórico de lançadas/apagadas e os valores,
-   e restaura a partir de um backup colado ou de um arquivo (inclusive o dados-do-bar.json). */
+/* Backup: "Copiar backup da portaria" copia entradas, lançadas/apagadas e valores.
+   "Restaurar backup" aceita o backup do Caixa ({days, meta}), da Portaria, do Estoque ou o
+   dados-do-bar.json, e grava cada parte no banco da aba certa. Só o dono restaura. */
 (function(){
   const COLS=['entradas','log','config'];
-  const caixaTexto=(v,ro)=>`<textarea id="bkTxt" rows="5" style="width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:13px" ${ro?'readonly':''} placeholder="Cole aqui o backup copiado">${v||''}</textarea>`;
+  const caixaTexto=(v,ro)=>`<textarea id="bkTxt" rows="5" style="width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:13px" ${ro?'readonly':''} placeholder="Cole aqui o backup copiado (Caixa, Portaria ou Estoque)">${v||''}</textarea>`;
   async function copiarTexto(t){
     try{await navigator.clipboard.writeText(t);return true}catch(e){}
     const el=$('#bkTxt');if(el){el.select();try{return document.execCommand('copy')}catch(e){}}
@@ -222,20 +222,48 @@ document.addEventListener("click",async ev=>{
     const ok=await copiarTexto(t);
     $('#bkMsg').textContent=(ok?'✅ Backup copiado. ':'Copie o texto acima. ')+Object.keys(out.entradas).length+' entradas e '+Object.keys(out.log).length+' registros de lançadas/apagadas. Cole em um lugar seguro (e-mail, WhatsApp para você mesmo).';
   };
+  // Converte qualquer backup no formato {apps:{caixa,portaria,estoque}}
+  function normalizar(o){
+    if(!o||typeof o!=='object')return null;
+    if(o.apps)return o.apps;
+    const apps={},t=Date.now();
+    const ehEstoque=o.tipo==='estoque-backup'||!!o.items;
+    if(o.days||(o.meta&&!ehEstoque)){ // backup do Caixa ("Copiar backup" do Caixa)
+      const cxdays={},cxmeta={};
+      Object.keys(o.days||{}).forEach(k=>{const m=k.slice(0,7);(cxdays[m]=cxdays[m]||{})[k]=o.days[k]});
+      Object.keys(cxdays).forEach(m=>cxdays[m]={j:JSON.stringify(cxdays[m]),t});
+      Object.keys(o.meta||{}).forEach(k=>{const j=JSON.stringify(o.meta[k]);if(j!==undefined)cxmeta[k]={j,t}});
+      apps.caixa={cxdays,cxmeta};
+    }
+    if(ehEstoque)apps.estoque={items:o.items||{},mov:o.mov||{},meta:o.meta||{},price:o.price||{},pg:o.pg||{}};
+    if(o.tipo==='portaria-backup'||o.entradas||o.log||o.config)apps.portaria={entradas:o.entradas||{},log:o.log||{},config:o.config||{}};
+    return Object.keys(apps).length?apps:null;
+  }
+  const NOMES={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque'};
+  const contar=cols=>Object.values(cols||{}).reduce((a,d)=>a+Object.keys(d||{}).length,0);
+  let armado=false;
   $('#bkRest').onclick=()=>{
+    armado=false;
     $('#bkBox').innerHTML=caixaTexto('',false)+`<input type="file" id="bkArq" accept=".json,application/json,text/plain" style="margin-top:8px"><button class="btn" id="bkGo">Restaurar</button><div class="msg" id="bkMsg"></div>`;
     $('#bkArq').onchange=async e=>{const f=e.target.files[0];if(f)$('#bkTxt').value=await f.text()};
     $('#bkGo').onclick=async()=>{
       const msg=$('#bkMsg');
       if(!owner){msg.textContent='Somente o dono pode restaurar o backup.';return}
       let o;try{o=JSON.parse($('#bkTxt').value.trim())}catch(e){msg.textContent='Backup inválido. Cole o texto completo ou escolha o arquivo.';return}
-      const dados=o&&o.apps&&o.apps.portaria?o.apps.portaria:o;
-      const n=COLS.reduce((a,c)=>a+Object.keys((dados&&dados[c])||{}).length,0);
-      if(!n){msg.textContent='Esse backup não tem dados da portaria.';return}
-      if(!conf('restaurar','Restaurar '+n+' registros da portaria? Registros iguais serão substituídos.')){msg.textContent='Toque em Restaurar de novo para confirmar.';return}
+      const apps=normalizar(o);
+      if(!apps){msg.textContent='Não reconheci esse backup. Use o texto do "Copiar backup" do Caixa, da Portaria ou do Estoque, ou o dados-do-bar.json.';return}
+      const resumo=Object.entries(apps).map(([a,c])=>NOMES[a]+' '+contar(c)).join(', ');
+      if(!armado){armado=true;msg.textContent='Restaurar: '+resumo+' registros? Registros iguais serão substituídos. Toque em Restaurar de novo para confirmar.';return}
+      armado=false;msg.textContent='Restaurando…';
       try{
-        for(const c of COLS)for(const[id,v]of Object.entries(dados[c]||{}))await db.collection(c).doc(id).set(v);
-        msg.textContent='✅ '+n+' registros restaurados.';$('#status').textContent='● Sincronizado ao vivo';
+        let imp=null;try{imp=window.parent!==window&&window.parent.__barImportar}catch(e){}
+        imp=imp||window.__barImportar;
+        if(imp){await imp({apps})}
+        else{for(const[c,docs]of Object.entries(apps.portaria||{}))for(const[id,v]of Object.entries(docs))await db.collection(c).doc(id).set(v)}
+        // recarrega as outras abas para mostrarem os dados restaurados
+        try{['f-caixa','f-estoque'].forEach(id=>{const f=window.parent.document.getElementById(id);if(f&&f.src)f.contentWindow.location.reload()})}catch(e){}
+        msg.textContent='✅ Restaurado: '+resumo+' registros.'+(apps.caixa?' Abra a aba Caixa para ver.':'');
+        $('#status').textContent='● Sincronizado ao vivo';
       }catch(e){msg.textContent='Não consegui restaurar: '+(e.message||e.code||'erro')}
     };
   };

@@ -1,7 +1,7 @@
 # Caderno-m-sical-
 Cardeno músical
 
-## Bar · Caixa, Portaria e Estoque (aplicativo)
+## Bar Conect · Caixa, Portaria e Estoque (aplicativo)
 
 Aplicativo que junta os projetos **Caixa bar**, **Portaria do Bar** e **Estoque do Bar** em um só, com uma aba
 para cada. Fica na pasta [`app/`](app/). É um PWA: pode ser instalado na tela inicial do

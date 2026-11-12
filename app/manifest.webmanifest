@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Bar · Caixa, Portaria e Estoque",
-  "short_name": "Bar",
+  "name": "Bar Conect · Caixa, Portaria e Estoque",
+  "short_name": "Bar Conect",
   "description": "Caixa bar, Portaria do Bar e Estoque do Bar em um só aplicativo",
   "start_url": "./index.html",
   "scope": "./",

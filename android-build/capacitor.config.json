@@ -1,6 +1,6 @@
 {
   "appId": "br.bar.caixaportaria",
-  "appName": "Bar",
+  "appName": "Bar Conect",
   "webDir": "www",
   "android": {
     "allowMixedContent": false

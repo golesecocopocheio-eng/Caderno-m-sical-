@@ -73,7 +73,15 @@
   window.claude = {
     async use(what) {
       if (what === 'db') return db;
-      if (what === 'user') return { isOwner: async () => true };
+      if (what === 'user') {
+        return {
+          isOwner: async () => true,
+          id: async () => 'este-aparelho',
+          canEdit: () => true,
+          can: () => true,
+          profiles: async (ids) => Object.fromEntries(ids.map((i) => [i, { name: 'Este aparelho' }])),
+        };
+      }
       return null;
     },
   };

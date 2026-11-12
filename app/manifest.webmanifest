@@ -1,7 +1,7 @@
 {
-  "name": "Bar · Caixa e Portaria",
+  "name": "Bar · Caixa, Portaria e Estoque",
   "short_name": "Bar",
-  "description": "Caixa bar e Portaria do Bar em um só aplicativo",
+  "description": "Caixa bar, Portaria do Bar e Estoque do Bar em um só aplicativo",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

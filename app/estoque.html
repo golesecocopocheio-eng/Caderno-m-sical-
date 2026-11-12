@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Estoque do Bar</title>
+<style>
+:root{--bg:#f6f6f3;--fg:#1a1a1a;--mu:#6b6b6b;--cd:#fff;--ln:#0001;--ac:#1f6feb;--bad:#d03b2c;--ok:#1e8e3e;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--fg:#eee;--mu:#9a9a9a;--cd:#1e1e1e;--ln:#fff2;--ac:#6ea8ff;--bad:#ff7b6b;--ok:#5fd07c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121212;--fg:#eee;--mu:#9a9a9a;--cd:#1e1e1e;--ln:#fff2;--ac:#6ea8ff;--bad:#ff7b6b;--ok:#5fd07c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+h1{font-size:21px;margin:4px 0 12px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.tile{background:var(--cd);border-radius:14px;padding:10px 12px;box-shadow:0 1px 2px var(--ln)}
+.tile span{display:block;font-size:12px;color:var(--mu)}.tile b{font-size:18px}.tile.bad b{color:var(--bad)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;background:var(--cd);padding:4px;border-radius:14px;box-shadow:0 1px 2px var(--ln)}
+.tabs button{flex:1;border:0;background:none;padding:9px 4px;border-radius:10px;font-size:14px}
+.tabs .on,.pri{background:var(--ac);color:#fff}
+button,input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:9px 12px}
+button{cursor:pointer}input{min-width:0;width:100%;box-sizing:border-box}
+details.g{background:var(--cd);border-radius:14px;padding:6px 12px 10px;margin-bottom:10px;box-shadow:0 1px 2px var(--ln)}
+summary{font-weight:700;cursor:pointer;padding:6px 0}
+.it{padding:10px 0;border-top:1px solid var(--ln)}
+.r{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.q{min-width:44px;text-align:center;font-weight:800;font-size:24px}
+.c{display:flex;align-items:center;gap:8px}.c button{padding:6px 16px;font-size:20px}
+.mu{color:var(--mu);font-size:13px}.rt{text-align:right}
+.chip{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--bg);color:var(--mu);font-weight:600;white-space:nowrap}
+.chip.ok{color:var(--ok)}.chip.bad{color:var(--bad)}
+.bar{height:6px;border-radius:9px;background:var(--bg);margin:8px 0 4px;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px}
+.bar .ok{background:var(--ok)}.bar .bad{background:var(--bad)}
+.brk{font-size:13px;color:var(--mu)}.brk b{color:var(--fg)}
+details.ed{margin-top:6px}details.ed summary{font-size:13px;font-weight:600;color:var(--ac)}
+.row{display:flex;gap:6px;margin-top:8px;align-items:flex-end}.row button{flex:0 0 auto}
+label.lb{flex:1;font-size:12px;color:var(--mu);display:block}
+pre{white-space:pre-wrap;font:inherit;margin:0}
+.big{font-weight:800;font-size:17px;padding-top:10px}
+#t{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:20px;display:none}
+</style></head><body><div id="app"><h1>📦 Estoque do Bar</h1><p class="mu">Carregando…</p></div><div id="t"></div>
+<script src="claude-local.js"></script>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let db,user,me=null,adm=false,wr=true,items=[],movs=[],glist=[],price={},pgs=[],tab='est',flt='all',pend={},tm={},names={},rq=0,fv={n:'',g:'',ng:'',h:'',m:'',p:''},fo=false;
+const nv=v=>{let s=String(v??'').trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s);return isNaN(n)?0:n};
+const R=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const rid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const toast=m=>{const e=$('#t');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',2200)};
+const st=it=>{let c=0,s=0;movs.forEach(m=>{if(m.i!==it.id||m.t<=(it.bt||0))return;const d=Number(m.d)||0;if(m.k==='p')c+=d;else s+=d});return{h:Number(it.base)||0,c,s:s+(pend[it.id]||0)}};
+const cur=it=>{const x=st(it);return x.h+x.c+x.s};
+const ideal=it=>Number(it.min)||0,short=it=>Math.max(0,ideal(it)-cur(it)),isLow=it=>ideal(it)>0&&cur(it)<ideal(it);
+const up=id=>{const p=price[id]||{};return nv(p.pu)||(nv(p.pc)&&nv(p.uc)?nv(p.pc)/nv(p.uc):0)};
+const groups=()=>{const g=[...glist];items.forEach(i=>{if(i.g&&!g.includes(i.g))g.push(i.g)});return g};
+const byN=(a,b)=>a.n.localeCompare(b.n,'pt');
+const render=()=>{cancelAnimationFrame(rq);rq=requestAnimationFrame(draw)};
+const bump=(id,d)=>{pend[id]=(pend[id]||0)+d;render();clearTimeout(tm[id]);tm[id]=setTimeout(async()=>{const x=pend[id];pend[id]=0;if(!x)return;try{await db.doc('mov/'+rid('m')).set({i:id,d:x,t:Date.now(),u:me})}catch(e){toast('Sem permissão para alterar');render()}},700)};
+const dt=()=>new Date().toLocaleDateString('pt-BR');
+const estTxt=()=>{const L=['*ESTOQUE - '+dt()+'*'];groups().forEach(g=>{const a=items.filter(i=>i.g===g);if(!a.length)return;L.push('','*'+g.toUpperCase()+'*');a.sort(byN).forEach(i=>L.push(i.n+': '+cur(i)+(isLow(i)?' ⚠️':'')))});return L.join('\n')};
+const buyTxt=()=>{const L=['*LISTA DE COMPRAS - '+dt()+'*'];groups().forEach(g=>{const a=items.filter(i=>i.g===g&&short(i)>0);if(!a.length)return;L.push('','*'+g.toUpperCase()+'*');a.sort(byN).forEach(i=>L.push(i.n+': comprar '+short(i)+' (tem '+cur(i)+', ideal '+ideal(i)+')'))});return L.join('\n')};
+const copy=async t=>{try{await navigator.clipboard.writeText(t);toast('Copiado')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Copiado')}catch(_){toast('Não foi possível copiar')}a.remove()}};
+const send=t=>{if(navigator.share)navigator.share({text:t}).catch(()=>{});else copy(t)};
+async function who(ids){const n=ids.filter(i=>i&&!(i in names));if(!n.length||!user)return;try{const p=await user.profiles(n);n.forEach(i=>names[i]=(p[i]&&p[i].name)||'Alguém');render()}catch(e){n.forEach(i=>names[i]='Alguém')}}
+const row=i=>{const x=st(i),c=x.h+x.c+x.s,id=ideal(i),lo=isLow(i),p=id?Math.min(100,Math.round(c/id*100)):0;
+return `<div class="it"><div class="r"><b>${esc(i.n)}</b><span class="chip ${id?(lo?'bad':'ok'):''}">${id?(lo?'falta '+(id-c):'ok'):'sem ideal'}</span></div>
+<div class="r" style="margin-top:6px"><span class="c">${wr?`<button data-d="${i.id}" data-v="-1" aria-label="Dar baixa em ${esc(i.n)}">−</button>`:''}<span class="q">${c}</span>${wr?`<button data-d="${i.id}" data-v="1" aria-label="Entrada em ${esc(i.n)}">+</button>`:''}</span><span class="mu rt">ideal ${id||'—'}${up(i.id)?'<br>'+R(c*up(i.id)):''}</span></div>
+${id?`<div class="bar"><i class="${lo?'bad':'ok'}" style="width:${p}%"></i></div>`:''}
+<div class="brk">Em casa <b>${x.h}</b> · Comprado <b>+${x.c}</b> · Saídas/ajustes <b>${x.s>0?'+':''}${x.s}</b></div>
+${adm?`<details class="ed"><summary>Editar</summary><div class="row"><label class="lb">Em casa<input data-k="h" data-id="${i.id}" inputmode="numeric" placeholder="${x.h}"></label><label class="lb">Ideal (mínimo)<input data-k="m" data-id="${i.id}" inputmode="numeric" placeholder="${id}"></label><label class="lb">Acertar total<input data-k="a" data-id="${i.id}" inputmode="numeric" placeholder="${c}"></label><button data-x="${i.id}" aria-label="Excluir ${esc(i.n)}">✕</button></div></details>`:''}</div>`};
+function draw(){const a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='SELECT')&&a.dataset.k)return;
+const fal=items.filter(isLow).length,val=items.reduce((s,i)=>s+cur(i)*up(i.id),0),buy=items.reduce((s,i)=>s+short(i)*up(i.id),0),TB=[['est','Estoque'],['buy','Comprar'],['cp','Compras'],['log','Histórico']];
+let h='<h1>📦 Estoque do Bar <small class="mu" style="color:var(--ok)">● ao vivo</small></h1>'+(wr?'':'<p class="mu">Somente visualização. Peça acesso de colaborador para dar baixa.</p>')
++`<div class="sum"><div class="tile"><span>Itens</span><b>${items.length}</b></div><div class="tile ${fal?'bad':''}"><span>Abaixo do ideal</span><b>${fal}</b></div><div class="tile"><span>Valor em estoque</span><b>${R(val)}</b></div><div class="tile"><span>Falta comprar (estimado)</span><b>${R(buy)}</b></div></div>`
++'<div class="tabs">'+TB.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('')+'</div>';
+if(tab==='est'){h+=`<div class="tabs"><button data-f="all" class="${flt==='all'?'on':''}">Todos</button><button data-f="low" class="${flt==='low'?'on':''}">Só o que falta</button></div>`;
+const G=groups();if(adm)h+=`<details class="g" id="nf" ${fo?'open':''}><summary>➕ Adicionar item</summary><div class="row"><label class="lb">Nome do item<input data-k="fn" value="${esc(fv.n)}" placeholder="Ex.: Gin Tanqueray"></label></div><div class="row"><label class="lb">Grupo<select data-k="fg" style="width:100%;font:inherit;padding:9px;border-radius:10px;background:var(--bg);color:var(--fg);border:1px solid var(--ln)">${G.map(g=>`<option ${(fv.g||G[0])===g?'selected':''}>${esc(g)}</option>`).join('')}<option value="__n" ${fv.g==='__n'?'selected':''}>+ Novo grupo…</option></select></label><label class="lb">Nome do novo grupo<input data-k="fng" value="${esc(fv.ng)}" placeholder="só se escolheu novo"></label></div><div class="row"><label class="lb">Em casa<input data-k="fh" value="${esc(fv.h)}" inputmode="numeric" placeholder="0"></label><label class="lb">Ideal (mínimo)<input data-k="fm" value="${esc(fv.m)}" inputmode="numeric" placeholder="0"></label><label class="lb">R$ unidade<input data-k="fp" value="${esc(fv.p)}" inputmode="decimal" placeholder="0,00"></label></div><div class="row"><button id="fs" class="pri" style="flex:1">Salvar item</button></div></details>`;if(!G.length)h+='<p class="mu">Estoque vazio.'+(adm?' Crie um grupo abaixo.':'')+'</p>';
+G.forEach(g=>{const a=items.filter(i=>i.g===g&&(flt==='all'||isLow(i))).sort(byN);if(!a.length&&(flt==='low'||!adm))return;const fg=items.filter(i=>i.g===g&&isLow(i)).length;
+h+=`<details class="g" open><summary>${esc(g)} <span class="mu">· ${a.length}</span> ${fg?`<span class="chip bad">${fg} abaixo</span>`:''}</summary>${a.map(row).join('')}${adm&&flt==='all'?`<div class="row"><input data-k="n" placeholder="Novo item em ${esc(g)}"><button data-a="${esc(g)}">Adicionar</button></div>`:''}</details>`});
+if(adm&&flt==='all')h+='<div class="row"><input data-k="g" placeholder="Novo grupo"><button id="ng">Criar grupo</button></div>';
+h+='<div class="row"><button id="ce" style="flex:1">Copiar estoque atual</button><button id="se" style="flex:1">Enviar</button></div>'}
+else if(tab==='buy'){const G=groups();h+='<p class="mu">Quanto falta para chegar no <b>ideal</b> de cada item (ideal − o que você tem agora).</p>';let n=0;
+G.forEach(g=>{const a=items.filter(i=>i.g===g&&short(i)>0).sort(byN);if(!a.length)return;n+=a.length;h+=`<details class="g" open><summary>${esc(g)} <span class="mu">· ${a.length}</span></summary>${a.map(i=>`<div class="it r"><span>${esc(i.n)}<div class="mu">tem ${cur(i)} · ideal ${ideal(i)}</div></span><span class="rt"><b>comprar ${short(i)}</b>${up(i.id)?`<div class="mu">≈ ${R(short(i)*up(i.id))}</div>`:''}</span></div>`).join('')}</details>`});
+if(!n)h+='<p class="mu">Nada faltando. Defina o ideal de cada item em Estoque › Editar.</p>';else h+=`<div class="r big"><span>Total estimado</span><b>${R(buy)}</b></div><div class="row"><button id="cb" class="pri" style="flex:1">Copiar lista</button><button id="sb" style="flex:1">Enviar</button></div>`}
+else if(tab==='cp'){const lp=id=>{const a=pgs.filter(p=>p.i===id).sort((x,y)=>y.t-x.t)[0];return a?`<div class="mu">Última compra: ${fmt(a.t)} · ${R(nv(a.v))}${a.nf?' · '+esc(a.nf):''}</div>`:''},G=groups(),d0=new Date(),mk0=d0.getFullYear()*12+d0.getMonth(),pm=pgs.filter(p=>{const d=new Date(p.t);return d.getFullYear()*12+d.getMonth()===mk0}).reduce((s,p)=>s+nv(p.v),0),nm={};items.forEach(i=>nm[i.id]=i.n);
+h+=`<details class="g" open><summary>Valor do estoque · ${R(val)}</summary>${G.map(g=>`<div class="it r"><span>${esc(g)}</span><b>${R(items.filter(i=>i.g===g).reduce((s,i)=>s+cur(i)*up(i.id),0))}</b></div>`).join('')}</details>`;
+G.forEach(g=>{h+=`<details class="g"><summary>${esc(g)}</summary>`+items.filter(i=>i.g===g).sort(byN).map(i=>{const p=price[i.id]||{};return `<div class="it"><div class="r"><b>${esc(i.n)}</b><span class="mu">${cur(i)} un · ${R(cur(i)*up(i.id))}</span></div>${lp(i.id)}<div class="row"><label class="lb">R$ unidade<input data-k="pu" data-id="${i.id}" inputmode="decimal" value="${esc(p.pu??'')}"></label><label class="lb">R$ caixa<input data-k="pc" data-id="${i.id}" inputmode="decimal" value="${esc(p.pc??'')}"></label><label class="lb">un/caixa<input data-k="uc" data-id="${i.id}" inputmode="numeric" value="${esc(p.uc??'')}"></label></div>${adm?`<div class="row"><label class="lb">Caixas compradas<input data-k="bq" inputmode="numeric"></label><label class="lb">R$ pago<input data-k="bv" inputmode="decimal"></label><button data-pg="${i.id}">PG</button></div>`:''}</div>`}).join('')+'</details>'});
+h+=`<details class="g" open><summary>Pagamentos (PG) · mês ${R(pm)}</summary>${[...pgs].sort((x,y)=>y.t-x.t).slice(0,40).map(p=>`<div class="it r"><span>${esc(nm[p.i]||'(item apagado)')}<div class="mu">${fmt(p.t)} · ${p.nf?esc(p.nf)+' · ':''}${p.u} un</div></span><b>${R(nv(p.v))}</b></div>`).join('')||'<p class="mu">Nenhum pagamento registrado.</p>'}</details><p class="mu">Todos com acesso veem isto ao vivo; só dono/editor altera. Ao registrar PG, as unidades entram em "Comprado".</p>`}
+else{const L=[...movs].sort((x,y)=>y.t-x.t).slice(0,80);who(L.map(m=>m.u));const nm={};items.forEach(i=>nm[i.id]=i.n);h+=L.length?L.map(m=>`<div class="it r"><span>${esc(nm[m.i]||'(item apagado)')}<div class="mu">${fmt(m.t)} · ${esc(names[m.u]||'…')}</div></span><b class="${m.d<0?'chip bad':''}">${m.k==='a'?'ajuste → '+m.v:m.k==='p'?'compra +'+m.d:(m.d>0?'+':'')+m.d}</b></div>`).join(''):'<p class="mu">Nenhuma movimentação ainda.</p>'}
+$('#app').innerHTML=h;
+if(!adm)document.querySelectorAll('input[data-k="pu"],input[data-k="pc"],input[data-k="uc"]').forEach(i=>{i.readOnly=true});
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;draw()});
+document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>bump(b.dataset.d,+b.dataset.v));
+const q=(id,f)=>{const e=$(id);if(e)e.onclick=f};q('#ce',()=>copy(estTxt()));q('#se',()=>send(estTxt()));q('#cb',()=>copy(buyTxt()));q('#sb',()=>send(buyTxt()));
+if(!adm)return;
+const w=f=>f().catch(()=>toast('Sem permissão')),it=id=>items.find(z=>z.id===id);
+document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{if(b.dataset.s)w(()=>db.doc('items/'+b.dataset.x).delete());else{b.dataset.s=1;b.textContent='Apagar?';setTimeout(()=>{b.dataset.s='';b.textContent='✕'},2500)}});
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const n=b.parentNode.querySelector('input').value.trim();if(n)w(()=>db.doc('items/'+rid('i')).set({n,g:b.dataset.a,min:0,base:0,bt:0}))});
+document.querySelectorAll('input[data-k="h"]').forEach(i=>i.onchange=()=>{if(i.value!=='')w(()=>db.doc('items/'+i.dataset.id).update({base:nv(i.value)}))});
+document.querySelectorAll('input[data-k="m"]').forEach(i=>i.onchange=()=>{if(i.value!=='')w(()=>db.doc('items/'+i.dataset.id).update({min:nv(i.value)}))});
+document.querySelectorAll('input[data-k="a"]').forEach(i=>i.onchange=()=>{const x=it(i.dataset.id);if(!x||i.value==='')return;const v=nv(i.value),d=v-cur(x);if(d)w(()=>db.doc('mov/'+rid('m')).set({i:x.id,d,k:'a',v,t:Date.now(),u:me}))});
+document.querySelectorAll('input[data-k="pu"],input[data-k="pc"],input[data-k="uc"]').forEach(i=>i.onchange=()=>{const id=i.dataset.id;w(()=>db.doc('price/'+id).set({...(price[id]||{}),[i.dataset.k]:i.value.trim()}))});
+document.querySelectorAll('[data-pg]').forEach(b=>b.onclick=async()=>{const id=b.dataset.pg,box=b.closest('.it'),n=nv(box.querySelector('[data-k="bq"]').value),p=price[id]||{},u=n*(nv(p.uc)||1);let v=nv(box.querySelector('[data-k="bv"]').value);if(!n){toast('Informe as caixas compradas');return}if(!v)v=n*nv(p.pc);if(!v){toast('Informe o valor pago');return}const t=Date.now();try{await db.doc('pg/'+rid('p')).set({i:id,q:n,u,v,t,by:me});await db.doc('mov/'+rid('m')).set({i:id,d:u,k:'p',t,u:me});toast('PG registrado')}catch(e){toast('Sem permissão')}});
+document.querySelectorAll('[data-k^="f"]').forEach(e=>{e.oninput=e.onchange=()=>{fv[e.dataset.k.slice(1)]=e.value}});
+const nfd=$('#nf');if(nfd)nfd.ontoggle=()=>{fo=nfd.open};
+const fs=$('#fs');if(fs)fs.onclick=async()=>{const n=fv.n.trim(),G0=groups();let g=(!fv.g?G0[0]:fv.g)||'';if(g==='__n'||!g)g=fv.ng.trim();if(!n){toast('Digite o nome do item');return}if(!g){toast('Escolha ou crie um grupo');return}const id=rid('i');try{if(!G0.includes(g))await db.doc('meta/groups').set({list:[...glist,g]});await db.doc('items/'+id).set({n,g,min:nv(fv.m),base:nv(fv.h),bt:0});if(nv(fv.p))await db.doc('price/'+id).set({pu:fv.p.trim()});fv={n:'',g,ng:'',h:'',m:'',p:''};fo=true;toast('Item adicionado');render()}catch(e){toast('Sem permissão')}};
+const ng=$('#ng');if(ng)ng.onclick=()=>{const n=$('input[data-k="g"]').value.trim();if(n&&!groups().includes(n))w(()=>db.doc('meta/groups').set({list:[...glist,n]}))};
+document.querySelectorAll('input[data-k]').forEach(i=>i.onblur=()=>setTimeout(render,1500))}
+(async()=>{try{db=await claude.use('db');user=await claude.use('user')}catch(e){}
+if(!db){$('#app').innerHTML='<h1>📦 Estoque do Bar</h1><p class="mu">Não foi possível abrir o estoque compartilhado. Abra pelo link, com a conta logada.</p>';return}
+if(user){try{me=await user.id();adm=!!user.canEdit();wr=user.can('data.write')!==false}catch(e){}}
+const er=e=>{if(e&&e.code==='revoked')$('#app').innerHTML='<p class="mu">Acesso removido.</p>'};
+db.collection('items').onSnapshot(s=>{items=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);
+db.collection('mov').onSnapshot(s=>{movs=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);
+db.doc('meta/groups').onSnapshot(s=>{glist=(s.data()||{}).list||[];render()},er);
+db.collection('price').onSnapshot(s=>{price={};s.docs.forEach(d=>{price[d.id]=d.data()});render()},er);
+db.collection('pg').onSnapshot(s=>{pgs=s.docs.map(d=>({id:d.id,...d.data()}));render()},er)})();
+</script></body></html>

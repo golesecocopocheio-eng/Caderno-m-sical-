@@ -11,8 +11,8 @@ celular e funciona sem internet.
   `claude-local.js`, para usar a sincronização.
 - `app/portaria.html`: a Portaria do Bar original, com uma linha que carrega `claude-local.js`
   e o bloco **Backup da portaria** (copiar e restaurar backup; aceita também o `dados-do-bar.json`).
-- `app/estoque.html`: o Estoque do Bar original. A única mudança é a mesma linha que carrega
-  `claude-local.js`.
+- `app/estoque.html`: o Estoque do Bar original, com a mesma linha que carrega `claude-local.js`
+  e o bloco **Backup do estoque** (copiar e restaurar backup; aceita também o `dados-do-bar.json`).
 - `app/claude-local.js`: substitui o banco de dados do Claude (`claude.use("db")` e
   `claude.use("user")`) pelo Firebase, ou por um banco local quando o Firebase não está
   configurado. Dentro do claude.ai ele não faz nada.

@@ -287,6 +287,33 @@ document.addEventListener("click",async ev=>{
   }
   const NOMES={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque'};
   const contar=cols=>Object.values(cols||{}).reduce((a,d)=>a+Object.keys(d||{}).length,0);
+  // Restauração em duas etapas (usada aqui e pela aba Backup do app): preparar mostra o que vai
+  // acontecer; executar grava. Só o dono restaura.
+  async function preparar(txt){
+    if(!owner)return {erro:'Somente o dono pode restaurar o backup.'};
+    txt=(txt||'').trim();let o;
+    try{o=JSON.parse(txt)}catch(e){o=lerResumo(txt);if(!o)return {erro:'Backup inválido. Cole o texto completo do backup, o resumo da noite da portaria, ou escolha o arquivo.'};if(o.erro)return {erro:'Resumo da noite: '+o.erro}}
+    const apps=normalizar(o);
+    if(!apps)return {erro:'Não reconheci esse backup. Use um backup do app (completo, do Caixa, da Portaria ou do Estoque), o dados-do-bar.json ou o resumo da noite da portaria.'};
+    const resumo=Object.entries(apps).map(([a,c])=>NOMES[a]+' '+contar(c)).join(', ');
+    const aviso=(o.resumo?'Resumo da noite de '+o.noite.split('-').reverse().join('/')+': vou SUBSTITUIR a noite inteira por '+Object.keys(o.entradas).length+' entradas com os mesmos totais (horários e valor de cada entrada aproximados). ':'')+'Restaurar: '+resumo+' registros? Registros iguais serão substituídos.';
+    return {o,apps,resumo,aviso};
+  }
+  async function executar(prep){
+    const {o,apps,resumo}=prep;
+    if(o.resumo){ // o resumo substitui a noite inteira: apaga o que já existe nessa noite antes
+      for(const c of ['entradas','log']){const q=await db.collection(c).where('noite','==',o.noite).get();for(const d of q.docs)await db.collection(c).doc(d.id).delete()}
+    }
+    let imp=null;try{imp=window.parent!==window&&window.parent.__barImportar}catch(e){}
+    imp=imp||window.__barImportar;
+    if(imp){await imp({apps})}
+    else{for(const[c,docs]of Object.entries(apps.portaria||{}))for(const[id,v]of Object.entries(docs))await db.collection(c).doc(id).set(v)}
+    // recarrega as outras abas para mostrarem os dados restaurados
+    try{['f-caixa','f-estoque'].forEach(id=>{const f=window.parent.document.getElementById(id);if(f&&f.src)f.contentWindow.location.reload()})}catch(e){}
+    $('#status').textContent='● Sincronizado ao vivo';
+    return '✅ Restaurado: '+resumo+' registros.'+(apps.caixa?' Abra a aba Caixa para ver.':'');
+  }
+  window.__barPreparar=preparar;window.__barExecutar=executar;
   let armado=false;
   $('#bkRest').onclick=()=>{
     armado=false;
@@ -294,27 +321,11 @@ document.addEventListener("click",async ev=>{
     $('#bkArq').onchange=async e=>{const f=e.target.files[0];if(f)$('#bkTxt').value=await f.text()};
     $('#bkGo').onclick=async()=>{
       const msg=$('#bkMsg');
-      if(!owner){msg.textContent='Somente o dono pode restaurar o backup.';return}
-      const txt=$('#bkTxt').value.trim();let o;
-      try{o=JSON.parse(txt)}catch(e){o=lerResumo(txt);if(!o){msg.textContent='Backup inválido. Cole o texto completo do backup, o resumo da noite da portaria, ou escolha o arquivo.';return}if(o.erro){msg.textContent='Resumo da noite: '+o.erro;return}}
-      const apps=normalizar(o);
-      if(!apps){msg.textContent='Não reconheci esse backup. Use o texto do "Copiar backup" do Caixa, da Portaria ou do Estoque, ou o dados-do-bar.json.';return}
-      const resumo=Object.entries(apps).map(([a,c])=>NOMES[a]+' '+contar(c)).join(', ');
-      if(!armado){armado=true;msg.textContent=(o.resumo?'Resumo da noite de '+o.noite.split('-').reverse().join('/')+': vou SUBSTITUIR a noite inteira por '+Object.keys(o.entradas).length+' entradas com os mesmos totais (horários e valor de cada entrada aproximados). ':'')+'Restaurar: '+resumo+' registros? Registros iguais serão substituídos. Toque em Restaurar de novo para confirmar.';return}
+      const prep=await preparar($('#bkTxt').value);
+      if(prep.erro){msg.textContent=prep.erro;armado=false;return}
+      if(!armado){armado=true;msg.textContent=prep.aviso+' Toque em Restaurar de novo para confirmar.';return}
       armado=false;msg.textContent='Restaurando…';
-      try{
-        if(o.resumo){ // o resumo substitui a noite inteira: apaga o que já existe nessa noite antes
-          for(const c of ['entradas','log']){const q=await db.collection(c).where('noite','==',o.noite).get();for(const d of q.docs)await db.collection(c).doc(d.id).delete()}
-        }
-        let imp=null;try{imp=window.parent!==window&&window.parent.__barImportar}catch(e){}
-        imp=imp||window.__barImportar;
-        if(imp){await imp({apps})}
-        else{for(const[c,docs]of Object.entries(apps.portaria||{}))for(const[id,v]of Object.entries(docs))await db.collection(c).doc(id).set(v)}
-        // recarrega as outras abas para mostrarem os dados restaurados
-        try{['f-caixa','f-estoque'].forEach(id=>{const f=window.parent.document.getElementById(id);if(f&&f.src)f.contentWindow.location.reload()})}catch(e){}
-        msg.textContent='✅ Restaurado: '+resumo+' registros.'+(apps.caixa?' Abra a aba Caixa para ver.':'');
-        $('#status').textContent='● Sincronizado ao vivo';
-      }catch(e){msg.textContent='Não consegui restaurar: '+(e.message||e.code||'erro')}
+      try{msg.textContent=await executar(prep)}catch(e){msg.textContent='Não consegui restaurar: '+(e.message||e.code||'erro')}
     };
   };
 })();

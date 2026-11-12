@@ -23,7 +23,9 @@ celular e funciona sem internet.
 - `app/porta.html`: página só com a Portaria, aberta pelo **QR Code para a equipe** ou pelo botão
   **Compartilhar link** da Portaria. Funciona no iPhone e no Android e pode ser instalada como app
   próprio ("Portaria"). Com a sincronização ligada, o link leva o código do bar.
-- `app/index.html`: a tela que junta os três, com as abas Caixa, Portaria, Estoque e Ajustes.
+- `app/index.html`: a tela que junta os três, com as abas Caixa, Portaria, Estoque, **Backup** e Ajustes.
+  A aba **💾 Backup** copia (ou baixa) o backup completo de Caixa, Portaria e Estoque num texto só,
+  e restaura qualquer backup do app, o `dados-do-bar.json` ou o resumo da noite da Portaria.
 
 ### Sincronização entre celulares (Firebase)
 

@@ -5,19 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#161826">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Bar">
-<title>Bar · Caixa, Portaria e Estoque</title>
+<meta name="apple-mobile-web-app-title" content="Bar Conect">
+<title>Bar Conect · Caixa, Portaria e Estoque</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
+/* Área segura: no APK (Android com tela de ponta a ponta) o Capacitor informa a altura da barra de
+   status e da barra de navegação em --safe-area-inset-*; no navegador vale o env(). */
+:root{--sat:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
 html,body{margin:0;height:100%;background:#f2f3f7;color:#161826;font:16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
 @media (prefers-color-scheme:dark){html,body{background:#0f1018;color:#ecedf6}}
-body{display:flex;flex-direction:column}
+body{display:flex;flex-direction:column;padding-top:var(--sat);box-sizing:border-box}
 .frames{flex:1;position:relative}
 iframe,.painel{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;box-sizing:border-box}
 iframe.on,.painel.on{display:block}
-.painel{overflow:auto;padding:24px 18px;max-width:480px;margin:0 auto;left:0;right:0}
+.painel{overflow:auto;padding:28px 18px 24px;max-width:480px;margin:0 auto;left:0;right:0}
 .painel h1{font-size:22px;margin:0 0 6px}
 .painel p{color:#667085;font-size:14px;margin:0 0 16px}
 .painel label{display:block;font-size:13px;color:#667085;margin:12px 0 4px}
@@ -26,11 +29,18 @@ iframe.on,.painel.on{display:block}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(5,1fr);background:#161826;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px 8px calc(8px + var(--sab));background:#161826;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
-nav button{border:0;background:none;color:#9aa0b5;padding:8px 0 10px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button span{font-size:22px}
-nav button.on{color:#fff;font-weight:700}
+nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 12px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
+nav button span{font-size:25px;line-height:1;transition:transform .2s}
+nav button.on{color:#fff;background:rgba(167,139,250,.22)}
+nav button.on span{transform:translateY(-1px) scale(1.08)}
+nav button:active{background:rgba(255,255,255,.08)}
+.hs{background:#fff;border:1px solid #dcdfe8;border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:center}
+.hs div{flex:1;min-width:0}.hs b{display:block;font-size:15px}.hs small{color:#667085;font-size:12.5px}
+.painel .hs button{width:auto;margin:0;padding:9px 12px;font-size:13px;border-radius:10px;background:#dcdfe8;color:#161826}
+.painel .hs button.arm{background:#c2410c;color:#fff}
+@media (prefers-color-scheme:dark){.hs{background:#1a1b27;border-color:#2c2e40}.hs small{color:#9aa0b5}}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
@@ -42,7 +52,7 @@ nav button.on{color:#fff;font-weight:700}
   <iframe id="f-estoque" title="Estoque do Bar" data-src="estoque.html"></iframe>
 
   <form class="painel" id="entrar">
-    <h1>🍸 Entrar no bar</h1>
+    <h1>🍸 Bar Conect</h1>
     <p>Use o mesmo código do bar em todos os celulares da equipe para os dados sincronizarem. Quem cria o código primeiro vira o dono.</p>
     <label for="codigo">Código do bar</label>
     <input id="codigo" required minlength="6" autocomplete="off" autocapitalize="none" placeholder="ex.: barzinho-centro-2026">
@@ -65,12 +75,29 @@ nav button.on{color:#fff;font-weight:700}
     <label>ou escolha um arquivo<input type="file" id="bkArquivo" accept=".json,application/json,text/plain"></label>
     <button id="bkRestaurar" style="background:#c2410c">Restaurar</button>
     <p id="bkMsg2" style="margin-top:12px"></p>
+
+    <h1 style="margin-top:26px">🕘 Histórico</h1>
+    <p id="hsOnde">Tudo o que foi gravado no app, com data, hora e quem fez. Toque em "Voltar" para devolver aquele item ao que era naquele momento.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="hsFiltro">
+      <button class="sec" data-f="" style="margin-top:0;padding:10px 0;font-size:14px">Tudo</button>
+      <button class="sec" data-f="caixa" style="margin-top:0;padding:10px 0;font-size:14px">Caixa</button>
+      <button class="sec" data-f="portaria" style="margin-top:0;padding:10px 0;font-size:14px">Portaria</button>
+      <button class="sec" data-f="estoque" style="margin-top:0;padding:10px 0;font-size:14px">Estoque</button>
+    </div>
+    <div id="hsLista" style="margin-top:12px"></div>
+    <p id="hsMsg" style="margin-top:8px"></p>
   </div>
 
   <div class="painel" id="f-ajustes">
     <h1>⚙️ Ajustes</h1>
     <div class="info" id="info"></div>
     <p id="versao" style="margin-top:10px"></p>
+    <label style="margin-top:18px">Tamanho da letra</label>
+    <div id="zoom" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <button class="sec" data-z="1" style="margin-top:0">Normal</button>
+      <button class="sec" data-z="1.12" style="margin-top:0;font-size:18px">Grande</button>
+      <button class="sec" data-z="1.25" style="margin-top:0;font-size:20px">Muito grande</button>
+    </div>
     <button class="sec" id="trocar">Trocar de bar ou de nome</button>
     <button class="sec" id="recarregar">Recarregar o aplicativo</button>
     <button class="sec" id="importar">📥 Importar dados de um arquivo</button>
@@ -92,12 +119,19 @@ const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
+  if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   document.querySelectorAll('iframe,.painel').forEach(f=>f.classList.toggle('on',f.id==='f-'+t));
   localStorage.setItem('bar-aba',t);
 }
+/* Tamanho da letra: aplica um zoom em cada aba (padrão: Grande) */
+const zoomAtual=()=>parseFloat(localStorage.getItem('bar-zoom')||'1.12')||1.12;
+function aplicarZoom(f){try{f.contentDocument.documentElement.style.zoom=zoomAtual()}catch(e){}}
+function aplicarZoomTudo(){document.querySelectorAll('iframe').forEach(aplicarZoom);document.querySelectorAll('.painel').forEach(p=>p.style.zoom=zoomAtual());
+  document.querySelectorAll('#zoom [data-z]').forEach(b=>{const on=parseFloat(b.dataset.z)===zoomAtual();b.style.background=on?'#6d28d9':'';b.style.color=on?'#fff':''})}
 function carregarAbas(){
-  document.querySelectorAll('iframe').forEach(f=>{if(!f.src)f.src=f.dataset.src});
+  document.querySelectorAll('iframe').forEach(f=>{if(!f.src){f.addEventListener('load',()=>aplicarZoom(f));f.src=f.dataset.src}});
+  aplicarZoomTudo();
 }
 function mostrarInfo(){
   $('#info').innerHTML=nuvem&&codigo()
@@ -156,7 +190,7 @@ $('#trocar').onclick=()=>{
   $('#entrar').classList.add('on');
 };
 $('#recarregar').onclick=()=>location.reload();
-fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').then(v=>{$('#versao').textContent=(window.Capacitor?'📱 App Android · versão ':'🌐 Site · versão ')+(v.trim()||'em teste')});
+fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').then(v=>{$('#versao').textContent=(window.Capacitor?'📱 Bar Conect · Android · versão ':'🌐 Bar Conect · site · versão ')+(v.trim()||'em teste')});
 $('#importar').onclick=()=>$('#arquivo').click();
 $('#arquivo').onchange=async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -173,6 +207,71 @@ $('#arquivo').onchange=async e=>{
   }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
 };
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
+document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStorage.setItem('bar-zoom',b.dataset.z);aplicarZoomTudo()});
+
+/* ---- Histórico ---- */
+const NOMEAPP={caixa:'🍸 Caixa',portaria:'🚪 Portaria',estoque:'📦 Estoque'};
+const META={sup:'fornecedores',fin:'pagamentos a fornecedores',adv:'vales',reg:'faltas e feriados',pg:'comissões e salários pagos',nomes:'equipe',sal:'salários',piso:'piso salarial',est:'estoque do caixa',semCom:'quem não tem comissão',fer:'feriados',base:'saldo inicial'};
+const PGN={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',cortesia:'Cortesia'},CATN={turista:'Turista',morador:'Morador',clan:'Clã'};
+const brl=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const dm=k=>k.slice(8,10)+'/'+k.slice(5,7);
+let hsItens=[],hsFiltro='',hsDono=true;
+function descrever(e,i){
+  let d=null;try{d=JSON.parse(e.dados)}catch(x){}
+  const apagou=e.op==='delete';
+  if(e.app==='caixa'&&e.col==='cxdays'){
+    let atual={},antes={};try{atual=JSON.parse((d||{}).j||'{}')}catch(x){}
+    const prev=hsItens.slice(i+1).find(x=>x.app==='caixa'&&x.col==='cxdays'&&x.id===e.id);
+    if(prev){try{antes=JSON.parse((JSON.parse(prev.dados)||{}).j||'{}')}catch(x){}}
+    const mud=Object.keys({...atual,...antes}).filter(k=>JSON.stringify(atual[k])!==JSON.stringify(antes[k])).sort();
+    return 'Fechamento'+(mud.length===1?' do dia '+dm(mud[0]):mud.length?'s dos dias '+mud.slice(0,6).map(dm).join(', ')+(mud.length>6?'…':''):' de '+e.id.slice(5)+'/'+e.id.slice(0,4))+(prev||!mud.length?' alterado':' salvo');
+  }
+  if(e.app==='caixa')return 'Caixa · '+(META[e.id]||e.id)+(apagou?' apagado':' alterado');
+  if(e.app==='portaria'&&e.col==='entradas'&&d)return (apagou?'Apagou entrada ':'Entrada ')+(CATN[d.cat]||d.cat)+' · '+(PGN[d.pg]||d.pg)+' · '+brl(d.valor)+' (noite '+dm(d.noite||'')+')';
+  if(e.app==='portaria'&&e.col==='config'&&d)return 'Valores da portaria: Turista '+brl(d.turista)+' · Morador '+brl(d.morador);
+  if(e.app==='estoque'&&e.col==='items'&&d)return (apagou?'Apagou item ':'Item ')+d.n+(d.g?' ('+d.g+')':'');
+  if(e.app==='estoque'&&e.col==='mov'&&d){const it=d.i&&hsNomeItem[d.i];return (d.k==='p'?'Compra ':'Movimento ')+(d.d>0?'+':'')+d.d+' em '+(it||d.i)}
+  if(e.app==='estoque'&&e.col==='price')return 'Preço de '+(hsNomeItem[e.id]||e.id);
+  if(e.app==='estoque'&&e.col==='pg'&&d)return 'Compra registrada'+(d.nf?' ('+d.nf+')':'')+(d.v?' · R$ '+d.v:'');
+  if(e.app==='estoque'&&e.col==='meta')return 'Grupos do estoque';
+  return e.col+' · '+e.id+(apagou?' apagado':'');
+}
+let hsNomeItem={};
+async function carregarHistorico(){
+  const lista=$('#hsLista');lista.innerHTML='<p>Carregando…</p>';
+  try{
+    const r=await window.__barHistorico(300);hsDono=r.dono;
+    hsItens=r.itens.filter(x=>!(x.app==='portaria'&&x.col==='log')&&!(x.app==='caixa'&&x.col==='cxmeta'&&!META[x.id]));
+    hsNomeItem={};hsItens.slice().reverse().forEach(x=>{if(x.app==='estoque'&&x.col==='items'){try{const d=JSON.parse(x.dados);if(d&&d.n)hsNomeItem[x.id]=d.n}catch(e){}}});
+    try{const est=JSON.parse(localStorage.getItem('app-bar-db:estoque.html')||'{}').items||{};Object.entries(est).forEach(([id,v])=>{if(!hsNomeItem[id]&&v&&v.n)hsNomeItem[id]=v.n})}catch(e){}
+    $('#hsOnde').textContent=(r.onde==='nuvem'?'☁️ Histórico na nuvem, de todos os celulares do bar. ':'📱 Histórico deste aparelho (as últimas alterações). ')+'Toque em "Voltar" para devolver aquele item ao que era naquele momento.';
+    mostrarHistorico();
+  }catch(e){lista.innerHTML='<p>Não consegui carregar o histórico: '+(e.message||e)+'</p>'}
+}
+function mostrarHistorico(){
+  document.querySelectorAll('#hsFiltro [data-f]').forEach(b=>{const on=b.dataset.f===hsFiltro;b.style.background=on?'#6d28d9':'';b.style.color=on?'#fff':''});
+  const lista=$('#hsLista');
+  const itens=hsItens.map((e,i)=>({e,i})).filter(({e})=>!hsFiltro||e.app===hsFiltro).slice(0,120);
+  if(!itens.length){lista.innerHTML='<p>Nada gravado ainda'+(hsFiltro?' nesta aba':'')+'.</p>';return}
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  lista.innerHTML=itens.map(({e,i})=>{const dt=new Date(e.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<div class="hs"><div><b>${esc(descrever(e,i))}</b><small>${NOMEAPP[e.app]||e.app} · ${dt} · ${esc(e.quem||'')}</small></div>${e.dados&&e.dados!=='null'?`<button data-h="${i}">Voltar</button>`:''}</div>`}).join('');
+}
+document.querySelectorAll('#hsFiltro [data-f]').forEach(b=>b.onclick=()=>{hsFiltro=b.dataset.f;mostrarHistorico()});
+$('#hsLista').addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-h]');if(!b)return;
+  const e=hsItens[+b.dataset.h],msg=$('#hsMsg');
+  if(!hsDono){msg.textContent='Somente o dono pode voltar versões.';return}
+  if(!b.classList.contains('arm')){document.querySelectorAll('#hsLista .arm').forEach(x=>{x.classList.remove('arm');x.textContent='Voltar'});b.classList.add('arm');b.textContent='Confirmar?';msg.textContent='Toque em "Confirmar?" para devolver: '+descrever(e,+b.dataset.h)+' ('+new Date(e.t).toLocaleString('pt-BR')+').';return}
+  b.disabled=true;msg.textContent='Voltando…';
+  try{
+    const dados=JSON.parse(e.dados);
+    await window.__barImportar({apps:{[e.app]:{[e.col]:{[e.id]:dados}}}});
+    ['f-caixa','f-portaria','f-estoque'].forEach(id=>{const f=document.getElementById(id);if(f&&f.src)f.contentWindow.location.reload()});
+    msg.textContent='✅ Voltou: '+descrever(e,+b.dataset.h)+'.';
+    setTimeout(carregarHistorico,1200);
+  }catch(x){msg.textContent='Não consegui voltar: '+(x.message||x)}
+});
 /* ---- aba Backup ---- */
 async function textoBackup(){const b=await window.__barExportar();return JSON.stringify(b)}
 function contarBackup(b){const n=a=>Object.values(b.apps[a]||{}).reduce((s,d)=>s+Object.keys(d).length,0);let dias=0;try{Object.values(b.apps.caixa.cxdays).forEach(m=>dias+=Object.keys(JSON.parse(m.j)).length)}catch(e){}

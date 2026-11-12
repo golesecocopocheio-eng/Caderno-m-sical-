@@ -1,7 +1,7 @@
 # Caderno-m-sical-
 Cardeno músical
 
-## Bar · Caixa, Portaria e Estoque (aplicativo)
+## Bar Conect · Caixa, Portaria e Estoque (aplicativo)
 
 Aplicativo que junta os projetos **Caixa bar**, **Portaria do Bar** e **Estoque do Bar** em um só, com uma aba
 para cada. Fica na pasta [`app/`](app/). É um PWA: pode ser instalado na tela inicial do
@@ -48,6 +48,14 @@ dados ficam salvos só no aparelho.
 5. Em **Configurações do projeto (⚙️) → Seus apps → Web (</>)**, registre um app e copie o
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
+
+### Histórico de alterações
+
+Toda gravação no Caixa, na Portaria e no Estoque (criar, mudar ou apagar) fica registrada com data,
+hora e quem fez. Na aba **💾 Backup → 🕘 Histórico** dá para ver a lista e tocar em **Voltar** para
+devolver um item ao que era naquele momento (só o dono). Sem o Firebase, o histórico fica no
+aparelho (últimas alterações); com o Firebase, fica na nuvem (`bares/{codigo}/historico`), vale
+para todos os celulares e as regras não deixam editar nem apagar registros.
 
 ### Dados iniciais do APK
 

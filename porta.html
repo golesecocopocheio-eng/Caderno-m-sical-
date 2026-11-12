@@ -56,7 +56,9 @@ if(nuvem&&!codigo()){
     location.replace('porta.html');
   };
 }else abrir();
-if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+// No APK (Capacitor) os arquivos já estão no celular: não usa cache offline e limpa caches antigos.
+if('serviceWorker' in navigator&&window.Capacitor){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});if(window.caches)caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{})}
+else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>

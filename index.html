@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Caixa &amp; Portaria</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Caixa &amp; Portaria</h1>
+    <span id="clock" class="clock"></span>
+  </header>
+
+  <main>
+    <!-- PAINEL -->
+    <section id="tab-painel" class="tab active">
+      <div class="cards">
+        <div class="card"><span class="label">Saldo do caixa</span><strong id="kpi-saldo">R$ 0,00</strong></div>
+        <div class="card"><span class="label">Entradas hoje</span><strong id="kpi-entradas" class="pos">R$ 0,00</strong></div>
+        <div class="card"><span class="label">Saídas hoje</span><strong id="kpi-saidas" class="neg">R$ 0,00</strong></div>
+        <div class="card"><span class="label">Visitantes no local</span><strong id="kpi-presentes">0</strong></div>
+        <div class="card"><span class="label">Visitas hoje</span><strong id="kpi-visitas">0</strong></div>
+        <div class="card"><span class="label">Encomendas pendentes</span><strong id="kpi-encomendas">0</strong></div>
+      </div>
+      <h2>Atividade recente</h2>
+      <ul id="atividade" class="list"></ul>
+    </section>
+
+    <!-- CAIXA -->
+    <section id="tab-caixa" class="tab">
+      <div id="caixa-status" class="status"></div>
+
+      <form id="form-mov" class="panel">
+        <h2>Novo lançamento</h2>
+        <div class="row">
+          <label>Tipo
+            <select name="tipo">
+              <option value="entrada">Entrada</option>
+              <option value="saida">Saída</option>
+            </select>
+          </label>
+          <label>Valor (R$)
+            <input name="valor" type="number" step="0.01" min="0.01" inputmode="decimal" required />
+          </label>
+        </div>
+        <div class="row">
+          <label>Forma de pagamento
+            <select name="forma">
+              <option>Dinheiro</option>
+              <option>PIX</option>
+              <option>Cartão de débito</option>
+              <option>Cartão de crédito</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Categoria
+            <input name="categoria" list="categorias" placeholder="Ex.: Taxa, Estacionamento" />
+          </label>
+        </div>
+        <label>Descrição
+          <input name="descricao" placeholder="Ex.: Pagamento de taxa do salão" />
+        </label>
+        <button type="submit" class="btn primary">Lançar</button>
+      </form>
+      <datalist id="categorias">
+        <option>Estacionamento</option>
+        <option>Taxa de condomínio</option>
+        <option>Reserva de salão</option>
+        <option>Venda</option>
+        <option>Material de limpeza</option>
+        <option>Manutenção</option>
+        <option>Sangria</option>
+        <option>Suprimento</option>
+      </datalist>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Movimentações</h2>
+          <input type="date" id="caixa-data" />
+        </div>
+        <div id="caixa-resumo" class="resumo"></div>
+        <ul id="lista-mov" class="list"></ul>
+      </div>
+    </section>
+
+    <!-- PORTARIA -->
+    <section id="tab-portaria" class="tab">
+      <form id="form-visita" class="panel">
+        <h2>Registrar entrada</h2>
+        <div class="row">
+          <label>Nome
+            <input name="nome" required autocomplete="off" list="visitantes-conhecidos" />
+          </label>
+          <label>Documento (RG/CPF)
+            <input name="documento" autocomplete="off" />
+          </label>
+        </div>
+        <div class="row">
+          <label>Tipo
+            <select name="tipo">
+              <option>Visitante</option>
+              <option>Prestador de serviço</option>
+              <option>Entregador</option>
+              <option>Morador</option>
+              <option>Funcionário</option>
+            </select>
+          </label>
+          <label>Destino (apto/sala)
+            <input name="destino" autocomplete="off" />
+          </label>
+        </div>
+        <div class="row">
+          <label>Placa do veículo
+            <input name="placa" autocomplete="off" style="text-transform:uppercase" />
+          </label>
+          <label>Autorizado por
+            <input name="autorizado" autocomplete="off" />
+          </label>
+        </div>
+        <label>Observações
+          <input name="obs" autocomplete="off" />
+        </label>
+        <button type="submit" class="btn primary">Registrar entrada</button>
+      </form>
+      <datalist id="visitantes-conhecidos"></datalist>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>No local agora</h2>
+          <input type="search" id="busca-presentes" placeholder="Buscar..." />
+        </div>
+        <ul id="lista-presentes" class="list"></ul>
+      </div>
+
+      <div class="panel">
+        <h2>Encomendas</h2>
+        <form id="form-encomenda" class="row">
+          <input name="destino" placeholder="Apto/sala" required />
+          <input name="descricao" placeholder="Descrição (ex.: caixa Correios)" required />
+          <button type="submit" class="btn">Receber</button>
+        </form>
+        <ul id="lista-encomendas" class="list"></ul>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Histórico</h2>
+          <input type="date" id="portaria-data" />
+        </div>
+        <ul id="lista-historico" class="list"></ul>
+      </div>
+    </section>
+
+    <!-- RELATÓRIOS / CONFIG -->
+    <section id="tab-mais" class="tab">
+      <div class="panel">
+        <h2>Configurações</h2>
+        <label>Nome do local
+          <input id="cfg-local" placeholder="Ex.: Condomínio Jardim" />
+        </label>
+        <label>Operador atual
+          <input id="cfg-operador" placeholder="Seu nome" />
+        </label>
+        <label>Valor padrão do estacionamento por hora (R$)
+          <input id="cfg-estac" type="number" step="0.01" min="0" />
+        </label>
+      </div>
+      <div class="panel">
+        <h2>Relatórios</h2>
+        <button class="btn" id="btn-relatorio">Ver relatório do dia</button>
+        <button class="btn" id="btn-csv-caixa">Exportar caixa (CSV)</button>
+        <button class="btn" id="btn-csv-portaria">Exportar portaria (CSV)</button>
+      </div>
+      <div class="panel">
+        <h2>Backup</h2>
+        <button class="btn" id="btn-backup">Salvar backup (JSON)</button>
+        <label class="btn file">Restaurar backup
+          <input type="file" id="input-restore" accept="application/json" hidden />
+        </label>
+        <button class="btn danger" id="btn-limpar">Apagar todos os dados</button>
+      </div>
+      <p class="muted">Os dados ficam salvos apenas neste aparelho. Faça backups com frequência.</p>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button data-tab="painel" class="active"><span>📊</span>Painel</button>
+    <button data-tab="caixa"><span>💰</span>Caixa</button>
+    <button data-tab="portaria"><span>🚪</span>Portaria</button>
+    <button data-tab="mais"><span>⚙️</span>Mais</button>
+  </nav>
+
+  <dialog id="dialog">
+    <form method="dialog" id="dialog-form">
+      <h2 id="dialog-title"></h2>
+      <div id="dialog-body"></div>
+      <menu>
+        <button value="cancel" class="btn" formnovalidate>Cancelar</button>
+        <button value="ok" class="btn primary" id="dialog-ok">Confirmar</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

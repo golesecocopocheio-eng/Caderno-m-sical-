@@ -105,9 +105,38 @@ function mostrarInfo(){
     :`📱 <b>Dados salvos só neste aparelho</b><br>${nuvem?'Entre com o código do bar para sincronizar.':'A sincronização ainda não foi configurada (Firebase).'}`;
   $('#trocar').hidden=!nuvem;
 }
-function iniciar(){
+/* Dados iniciais (só no APK): na primeira abertura de cada versão do pacote, preenche o que falta
+   no aparelho, sem substituir nada que já foi lançado aqui. Caixa: dias que faltam e campos vazios;
+   Portaria: noites sem nenhuma entrada; Estoque: itens e registros que faltam. */
+async function aplicarDadosIniciais(){
+  if(nuvem)return;
+  let pac;try{const r=await fetch('dados-iniciais.json',{cache:'no-store'});if(!r.ok)return;pac=await r.json()}catch(e){return}
+  if(!pac||!pac.apps||localStorage.getItem('bar-dados-iniciais')===pac.versao)return;
+  const ler=k=>{try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){return {}}};
+  const vazio=v=>v===undefined||v===null||v===''||(Array.isArray(v)&&!v.length);
+  // Caixa (grava onde o próprio Caixa lê: caixa-bar e caixa-bar-meta)
+  const days=ler('caixa-bar'),meta=ler('caixa-bar-meta'),cx=pac.apps.caixa||{};
+  Object.values(cx.cxdays||{}).forEach(m=>{let d={};try{d=JSON.parse(m.j)}catch(e){}
+    Object.entries(d).forEach(([k,v])=>{if(!days[k]){days[k]=v;return}Object.entries(v).forEach(([c,x])=>{if(vazio(days[k][c])&&!vazio(x))days[k][c]=x})})});
+  Object.entries(cx.cxmeta||{}).forEach(([k,m])=>{if(meta[k]===undefined){try{meta[k]=JSON.parse(m.j)}catch(e){}}});
+  localStorage.setItem('caixa-bar',JSON.stringify(days));localStorage.setItem('caixa-bar-meta',JSON.stringify(meta));
+  // Portaria
+  const po=ler('app-bar-db:portaria.html'),pp=pac.apps.portaria||{};
+  const noitesComEntrada=new Set(Object.values(po.entradas||{}).map(e=>e.noite));
+  const novasNoites=new Set(Object.values(pp.entradas||{}).map(e=>e.noite).filter(n=>!noitesComEntrada.has(n)));
+  ['entradas','log'].forEach(c=>{po[c]=po[c]||{};Object.entries(pp[c]||{}).forEach(([id,v])=>{if(novasNoites.has(v.noite)&&!po[c][id])po[c][id]=v})});
+  po.config=po.config||{};Object.entries(pp.config||{}).forEach(([id,v])=>{const a=po.config[id];if(!a||Object.values(a).every(x=>!x))po.config[id]=v});
+  localStorage.setItem('app-bar-db:portaria.html',JSON.stringify(po));
+  // Estoque
+  const es=ler('app-bar-db:estoque.html');
+  Object.entries(pac.apps.estoque||{}).forEach(([c,docs])=>{es[c]=es[c]||{};Object.entries(docs).forEach(([id,v])=>{if(!es[c][id])es[c][id]=v})});
+  localStorage.setItem('app-bar-db:estoque.html',JSON.stringify(es));
+  localStorage.setItem('bar-dados-iniciais',pac.versao);
+}
+async function iniciar(){
   $('#nav').hidden=false;
   $('#entrar').classList.remove('on');
+  await aplicarDadosIniciais().catch(()=>{});
   carregarAbas();mostrarInfo();
   abrir(localStorage.getItem('bar-aba')||'caixa');
 }

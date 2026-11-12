@@ -16,6 +16,9 @@ celular e funciona sem internet.
 - `app/claude-local.js`: substitui o banco de dados do Claude (`claude.use("db")` e
   `claude.use("user")`) pelo Firebase, ou por um banco local quando o Firebase não está
   configurado. Dentro do claude.ai ele não faz nada.
+- `app/porta.html`: página só com a Portaria, aberta pelo **QR Code para a equipe** ou pelo botão
+  **Compartilhar link** da Portaria. Funciona no iPhone e no Android e pode ser instalada como app
+  próprio ("Portaria"). Com a sincronização ligada, o link leva o código do bar.
 - `app/index.html`: a tela que junta os três, com as abas Caixa, Portaria, Estoque e Ajustes.
 
 ### Sincronização entre celulares (Firebase)

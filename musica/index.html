@@ -172,6 +172,11 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .hn{max-width:560px}.pbar{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
 #app:has(.hn){padding-bottom:150px}#app:has(#pbar){padding-bottom:330px}
 .hn button.on::before{background:var(--hl)}
+.lane{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--lc);border-radius:18px;padding:12px;margin:12px 0}
+.lane .lh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.lane .lh b{font-size:17px}.lane .lh small{color:var(--mute)}.lane .ei{font-size:22px;line-height:1}
+.lane .lh button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}.lane .fb.mini{padding:9px 12px;font-size:14px;width:auto;flex:0 0 auto;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.lane .au{border:0;border-top:1px solid var(--line);border-radius:0;margin:10px 0 0;padding:10px 0 0;background:none}
+.isel{flex:1;padding:7px 10px;font-size:14px}
 </style>
 </head>
 <body>
@@ -220,7 +225,7 @@ async function recoverRecs(){if(!db)return 0;
  const by={};all.forEach(x=>(by[x.sid]=by[x.sid]||[]).push(x));let n=0;
  for(const sid of Object.keys(by)){const cs=by[sid].sort((a,b)=>a.id<b.id?-1:1),s=songs.find(x=>x.id===cs[0].song);if(!s)continue;
   const blob=new Blob(cs.map(c=>c.blob),{type:cs[0].mime});
-  if(blob.size>2000){s.audios.push({id:'a'+Date.now()+n,tipo:cs[0].tipo,name:'Gravação recuperada '+new Date(cs[0].t).toLocaleString('pt-BR'),blob:blob,vol:1});s.upd=Date.now();put(s);n++}
+  if(blob.size>2000){s.audios.push({id:'a'+Date.now()+n,tipo:cs[0].tipo,inst:cs[0].tipo,name:'Gravação recuperada '+new Date(cs[0].t).toLocaleString('pt-BR'),blob:blob,vol:1});s.upd=Date.now();put(s);n++}
   rdelSid(sid)}
  return n}
 function twice(b,fn,lbl){if(b.dataset.arm){fn();return}b.dataset.arm='1';const o=b.innerHTML;b.innerHTML=lbl||'Confirmar?';toast('Toque de novo para confirmar');setTimeout(()=>{b.dataset.arm='';b.innerHTML=o},3000)}
@@ -431,7 +436,7 @@ async function nrTrack(s,a,strength){const b=mx.buf[a.id];if(!b){toast('Esta fai
  catch(e){toast('Não consegui reduzir o ruído desta faixa.');if(bt)bt.disabled=false;if(bar)bar.hidden=true}}
 
 function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
- p.innerHTML=`<div class="card2"><select id="tp" aria-label="Tipo de gravação"><option value="mix">Gravar voz + violão juntos</option><option value="violao">Gravar só o violão</option><option value="voz">Gravar só a voz</option></select>
+ p.innerHTML=`<div class="card2"><select id="tp" aria-label="O que vou gravar">${tipoOpts()}</select>
  <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
  <label class="chk"><input type="checkbox" id="nsc" ${recNS?'checked':''}> Filtro de ruído do celular ao gravar</label>
  <div class="row"><label class="fb">Adicionar arquivo<input id="fl" type="file" accept="audio/*" multiple hidden></label><button id="rc" class="${rc?'rec':''}" style="flex:1">${rc?'■ Parar gravação':'● Gravar'}</button></div>
@@ -442,9 +447,15 @@ function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
  $('#fl').onchange=$('#cap').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1}));save(s);put(s);mixStop();audioTab(p)};
  loadBufs(s).then(()=>{if(cur===s&&tab==='audio'&&$('#mxb'))mixUI(s)})}
 
+const INST=[['voz','Voz','🎤','#E5484D'],['violao','Violão','🎸','#F5A623'],['baixo','Baixo','🎸','#4DA3FF'],['teclado','Teclado','🎹','#9B6BFF'],['bateria','Bateria','🥁','#34C27A']];
+const INSTX=[...INST,['mix','Voz + violão juntos','🎶','#C9A227'],['outro','Outros','🎧','#8A8478']];
+const instOf=a=>a.inst||({voz:'voz',violao:'violao',baixo:'baixo',teclado:'teclado',bateria:'bateria',mix:'mix'})[a.tipo]||'outro';
+const instI=k=>INSTX.find(x=>x[0]===k)||INSTX[6];
+const PRESET={voz:{hp:true,comp:true,rev:.15,high:2},violao:{hp:true,comp:true,rev:.08,mid:1},baixo:{low:3,high:-4,comp:true},teclado:{hp:true,rev:.12},bateria:{comp:true,low:2,high:2},mix:{hp:true,comp:true},outro:{}};
+const tipoOpts=()=>'<option value="mix">Voz + violão juntos</option>'+INST.map(i=>`<option value="${i[0]}">${i[2]} ${i[1]}</option>`).join('')+'<option value="outro">🎧 Outro instrumento</option>';
 const fxOpen=new Set();
 function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
- const tr=s.audios.map(a=>{const fx=a.fx||{},id=a.id;return `<div class="au"><div class="row"><input class="nm" data-n="${id}" value="${esc(a.name)}" aria-label="Nome da faixa"><button data-x="${id}" aria-label="Remover faixa" style="flex:0 0 auto">✕</button></div>
+ const trk=a=>{const fx=a.fx||{},id=a.id;return `<div class="au"><div class="row"><input class="nm" data-n="${id}" value="${esc(a.name)}" aria-label="Nome da faixa"><button data-x="${id}" aria-label="Remover faixa" style="flex:0 0 auto">✕</button></div><div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Pista</small><select class="isel" data-in="${id}" aria-label="Instrumento da faixa">${INSTX.map(i=>`<option value="${i[0]}" ${instOf(a)===i[0]?'selected':''}>${i[2]} ${i[1]}</option>`).join('')}</select></div>
  ${a.blob&&!mx.bad[id]?'':a.cloud&&!a.blob?'<p class="hint">Baixando da nuvem…</p>':'<p class="hint" style="color:var(--danger)">Não consegui ler este áudio.</p>'}
  <div class="row"><button class="tg ${a.mute?'on':''}" data-m="${id}" style="flex:0 0 auto">Mudo</button><button class="tg ${a.solo?'on':''}" data-so="${id}" style="flex:0 0 auto">Solo</button><input type="range" min="0" max="150" value="${Math.round((a.vol==null?1:a.vol)*100)}" data-v="${id}" aria-label="Volume"><b class="pc" id="pv_${id}">${Math.round((a.vol==null?1:a.vol)*100)}%</b></div>
  <div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Atraso</small><input type="range" min="-500" max="500" step="5" value="${a.off||0}" data-o="${id}" aria-label="Atraso em milissegundos"><b class="pc" id="po_${id}">${a.off||0} ms</b></div>
@@ -458,13 +469,21 @@ function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
   <div class="row" style="margin-top:10px"><select data-nrs="${id}" style="flex:1" aria-label="Força do redutor de ruído"><option value="0.3">Suave</option><option value="0.6" selected>Médio</option><option value="1">Forte</option></select><button data-nr="${id}" style="flex:1.5">Reduzir ruído</button></div>
   <progress id="np_${id}" value="0" max="1" hidden></progress>
   <p class="hint">O redutor aprende o ruído nos trechos mais silenciosos e cria uma faixa nova, limpa. A original fica guardada.</p>
-  <button data-fz="${id}">Zerar efeitos</button></details></div>`}).join('');
- b.innerHTML=s.audios.length?`<div class="card2"><div class="row"><button class="pri" id="mxp" style="flex:1">▶ Tocar tudo</button><button id="mxst" aria-label="Parar" style="flex:0 0 auto">■</button><span id="mxt" class="tone" style="min-width:96px">0:00 / ${fmt(mx.dur)}</span></div>
+  <div class="row"><button data-fa="${id}" style="flex:1.4">Ajuste sugerido: ${instI(instOf(a))[1].replace(' juntos','').toLowerCase()}</button><button data-fz="${id}" style="flex:1">Zerar efeitos</button></div></details></div>`};
+ const rcn=rec&&rec.state==='recording';
+ const lane=k=>{const [,nm,em,col]=instI(k),L=s.audios.filter(a=>instOf(a)===k),me=rcn&&recTipo===k;return `<section class="lane" style="--lc:${col}"><div class="lh"><span class="ei">${em}</span><b>${nm}</b><small>${L.length} ${L.length===1?'faixa':'faixas'}</small><span style="flex:1"></span><button class="${me?'rec':''}" data-lr="${k}">${me?'■ Parar':'● Gravar'}</button><label class="fb mini">+ Arquivo<input type="file" accept="audio/*" multiple hidden data-lf="${k}"></label></div>${L.map(trk).join('')}</section>`};
+ const tr=INST.map(i=>lane(i[0])).join('')+['mix','outro'].filter(k=>s.audios.some(a=>instOf(a)===k)).map(lane).join('');
+ b.innerHTML=(s.audios.length?`<div class="card2"><div class="row"><button class="pri" id="mxp" style="flex:1">▶ Tocar tudo</button><button id="mxst" aria-label="Parar" style="flex:0 0 auto">■</button><span id="mxt" class="tone" style="min-width:96px">0:00 / ${fmt(mx.dur)}</span></div>
  <input type="range" id="mxs" min="0" max="${mx.dur||1}" step="0.01" value="${mixPos()}" aria-label="Posição" style="margin-top:8px">
  <div class="row" style="margin-top:6px"><small class="hint" style="flex:0 0 auto;margin:0">Volume geral</small><input type="range" id="mxv" min="0" max="150" value="${Math.round(mx.mv*100)}"><b class="pc" id="pvm">${Math.round(mx.mv*100)}%</b></div>
  <label class="sel" style="margin-top:8px"><span>Masterização</span><select id="mxm"><option value="0" ${!s.mast?'selected':''}>Desligada</option><option value="1" ${s.mast===1?'selected':''}>Suave</option><option value="2" ${s.mast===2?'selected':''}>Forte</option></select></label>
  <button id="mxj" style="width:100%;margin-top:8px">Juntar e salvar como nova faixa</button>
- <p class="hint" style="margin-bottom:0">A masterização equilibra graves e agudos, uniformiza o volume e evita estouro. Para masterizar uma faixa só, deixe só ela em Solo e toque em Juntar. Se a voz ficou adiantada ou atrasada, ajuste o Atraso da faixa.</p></div>${tr}`:'<p class="empty">Nenhuma faixa. Adicione um arquivo ou grave agora.</p>';
+ <p class="hint" style="margin-bottom:0">A masterização equilibra graves e agudos, uniformiza o volume e evita estouro. Para masterizar uma faixa só, deixe só ela em Solo e toque em Juntar. Se a voz ficou adiantada ou atrasada, ajuste o Atraso da faixa.</p></div>`:'')+tr;
+ const LA=id=>s.audios.find(x=>x.id===id);
+ b.querySelectorAll('[data-lr]').forEach(i=>i.onclick=()=>{if(rec&&rec.state==='recording'){toggleRec();return}recTipo=i.dataset.lr;toggleRec()});
+ b.querySelectorAll('[data-lf]').forEach(i=>i.onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',inst:i.dataset.lf,name:f.name,blob:f,vol:1}));save(s);put(s);mixStop();audioTab($('#pane'))});
+ b.querySelectorAll('[data-in]').forEach(i=>i.onchange=()=>{LA(i.dataset.in).inst=i.value;save(s);put(s);mixUI(s)});
+ b.querySelectorAll('[data-fa]').forEach(i=>i.onclick=()=>{const a=LA(i.dataset.fa);a.fx={...PRESET[instOf(a)]};save(s);mixUI(s);if(mx.playing)mixStart(s,mixPos());toast('Ajuste de '+instI(instOf(a))[1].toLowerCase()+' aplicado')});
  if(!s.audios.length)return;uiMix();
  const upd=()=>{if(mx.playing)s.audios.forEach(a=>{if(mx.gn[a.id])mx.gn[a.id].gain.value=eff(s,a)})};
  const rs=()=>{if(mx.playing)mixStart(s,mixPos())};
@@ -497,21 +516,21 @@ async function toggleRec(){const s=cur;
  const tipo=recTipo,useBk=recBk&&tipo!=='mix'&&s.audios.some(a=>a.blob);
  mixStop();if(useBk){AC();await loadBufs(s)}
  let st;
- try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:useBk,noiseSuppression:recNS,autoGainControl:false}})}
+ try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:useBk,noiseSuppression:recNS&&(tipo==='voz'||tipo==='mix'),autoGainControl:false}})}
  catch(e){toast('Sem acesso ao microfone. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click();return}
  try{
   const ch=[],mr=new MediaRecorder(st);rec=mr;
   const sid='r'+Date.now();let cn=0;mr.ondataavailable=e=>{if(e.data&&e.data.size){ch.push(e.data);rput({id:sid+'-'+String(cn++).padStart(5,'0'),sid:sid,song:s.id,tipo:tipo,mime:mr.mimeType||'audio/webm',t:Date.now(),blob:e.data})}};
   mr.onerror=()=>toast('A gravação falhou. Tente de novo.');
   mr.onstop=()=>{stopSR();meterStop();if(stu.keep)metStop();mixStop();st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
-   if(blob.size){s.audios.push({id:'a'+Date.now(),tipo:tipo,name:({mix:'Gravação',violao:'Violão',voz:'Voz'})[tipo]+' '+new Date().toLocaleString('pt-BR'),blob:blob,vol:1});s.upd=Date.now();put(s);setTimeout(()=>rdelSid(sid),1500);toast('Gravação salva')}
+   if(blob.size){s.audios.push({id:'a'+Date.now(),tipo:tipo,inst:tipo,name:instI(tipo)[1].replace(' juntos','')+' '+new Date().toLocaleString('pt-BR'),blob:blob,vol:1});s.upd=Date.now();put(s);setTimeout(()=>rdelSid(sid),1500);toast('Gravação salva')}
    else toast('A gravação saiu vazia. Tente de novo.');
    if(cur===s)refRec()};
   mr.start(1000);meterStart(st);
-  const okL=tipo==='violao'?false:startLetra(s);
+  const okL=(tipo==='voz'||tipo==='mix')?startLetra(s):false;
   if(useBk)mixStart(s,0);
   refRec();const g=$('#gst');
-  if(g)g.textContent=tipo==='violao'?'Gravando o violão…':(okL?'Gravando… o que você cantar vai aparecendo e fica salvo no rascunho.':'Gravando. Este aparelho não escreve a letra sozinho.');
+  if(g)g.textContent=!(tipo==='voz'||tipo==='mix')?'Gravando '+instI(tipo)[1].toLowerCase()+'…':(okL?'Gravando… o que você cantar vai aparecendo e fica salvo no rascunho.':'Gravando. Este aparelho não escreve a letra sozinho.');
  }catch(e){st.getTracks().forEach(t=>t.stop());rec=null;toast('Não consegui gravar neste aparelho. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click()}}
 
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();inst=e;if(!cur&&$('#bk'))list()});
@@ -710,7 +729,7 @@ function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechR
  <div class="chips">${['Intro','Verso','Pré-refrão','Refrão','Ponte','Final'].map(x=>`<button data-sec="${x}">${x}</button>`).join('')}</div>
  <textarea class="code" id="dr" style="white-space:pre-wrap;min-height:30vh;font-size:19px;line-height:1.5" placeholder="Rascunho da letra. O que você cantar aparece aqui sozinho; você pode corrigir com o dedo.">${esc(s.ouvido||'')}</textarea>
  <div class="row" style="margin-top:8px;align-items:center"><small id="cn" class="hint" style="flex:1;margin:0"></small><button id="tl">Passar para a Letra</button><button id="lp">Limpar</button></div></div>
- <details class="card2"><summary><b>Opções de gravação</b></summary><div style="margin-top:10px"> <select id="tp" aria-label="Tipo de gravação"><option value="mix">Voz + violão juntos</option><option value="violao">Só o violão</option><option value="voz">Só a voz</option></select>
+ <details class="card2"><summary><b>Opções de gravação</b></summary><div style="margin-top:10px"> <select id="tp" aria-label="O que vou gravar">${tipoOpts()}</select>
  <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
  <label class="chk"><input type="checkbox" id="nsc" ${recNS?'checked':''}> Filtro de ruído do celular</label>
  <label class="fb2" style="margin-top:8px">Gravar com o gravador do celular<input id="cap" type="file" accept="audio/*" capture hidden></label></div></details>

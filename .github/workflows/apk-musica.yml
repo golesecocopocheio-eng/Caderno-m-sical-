@@ -57,14 +57,39 @@ jobs:
           sed -i "s/versionName \"1.0\"/versionName \"1.${{ github.run_number }}\"/" android/app/build.gradle
           grep -n "versionCode\|versionName" android/app/build.gradle
 
-      - name: Usar sempre a mesma chave de assinatura (permite atualizar sem desinstalar)
+      - name: Assinar sempre com a mesma chave (permite atualizar sem desinstalar)
         run: |
-          mkdir -p ~/.android
-          if [ ! -f ../android-build/debug.keystore ]; then echo "keystore não encontrado"; exit 1; fi
-          cp ../android-build/debug.keystore ~/.android/debug.keystore
+          cp ../android-build/debug.keystore android/app/debug.keystore
+          python3 - <<'PY'
+          p = 'android/app/build.gradle'
+          s = open(p).read()
+          assert 'android {' in s
+          bloco = """android {
+              signingConfigs {
+                  debug {
+                      storeFile file('debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+          """
+          open(p, 'w').write(s.replace('android {', bloco, 1))
+          PY
+          sed -n '1,22p' android/app/build.gradle
 
       - name: Gerar o APK
         run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Conferir a assinatura (tem de ser sempre a da chave fixa)
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          QUERO=$(keytool -list -v -keystore ../android-build/debug.keystore -storepass android | grep -m1 'SHA256:' | sed 's/.*SHA256: //; s/://g' | tr 'A-F' 'a-f')
+          TEM=$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')
+          echo "chave fixa: $QUERO"
+          echo "apk:        $TEM"
+          if [ "$QUERO" != "$TEM" ]; then echo "ERRO: o APK não foi assinado com a chave fixa. O Android recusaria a atualização."; exit 1; fi
 
       - name: Renomear
         run: cp android/app/build/outputs/apk/debug/app-debug.apk ../CadernoMusical.apk

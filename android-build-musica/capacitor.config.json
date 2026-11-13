@@ -1,6 +1,6 @@
 {
   "appId": "br.bar.cadernomusical",
-  "appName": "Caderno Musical",
+  "appName": "Clan music",
   "webDir": "www",
   "android": {
     "allowMixedContent": false

@@ -49,7 +49,7 @@ jobs:
           grep -n "IMAGE_CAPTURE" android/app/src/main/AndroidManifest.xml
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#6d28d9' --splashBackgroundColor '#6d28d9'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#3b0764' --splashBackgroundColor '#12051f' --splashBackgroundColorDark '#12051f'
 
       - name: Definir a versão do app
         run: |

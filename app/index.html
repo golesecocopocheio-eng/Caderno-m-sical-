@@ -165,6 +165,8 @@ nav button:active{background:rgba(255,255,255,.08)}
     <h1>💾 Backup</h1>
     <p>Guarde uma cópia de tudo (Caixa, Portaria e Estoque) ou traga de volta uma cópia salva.</p>
     <button id="bkTudo">📋 Copiar backup completo</button>
+    <button id="bkDrive" style="background:#1a73e8">☁️ Salvar no Google Drive</button>
+    <p id="bkDriveInfo" style="margin-top:6px;font-size:13px"></p>
     <button class="sec" id="bkBaixar">⬇️ Baixar arquivo de backup</button>
     <p id="bkInfo" style="margin-top:12px"></p>
     <textarea id="bkSaida" rows="4" readonly hidden style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #dcdfe8;border-radius:12px;font:12px monospace"></textarea>
@@ -240,7 +242,7 @@ function carregarAbas(){
 function mostrarInfo(){
   $('#info').innerHTML=nuvem&&codigo()
     ?`☁️ <b>Sincronizando entre os celulares</b><br>Bar: <b>${codigo().replace(/</g,'&lt;')}</b><br>Você: <b>${(nome()||'—').replace(/</g,'&lt;')}</b>`
-    :`📱 <b>Dados salvos só neste aparelho</b><br>${nuvem?'Entre com o código do bar para sincronizar.':'A sincronização ainda não foi configurada (Firebase).'}`;
+    :`📱 <b>Dados salvos só neste aparelho</b><br>${nuvem?'Entre com o código do bar para sincronizar.':'Sincronização automática entre celulares: ainda falta ligar o Firebase da conta barconnect@gmail.com.'}<br>☁️ Cópia de segurança: aba <b>Backup → Salvar no Google Drive</b>.`;
   $('#trocar').hidden=!nuvem;
 }
 /* Dados iniciais (só no APK): na primeira abertura de cada versão do pacote, preenche o que falta
@@ -396,6 +398,28 @@ $('#bkBaixar').onclick=async()=>{
     $('#bkInfo').textContent='✅ Arquivo '+nome+' baixado: '+contarBackup(JSON.parse(t))+'.'}
   catch(e){$('#bkInfo').textContent='Não consegui gerar o arquivo: '+(e.message||e)}
 };
+/* Google Drive: o Google não deixa fazer login dentro do app, então o backup vai pelo
+   "Compartilhar" do Android: escolha Drive (conta barconnect@gmail.com) e toque em Salvar. */
+const DRIVE_K='bar-drive-ultimo';
+function driveInfo(){const u=Number(localStorage.getItem(DRIVE_K))||0,el=$('#bkDriveInfo');if(!el)return;
+  if(!u){el.innerHTML='⚠️ Ainda não foi salvo no Drive. Toque acima, escolha <b>Drive</b> e a conta <b>barconnect@gmail.com</b>.';return}
+  const h=(Date.now()-u)/36e5;el.innerHTML=(h>24?'⚠️ ':'✅ ')+'Último backup enviado ao Drive: <b>'+new Date(u).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+'</b>'+(h>24?' (mais de 1 dia, salve de novo)':'')}
+async function salvarDrive(){
+  const t=await textoBackup(),nome='backup-bar-conect-'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json';
+  const P=window.Capacitor&&window.Capacitor.Plugins||{};
+  if(P.Filesystem&&P.Share){
+    const r=await P.Filesystem.writeFile({path:nome,data:t,directory:'CACHE',encoding:'utf8'});
+    await P.Share.share({title:'Backup Bar Conect',text:'Backup do Bar Conect',files:[r.uri],dialogTitle:'Salvar no Google Drive'});
+  }else{
+    const f=new File([t],nome,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:'Backup Bar Conect'});
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=nome;document.body.appendChild(a);a.click();a.remove()}
+  }
+  localStorage.setItem(DRIVE_K,String(Date.now()));driveInfo();return contarBackup(JSON.parse(t))}
+$('#bkDrive').onclick=async()=>{$('#bkInfo').textContent='Preparando o backup…';
+  try{const c=await salvarDrive();$('#bkInfo').innerHTML='☁️ Escolha <b>Drive</b>, confira a conta <b>barconnect@gmail.com</b> e toque em <b>Salvar</b>. Leva: '+c+'.'}
+  catch(e){if(e&&(e.name==='AbortError'||/cancel/i.test(e.message||'')))$('#bkInfo').textContent='Envio cancelado.';else $('#bkInfo').textContent='Não consegui abrir o Drive: '+(e.message||e)}};
+driveInfo();
 $('#bkArquivo').onchange=async e=>{const f=e.target.files[0];if(f)$('#bkEntrada').value=await f.text()};
 let preparado=null;
 $('#bkEntrada').oninput=()=>{preparado=null};

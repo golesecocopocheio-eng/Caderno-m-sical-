@@ -40,7 +40,17 @@ pre.view{font:15px/1.6 "SF Mono",Menlo,Consolas,monospace;margin:12px 0;overflow
 .deg small{color:var(--mute)}
 .deg b{font-size:24px;color:var(--chord)}
 .au{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}
-.au audio{width:100%;margin-top:6px}
+.card2{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.chk{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px}.chk input{width:auto}
+.fb{flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;background:var(--acc);color:var(--accT);font-weight:600}
+.fb2{display:block;text-align:center;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.tg.on{background:var(--acc);color:var(--accT);border-color:var(--acc);font-weight:700}
+.au input[type=range],.card2 input[type=range]{padding:0;border:0;background:none;width:100%}
+.au .nm{font-weight:700;padding:6px 8px}
+.pc{min-width:56px;text-align:right;font-size:14px}
+h2.mh{margin:14px 0 4px;font-size:18px}
+input[type=range],input[type=checkbox]{accent-color:var(--acc)}
+
 .hint{color:var(--mute);font-size:14px;margin:8px 0}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.on{opacity:1}
@@ -58,11 +68,20 @@ const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"
 const $=s=>document.querySelector(s),app=$('#app');
 let inst=null,db,mem={},songs=[],cur=null,tab='cifra',edit=false,shift=0,q='',sev=false,rec=null,saveT;
 
-function openDB(){return new Promise(r=>{try{const o=indexedDB.open('caderno',1);o.onupgradeneeded=()=>o.result.createObjectStore('s',{keyPath:'id'});o.onsuccess=()=>{db=o.result;r()};o.onerror=()=>r()}catch(e){r()}})}
-function getAll(){return new Promise(r=>{if(!db)return r([]);try{const o=db.transaction('s').objectStore('s').getAll();o.onsuccess=()=>r(o.result);o.onerror=()=>r([])}catch(e){r([])}})}
-function put(s){try{if(db)db.transaction('s','readwrite').objectStore('s').put(s)}catch(e){toast('Não foi possível salvar neste navegador.')}}
+function openDB(){return new Promise(r=>{try{const o=indexedDB.open('caderno',2);o.onupgradeneeded=()=>{const d=o.result;if(!d.objectStoreNames.contains('s'))d.createObjectStore('s',{keyPath:'id'});if(!d.objectStoreNames.contains('a'))d.createObjectStore('a',{keyPath:'id'})};o.onsuccess=()=>{db=o.result;r()};o.onerror=()=>r();o.onblocked=()=>r()}catch(e){r()}})}
+const rd=(st,id)=>new Promise(r=>{try{const q=db.transaction(st).objectStore(st).get(id);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch(e){r(null)}});
+async function getAll(){if(!db)return[];
+ const ss=await new Promise(r=>{try{const o=db.transaction('s').objectStore('s').getAll();o.onsuccess=()=>r(o.result||[]);o.onerror=()=>r([])}catch(e){r([])}});
+ for(const s of ss){s.audios=s.audios||[];let leg=false;for(const a of s.audios){if(a.blob){leg=true}else{const x=await rd('a',a.id);a.blob=x?x.blob:null;a._p=true}}if(leg)put(s)}
+ return ss}
+function put(s){try{if(!db)return;const tx=db.transaction(['s','a'],'readwrite'),as=tx.objectStore('a');
+ const m={...s,audios:s.audios.map(a=>{if(!a._p&&a.blob){as.put({id:a.id,blob:a.blob});a._p=true}const{blob,_p,...r}=a;return r})};
+ tx.objectStore('s').put(m);tx.onerror=()=>toast('Não foi possível salvar neste aparelho.')}catch(e){toast('Não foi possível salvar neste aparelho.')}}
+function delBlob(id){try{if(db)db.transaction('a','readwrite').objectStore('a').delete(id)}catch(e){}}
 function del(id){try{if(db)db.transaction('s','readwrite').objectStore('s').delete(id)}catch(e){}}
-function save(){cur.upd=Date.now();clearTimeout(saveT);saveT=setTimeout(()=>put(cur),300)}
+function delSong(s){(s.audios||[]).forEach(a=>delBlob(a.id));del(s.id)}
+const sT=new Map();
+function save(o){o=o||cur;if(!o)return;o.upd=Date.now();clearTimeout(sT.get(o.id));sT.set(o.id,setTimeout(()=>put(o),300))}
 function twice(b,fn){if(b.dataset.arm){fn();return}b.dataset.arm='1';const o=b.textContent;b.textContent='Confirmar?';toast('Toque de novo para excluir');setTimeout(()=>{b.dataset.arm='';b.textContent=o},3000)}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)}
 
@@ -86,13 +105,13 @@ function song(){const s=cur;
  <div class="meta"><input id="ti" placeholder="Título" value="${esc(s.title)}"><input id="ar" placeholder="Artista" value="${esc(s.artist)}">
  <div class="row"><select id="ky" aria-label="Tom">${N.map(n=>`<option ${n===s.key?'selected':''}>${n}</option>`).join('')}</select><select id="md" aria-label="Modo"><option value="M" ${s.mode==='M'?'selected':''}>Maior</option><option value="m" ${s.mode==='m'?'selected':''}>Menor</option></select></div></div>
  <nav class="tabs">${[['cifra','Cifra'],['letra','Letra'],['ouvir','Ouvir'],['campo','Campo'],['audio','Áudio']].map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</nav><div id="pane"></div>`;
- $('#back').onclick=()=>{stopSR();if(rec&&rec.state==='recording')rec.stop();if(!s.title&&!s.cifra&&!s.letra&&!s.audios.length){songs=songs.filter(x=>x!==s);del(s.id)}list()};
- $('#del').onclick=()=>twice($('#del'),()=>{songs=songs.filter(x=>x!==s);del(s.id);toast('Música excluída');list()});
+ $('#back').onclick=()=>{stopSR();mixStop();if(rec&&rec.state==='recording')rec.stop();else if(!s.title&&!s.cifra&&!s.letra&&!s.ouvido&&!s.audios.length){songs=songs.filter(x=>x!==s);delSong(s)}list()};
+ $('#del').onclick=()=>twice($('#del'),()=>{stopSR();mixStop();if(rec&&rec.state==='recording')rec.stop();songs=songs.filter(x=>x!==s);delSong(s);toast('Música excluída');list()});
  $('#ti').oninput=e=>{s.title=e.target.value;$('#h').textContent=s.title||'Nova música';save()};
  $('#ar').oninput=e=>{s.artist=e.target.value;save()};
  $('#ky').onchange=e=>{s.key=e.target.value;shift=0;save();pane()};
  $('#md').onchange=e=>{s.mode=e.target.value;save();pane()};
- document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));pane()});
+ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;if(tab!=='audio'&&!(rec&&rec.state==='recording'))mixStop();document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));pane()});
  pane()}
 
 function pane(){const p=$('#pane'),s=cur;
@@ -116,17 +135,9 @@ function pane(){const p=$('#pane'),s=cur;
   <div class="grid">${iv.map((v,i)=>{const c=nm[(r+v)%12]+(sev?q7[i]:q3[i]);return `<button class="deg" data-c="${c}"><small>${rom[i]}</small><b>${c}</b></button>`}).join('')}</div>`;
   $('#sv').onclick=()=>{sev=!sev;pane()};
   document.querySelectorAll('.deg').forEach(b=>b.onclick=()=>{s.cifra=(s.cifra||'')+(s.cifra&&!s.cifra.endsWith('\n')?'  ':'')+b.dataset.c;save();toast(b.dataset.c+' adicionado à cifra')})}
- else{
-  p.innerHTML=`<select id="tp" aria-label="Tipo de gravação" style="margin-bottom:8px"><option value="mix">Gravar voz + violão juntos</option><option value="violao">Gravar só o violão</option><option value="voz">Gravar só a voz (toca o violão junto)</option></select><div class="row"><label class="pri" style="flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;background:var(--acc);color:var(--accT);font-weight:600">Adicionar arquivo<input id="fl" type="file" accept="audio/*" multiple hidden></label><button id="rc" style="flex:1">${rec&&rec.state==='recording'?'Parar gravação':'Gravar'}</button></div>
-  <label style="display:block;text-align:center;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer">Gravar com o gravador do celular<input id="cap" type="file" accept="audio/*" capture hidden></label><p class="hint" id="gst">${rec&&rec.state==='recording'?'Gravando… o que você cantar vai sendo escrito e salvo na aba Letra.':''}</p><p class="hint">Para gravar a voz com o violão tocando, grave o violão primeiro e use fones de ouvido. Se o botão Gravar não funcionar, use o gravador do celular. Os áudios ficam guardados só neste aparelho.</p><div id="aus"></div>`;
-  const aus=$('#aus');
-  aus.innerHTML=s.audios.map(a=>`<div class="au"><div class="row"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</b><button data-d="${a.id}" aria-label="Remover áudio">✕</button></div><audio controls preload="none" data-a="${a.id}"></audio></div>`).join('')||'<p class="empty">Nenhum áudio. Adicione um arquivo ou grave agora.</p>';
-  aus.querySelectorAll('audio').forEach(el=>{const a=s.audios.find(x=>x.id===el.dataset.a);if(a){el.src=URL.createObjectURL(a.blob);el.onerror=()=>{if(el.dataset.fb)return;el.dataset.fb='1';const fr=new FileReader();fr.onload=()=>{el.src=fr.result};fr.readAsDataURL(a.blob)}}});
-  aus.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{s.audios=s.audios.filter(x=>x.id!==b.dataset.d);save();pane()});
-  $('#fl').onchange=e=>{[...e.target.files].forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),name:f.name,blob:f}));save();pane()};
-  $('#tp').value=recTipo;$('#tp').onchange=e=>{recTipo=e.target.value};$('#rc').onclick=toggleRec;$('#cap').onchange=$('#fl').onchange}}
+ else audioTab(p)}
 
-let sr=null,srOn=false,recTipo='mix',bk=null;
+let sr=null,srOn=false,recTipo='mix',recBk=true;
 function stopSR(){srOn=false;try{sr&&sr.stop()}catch(e){}}
 function ouvir(p){const s=cur,SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  p.innerHTML=`<div class="row"><button class="pri" id="sr" style="flex:1">${srOn?'Parar de ouvir':'Começar a ouvir'}</button><button id="tl" style="flex:1">Passar para a Letra</button></div>
@@ -150,19 +161,107 @@ function ouvir(p){const s=cur,SR=window.SpeechRecognition||window.webkitSpeechRe
 function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
  try{stopSR();sr=new SR();sr.lang='pt-BR';sr.continuous=true;sr.interimResults=false;srOn=true;
   sr.onresult=e=>{let fin='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)fin+=e.results[i][0].transcript.trim()+'\n';
-   if(fin.trim()){s.letra=(s.letra?s.letra.replace(/\s+$/,'')+'\n':'')+fin.replace(/\s+$/,'');save();const st=$('#gst');if(st)st.textContent='Letra salva: '+fin.trim().slice(0,70)}};
+   if(fin.trim()){s.letra=(s.letra?s.letra.replace(/\s+$/,'')+'\n':'')+fin.replace(/\s+$/,'');save(s);const st=$('#gst');if(st)st.textContent='Letra salva: '+fin.trim().slice(0,70)}};
   sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;srOn=false;const st=$('#gst');if(st)st.textContent='Não consegui escrever a letra durante a gravação ('+e.error+'). O áudio continua gravando. Use a aba Ouvir se precisar.'};
   sr.onend=()=>{if(srOn&&rec&&rec.state==='recording'){try{sr.start()}catch(e){}}};
   sr.start();return true}catch(e){srOn=false;return false}}
+/* ---------- mixer ---------- */
+const mx={ac:null,buf:{},bad:{},src:[],gn:{},master:null,playing:false,t0:0,pos:0,dur:0,raf:0,mv:1};
+const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
+function AC(){if(!mx.ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;mx.ac=new C()}if(mx.ac.state==='suspended')mx.ac.resume().catch(()=>{});return mx.ac}
+async function loadBufs(s){const ac=AC();if(!ac)return false;
+ for(const a of s.audios){if(mx.buf[a.id]||mx.bad[a.id]||!a.blob)continue;try{mx.buf[a.id]=await ac.decodeAudioData(await a.blob.arrayBuffer())}catch(e){mx.bad[a.id]=1}}return true}
+const anySolo=s=>s.audios.some(a=>a.solo);
+const eff=(s,a)=>(anySolo(s)?a.solo:!a.mute)?(a.vol==null?1:a.vol):0;
+const durOf=s=>Math.max(0,...s.audios.filter(a=>mx.buf[a.id]).map(a=>mx.buf[a.id].duration+Math.max(0,(a.off||0)/1000)));
+const mixPos=()=>mx.playing?Math.max(0,mx.ac.currentTime-mx.t0):mx.pos;
+function killSrc(){mx.src.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});mx.src=[];mx.gn={};try{mx.master&&mx.master.disconnect()}catch(e){}}
+function mixStart(s,from){const ac=AC();if(!ac)return false;killSrc();
+ mx.master=ac.createGain();mx.master.gain.value=mx.mv;mx.master.connect(ac.destination);
+ const now=ac.currentTime+0.05;mx.dur=durOf(s);
+ s.audios.forEach(a=>{const b=mx.buf[a.id];if(!b)return;const g=ac.createGain();g.gain.value=eff(s,a);g.connect(mx.master);mx.gn[a.id]=g;
+  const src=ac.createBufferSource();src.buffer=b;src.connect(g);const tp=from-(a.off||0)/1000;
+  if(tp>=b.duration)return;if(tp>=0)src.start(now,tp);else src.start(now-tp,0);mx.src.push(src)});
+ mx.t0=now-from;mx.playing=true;tick();return true}
+function mixStop(){killSrc();cancelAnimationFrame(mx.raf);mx.playing=false;mx.pos=0;uiMix()}
+function mixPause(){const p=mixPos();killSrc();cancelAnimationFrame(mx.raf);mx.playing=false;mx.pos=p;uiMix()}
+function tick(){cancelAnimationFrame(mx.raf);const f=()=>{if(!mx.playing)return;const p=mixPos();if(mx.dur&&p>=mx.dur){mixStop();return}uiMix(p);mx.raf=requestAnimationFrame(f)};f()}
+function uiMix(p){const b=$('#mxp');if(!b)return;if(p==null)p=mixPos();b.textContent=mx.playing?'⏸ Pausar':'▶ Tocar tudo';
+ const t=$('#mxt');if(t)t.textContent=fmt(p)+' / '+fmt(mx.dur);const r=$('#mxs');if(r&&document.activeElement!==r){r.max=mx.dur||1;r.value=p}}
+function wav(b){const ch=b.numberOfChannels,n=b.length,sr=b.sampleRate,ab=new ArrayBuffer(44+n*ch*2),v=new DataView(ab);
+ const w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+ w(0,'RIFF');v.setUint32(4,36+n*ch*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,sr,true);v.setUint32(28,sr*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*ch*2,true);
+ const d=[];let pk=0;for(let c=0;c<ch;c++){const x=b.getChannelData(c);d.push(x);for(let i=0;i<n;i++){const y=Math.abs(x[i]);if(y>pk)pk=y}}
+ const k=pk>1?1/pk:1;let o=44;
+ for(let i=0;i<n;i++)for(let c=0;c<ch;c++){const x=Math.max(-1,Math.min(1,d[c][i]*k));v.setInt16(o,x<0?x*32768:x*32767,true);o+=2}
+ return new Blob([ab],{type:'audio/wav'})}
+async function bounce(s){const act=s.audios.filter(a=>mx.buf[a.id]&&eff(s,a)>0);if(!act.length){toast('Nenhuma faixa audível para juntar.');return}
+ const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('Este aparelho não consegue juntar as faixas.');return}
+ toast('Juntando as faixas…');const sr=44100,d=durOf(s),oc=new OC(2,Math.max(1,Math.ceil(d*sr)),sr);
+ const m=oc.createGain();m.gain.value=mx.mv;m.connect(oc.destination);
+ act.forEach(a=>{const g=oc.createGain();g.gain.value=eff(s,a);g.connect(m);const src=oc.createBufferSource();src.buffer=mx.buf[a.id];src.connect(g);const o=(a.off||0)/1000;if(o>=0)src.start(o);else src.start(0,-o)});
+ try{const r=await oc.startRendering();s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'mix',name:'Mix '+new Date().toLocaleString('pt-BR'),blob:wav(r),vol:1});save(s);put(s);toast('Mix salvo como nova faixa');if(cur===s&&tab==='audio')audioTab($('#pane'))}
+ catch(e){toast('Não consegui juntar as faixas.')}}
+
+function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
+ p.innerHTML=`<div class="card2"><select id="tp" aria-label="Tipo de gravação"><option value="mix">Gravar voz + violão juntos</option><option value="violao">Gravar só o violão</option><option value="voz">Gravar só a voz</option></select>
+ <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
+ <div class="row"><label class="fb">Adicionar arquivo<input id="fl" type="file" accept="audio/*" multiple hidden></label><button id="rc" style="flex:1">${rc?'Parar gravação':'Gravar'}</button></div>
+ <label class="fb2">Gravar com o gravador do celular<input id="cap" type="file" accept="audio/*" capture hidden></label>
+ <p class="hint" id="gst">${rc?'Gravando…':''}</p></div><h2 class="mh">Mixer</h2><div id="mxb"><p class="hint">Carregando faixas…</p></div>`;
+ $('#tp').value=recTipo;$('#tp').onchange=e=>{recTipo=e.target.value};$('#bkc').onchange=e=>{recBk=e.target.checked};
+ $('#rc').onclick=toggleRec;
+ $('#fl').onchange=$('#cap').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1}));save(s);put(s);mixStop();audioTab(p)};
+ loadBufs(s).then(()=>{if(cur===s&&tab==='audio'&&$('#mxb'))mixUI(s)})}
+
+function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
+ const tr=s.audios.map(a=>`<div class="au"><div class="row"><input class="nm" data-n="${a.id}" value="${esc(a.name)}" aria-label="Nome da faixa"><button data-x="${a.id}" aria-label="Remover faixa" style="flex:0 0 auto">✕</button></div>
+ ${a.blob&&!mx.bad[a.id]?'':'<p class="hint" style="color:var(--danger)">Não consegui ler este áudio.</p>'}
+ <div class="row"><button class="tg ${a.mute?'on':''}" data-m="${a.id}" style="flex:0 0 auto">Mudo</button><button class="tg ${a.solo?'on':''}" data-so="${a.id}" style="flex:0 0 auto">Solo</button><input type="range" min="0" max="150" value="${Math.round((a.vol==null?1:a.vol)*100)}" data-v="${a.id}" aria-label="Volume"><b class="pc" id="pv_${a.id}">${Math.round((a.vol==null?1:a.vol)*100)}%</b></div>
+ <div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Atraso</small><input type="range" min="-500" max="500" step="5" value="${a.off||0}" data-o="${a.id}" aria-label="Atraso em milissegundos"><b class="pc" id="po_${a.id}">${a.off||0} ms</b></div></div>`).join('');
+ b.innerHTML=s.audios.length?`<div class="card2"><div class="row"><button class="pri" id="mxp" style="flex:1">▶ Tocar tudo</button><button id="mxst" aria-label="Parar" style="flex:0 0 auto">■</button><span id="mxt" class="tone" style="min-width:90px">0:00 / ${fmt(mx.dur)}</span></div>
+ <input type="range" id="mxs" min="0" max="${mx.dur||1}" step="0.01" value="${mixPos()}" aria-label="Posição" style="margin-top:8px">
+ <div class="row" style="margin-top:6px"><small class="hint" style="flex:0 0 auto;margin:0">Volume geral</small><input type="range" id="mxv" min="0" max="150" value="${Math.round(mx.mv*100)}"><b class="pc" id="pvm">${Math.round(mx.mv*100)}%</b></div>
+ <button id="mxj" style="width:100%;margin-top:8px">Juntar tudo numa nova faixa</button>
+ <p class="hint" style="margin-bottom:0">Se a voz gravada ficou adiantada ou atrasada em relação ao violão, ajuste o Atraso da faixa.</p></div>${tr}`:'<p class="empty">Nenhuma faixa. Adicione um arquivo ou grave agora.</p>';
+ if(!s.audios.length)return;uiMix();
+ const upd=()=>{if(mx.playing)s.audios.forEach(a=>{if(mx.gn[a.id])mx.gn[a.id].gain.value=eff(s,a)})};
+ $('#mxp').onclick=()=>{if(mx.playing){mixPause();return}if(!s.audios.some(a=>mx.buf[a.id]))return toast('Nenhuma faixa pôde ser lida.');mixStart(s,mx.pos>=mx.dur?0:mx.pos)};
+ $('#mxst').onclick=mixStop;
+ $('#mxs').oninput=e=>{const t=$('#mxt');if(t)t.textContent=fmt(+e.target.value)+' / '+fmt(mx.dur)};
+ $('#mxs').onchange=e=>{const v=+e.target.value;if(mx.playing)mixStart(s,v);else mx.pos=v;uiMix()};
+ $('#mxv').oninput=e=>{mx.mv=e.target.value/100;$('#pvm').textContent=e.target.value+'%';if(mx.master)mx.master.gain.value=mx.mv};
+ $('#mxj').onclick=()=>bounce(s);
+ const A=id=>s.audios.find(x=>x.id===id);
+ b.querySelectorAll('[data-n]').forEach(i=>i.onchange=()=>{const a=A(i.dataset.n);a.name=i.value.trim()||'Faixa';save(s)});
+ b.querySelectorAll('[data-x]').forEach(i=>i.onclick=()=>twice(i,()=>{mixStop();const a=A(i.dataset.x);s.audios=s.audios.filter(x=>x!==a);delete mx.buf[a.id];delBlob(a.id);save(s);put(s);toast('Faixa removida');mixUI(s)}));
+ b.querySelectorAll('[data-m]').forEach(i=>i.onclick=()=>{const a=A(i.dataset.m);a.mute=!a.mute;i.classList.toggle('on',a.mute);save(s);upd()});
+ b.querySelectorAll('[data-so]').forEach(i=>i.onclick=()=>{const a=A(i.dataset.so);a.solo=!a.solo;i.classList.toggle('on',a.solo);save(s);upd()});
+ b.querySelectorAll('[data-v]').forEach(i=>i.oninput=()=>{const a=A(i.dataset.v);a.vol=i.value/100;$('#pv_'+a.id).textContent=i.value+'%';save(s);upd()});
+ b.querySelectorAll('[data-o]').forEach(i=>{i.oninput=()=>{const a=A(i.dataset.o);a.off=+i.value;$('#po_'+a.id).textContent=i.value+' ms';save(s)};i.onchange=()=>{if(mx.playing)mixStart(s,mixPos())}})}
+
 async function toggleRec(){const s=cur;
  if(rec&&rec.state==='recording'){rec.stop();return}
  if(!navigator.mediaDevices||!window.MediaRecorder){toast('Abrindo o gravador do celular…');$('#cap').click();return}
- try{const tipo=recTipo,st=await navigator.mediaDevices.getUserMedia({audio:true}),ch=[];rec=new MediaRecorder(st);
-  rec.ondataavailable=e=>ch.push(e.data);
-  rec.onstop=()=>{stopSR();if(bk){bk.pause();bk=null}toast('Gravação salva');st.getTracks().forEach(t=>t.stop());s.audios.push({id:'a'+Date.now(),tipo:tipo,name:({mix:'Gravação',violao:'Violão',voz:'Voz'})[tipo]+' '+new Date().toLocaleString('pt-BR'),blob:new Blob(ch,{type:rec.mimeType})});save();if(cur===s&&tab==='audio')pane()};
-  if(tipo==='voz'){const v=[...s.audios].reverse().find(a=>a.tipo==='violao');if(v){bk=new Audio(URL.createObjectURL(v.blob));bk.play().catch(()=>{})}}
-  rec.start();const okL=tipo==='violao'?false:startLetra(s);pane();const g=$('#gst');if(g)g.textContent=tipo==='violao'?'Gravando o violão…':(okL?'Gravando… o que você cantar vai sendo escrito e salvo na aba Letra.':'Gravando. Este navegador não escreve a letra sozinho.')+(bk?' O violão está tocando: use fones de ouvido.':'')}
- catch(e){toast('Sem acesso ao microfone aqui. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click()}}
+ const tipo=recTipo,useBk=recBk&&tipo!=='mix'&&s.audios.some(a=>a.blob);
+ mixStop();if(useBk){AC();await loadBufs(s)}
+ let st;
+ try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:useBk,noiseSuppression:false,autoGainControl:false}})}
+ catch(e){toast('Sem acesso ao microfone. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click();return}
+ try{
+  const ch=[],mr=new MediaRecorder(st);rec=mr;
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
+  mr.onerror=()=>toast('A gravação falhou. Tente de novo.');
+  mr.onstop=()=>{stopSR();mixStop();st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
+   if(blob.size){s.audios.push({id:'a'+Date.now(),tipo:tipo,name:({mix:'Gravação',violao:'Violão',voz:'Voz'})[tipo]+' '+new Date().toLocaleString('pt-BR'),blob:blob,vol:1});s.upd=Date.now();put(s);toast('Gravação salva')}
+   else toast('A gravação saiu vazia. Tente de novo.');
+   if(cur===s&&tab==='audio')audioTab($('#pane'))};
+  mr.start(1000);
+  const okL=tipo==='violao'?false:startLetra(s);
+  if(useBk)mixStart(s,0);
+  audioTab($('#pane'));const g=$('#gst');
+  if(g)g.textContent=tipo==='violao'?'Gravando o violão…':(okL?'Gravando… o que você cantar vai sendo escrito e salvo na aba Letra.':'Gravando. Este aparelho não escreve a letra sozinho.');
+ }catch(e){st.getTracks().forEach(t=>t.stop());rec=null;toast('Não consegui gravar neste aparelho. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click()}}
 
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();inst=e;if(!cur&&$('#bk'))list()});
 const lk=()=>{try{return +localStorage.getItem('lastBk')||0}catch(e){return 0}};
@@ -178,11 +277,11 @@ function backup(){cur=null;const d=lk();
  $('#back').onclick=list;$('#ex').onclick=exportAll;
  $('#im').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());let n=0;
   for(const s of j.songs){const o=songs.find(x=>x.id===s.id);if(o&&o.upd>=s.upd)continue;
-   const m={...s,audios:s.audios.map(a=>({id:a.id,name:a.name,blob:d2b(a.data)}))};
-   if(o)songs[songs.indexOf(o)]=m;else songs.push(m);put(m);n++}
+   const m={...s,audios:s.audios.map(a=>{const{data,...r}=a;return{...r,blob:d2b(data)}})};
+   if(o){o.audios.forEach(a=>delBlob(a.id));songs[songs.indexOf(o)]=m}else songs.push(m);put(m);n++}
   toast(n+' música(s) importada(s)');setTimeout(list,900)}catch(x){toast('Arquivo de backup inválido.')}}}
 async function exportAll(){toast('Preparando backup…');
- const out=[];for(const s of songs)out.push({...s,audios:await Promise.all(s.audios.map(async a=>({id:a.id,name:a.name,data:await b2d(a.blob)})))});
+ const out=[];for(const s of songs)out.push({...s,audios:await Promise.all(s.audios.filter(a=>a.blob).map(async a=>{const{blob,_p,...r}=a;return{...r,data:await b2d(a.blob)}}))});
  const name='caderno-musical-'+new Date().toISOString().slice(0,10)+'.json',blob=new Blob([JSON.stringify({v:1,songs:out})],{type:'application/json'}),file=new File([blob],name,{type:'application/json'});
  try{localStorage.setItem('lastBk',Date.now())}catch(e){}
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return backup()}}catch(e){if(e.name==='AbortError')return}

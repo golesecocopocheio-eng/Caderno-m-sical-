@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#161826">
+<meta name="theme-color" content="#12051f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bar Conect">
 <title>Bar Conect · Caixa, Portaria e Estoque</title>
@@ -14,10 +14,14 @@
 /* Área segura: no APK (Android com tela de ponta a ponta) o Capacitor informa a altura da barra de
    status e da barra de navegação em --safe-area-inset-*; no navegador vale o env(). */
 :root{--sat:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
-html,body{margin:0;height:100%;background:#f2f3f7;color:#161826;font:16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
-@media (prefers-color-scheme:dark){html,body{background:#0f1018;color:#ecedf6}}
+html,body{margin:0;height:100%;background:#12051f;color:#161826;font:16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){html,body{color:#ecedf6}.frames{background:#0f1018!important}}
 body{display:flex;flex-direction:column;padding-top:var(--sat);box-sizing:border-box}
-.frames{flex:1;position:relative}
+.frames{flex:1;position:relative;background:#f2f3f7}
+.marca{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 14px 9px;background:linear-gradient(100deg,#12051f 0%,#2e0a52 55%,#4c1d95 100%);box-shadow:0 4px 18px rgba(18,5,31,.35);position:relative;z-index:2}
+.marca img{height:34px;width:auto;display:block}
+.marca span{font:700 13px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fcd34d;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.marca[hidden]{display:none}
 iframe,.painel{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;box-sizing:border-box}
 iframe.on,.painel.on{display:block}
 .painel{overflow:auto;padding:28px 18px 24px;max-width:480px;margin:0 auto;left:0;right:0}
@@ -25,15 +29,15 @@ iframe.on,.painel.on{display:block}
 .painel p{color:#667085;font-size:14px;margin:0 0 16px}
 .painel label{display:block;font-size:13px;color:#667085;margin:12px 0 4px}
 .painel input{width:100%;box-sizing:border-box;padding:12px;font-size:17px;border:1px solid #dcdfe8;border-radius:12px;background:#fff;color:#161826}
-.painel button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#6d28d9;color:#fff;font-size:16px;font-weight:700}
+.painel button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;font-size:16px;font-weight:700;box-shadow:0 6px 16px rgba(76,29,149,.25)}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px 8px calc(8px + var(--sab));background:#161826;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
+nav{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:linear-gradient(180deg,#1e0b36,#12051f);border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
-nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 12px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
-nav button span{font-size:25px;line-height:1;transition:transform .2s}
-nav button.on{color:#fff;background:rgba(167,139,250,.22)}
+nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 11px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
+nav button span{font-size:23px;line-height:1;transition:transform .2s}
+nav button.on{color:#fcd34d;background:linear-gradient(180deg,rgba(245,158,11,.22),rgba(245,158,11,.08));box-shadow:inset 0 0 0 1px rgba(252,211,77,.25)}
 nav button.on span{transform:translateY(-1px) scale(1.08)}
 nav button:active{background:rgba(255,255,255,.08)}
 .hs{background:#fff;border:1px solid #dcdfe8;border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:center}
@@ -41,11 +45,83 @@ nav button:active{background:rgba(255,255,255,.08)}
 .painel .hs button{width:auto;margin:0;padding:9px 12px;font-size:13px;border-radius:10px;background:#dcdfe8;color:#161826}
 .painel .hs button.arm{background:#c2410c;color:#fff}
 @media (prefers-color-scheme:dark){.hs{background:#1a1b27;border-color:#2c2e40}.hs small{color:#9aa0b5}}
+.ft-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.painel .ft-chips button{margin:0;background:#dcdfe8;color:#161826}
+.painel .ft-chips button.on{background:#161826;color:#fff}
+.ft-foto-btn{display:flex!important;justify-content:center;align-items:center;margin-top:16px!important;padding:16px;border-radius:14px;background:#6d28d9;color:#fff!important;font-size:17px!important;font-weight:700;cursor:pointer}
+.ft-card{background:#fff;border:1px solid #dcdfe8;border-radius:16px;padding:12px;margin-top:12px}
+.ft-cab{display:flex;gap:10px;align-items:center}.ft-cab img,.ft-sem{width:54px;height:54px;border-radius:10px;object-fit:cover;background:#eef0f5;display:grid;place-items:center;font-size:24px}
+.ft-cab div{flex:1;min-width:0}.ft-cab b{display:block}.ft-cab small{color:#667085;font-size:12.5px}
+.painel .ft-x{width:auto;margin:0;padding:8px 10px;background:#eef0f5;color:#161826;font-size:13px}
+.ft-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.ft-grid label{margin:0}
+.ft-grid input{text-align:right;padding:10px}
+.ft-ok{display:block;margin-top:8px;color:#667085}
+.ft-card pre{white-space:pre-wrap;font-size:12px;max-height:200px;overflow:auto}
+.ft-r{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:4px 0}.ft-r b{white-space:nowrap}.ft-r small{color:#667085}
+.ft-big{border-top:1px dashed #dcdfe8;margin-top:6px;padding-top:8px;font-size:19px}
+.painel textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #dcdfe8;border-radius:12px;font:16px system-ui}
+@media (prefers-color-scheme:dark){.ft-card{background:#1a1b27;border-color:#2c2e40}.ft-cab small,.ft-ok,.ft-r small{color:#9aa0b5}.painel .ft-chips button{background:#2c2e40;color:#ecedf6}.painel .ft-chips button.on{background:#a78bfa;color:#17102e}}
+.pc-nome{font-weight:700}
+.pc-g3{grid-template-columns:1fr 1fr 1.2fr!important}
+.painel select{width:100%;box-sizing:border-box;padding:11px;font-size:16px;border:1px solid #dcdfe8;border-radius:12px;background:#fff;color:#161826}
+.painel .pc-check{display:flex!important;gap:8px;align-items:center;color:#161826;font-size:14px}
+.painel .pc-check input{width:auto}
+@media (prefers-color-scheme:dark){.painel select{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel .pc-check{color:#ecedf6}}
+/* apresentação animada de abertura */
+#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(circle at 50% 38%,#7c3aed 0%,#3b0764 46%,#12051f 100%);transition:opacity .45s ease,transform .45s ease}
+#intro.sai{opacity:0;transform:scale(1.06);pointer-events:none}
+#intro[hidden]{display:none}
+.in-emb{width:min(56vw,260px);height:auto;filter:drop-shadow(0 10px 30px rgba(245,158,11,.25))}
+.in-traco{stroke-dasharray:1;stroke-dashoffset:1;animation:inDesenha .7s ease-out .1s forwards}
+.in-haste,.in-base{opacity:0;transform-origin:100px 150px;animation:inSobe .35s ease-out .55s forwards}
+.in-liq{transform:translateY(52px);animation:inEnche .7s cubic-bezier(.3,.7,.4,1) .7s forwards}
+.in-palito{opacity:0;transform:translate(14px,-40px) rotate(12deg);animation:inCai .55s cubic-bezier(.3,1.4,.5,1) 1.05s forwards}
+.in-onda{opacity:0;transform-origin:100px 92px;animation:inOnda 1.1s ease-out 1.15s forwards}
+.in-onda.o2{animation-delay:1.3s}
+.in-nome{font:900 clamp(34px,11vw,52px)/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;letter-spacing:.02em;opacity:0;transform:translateY(18px);animation:inTexto .5s ease-out 1.2s forwards;text-shadow:0 6px 24px rgba(0,0,0,.45)}
+.in-nome span{background:linear-gradient(100deg,#b45309 0%,#fde68a 35%,#fff7d6 45%,#f59e0b 60%,#b45309 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:inBrilho 1.2s ease-in-out 1.5s forwards}
+.in-sub{font:700 clamp(10px,3.2vw,14px)/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fcd34d;letter-spacing:.22em;opacity:0;animation:inTexto .5s ease-out 1.45s forwards}
+@keyframes inDesenha{to{stroke-dashoffset:0}}
+@keyframes inSobe{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:none}}
+@keyframes inEnche{to{transform:translateY(0)}}
+@keyframes inCai{to{opacity:1;transform:none}}
+@keyframes inOnda{0%{opacity:0;transform:scale(.8)}50%{opacity:.9}100%{opacity:.45;transform:scale(1)}}
+@keyframes inTexto{to{opacity:1;transform:none}}
+@keyframes inBrilho{from{background-position:100% 0}to{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){#intro{display:none}}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
 </head>
 <body>
+<div id="intro" aria-hidden="true">
+  <svg class="in-emb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="inG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".55" stop-color="#f59e0b"/><stop offset="1" stop-color="#b45309"/></linearGradient>
+      <linearGradient id="inB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f472b6"/><stop offset="1" stop-color="#a21caf"/></linearGradient>
+      <clipPath id="inTaca"><path d="M62 62 H138 L100 104 Z"/></clipPath>
+    </defs>
+    <g fill="none" stroke="url(#inG)" stroke-linecap="round" stroke-width="5">
+      <path class="in-onda o1" d="M38 52 A62 62 0 0 1 38 132"/><path class="in-onda o2" d="M24 40 A80 80 0 0 1 24 144"/>
+      <path class="in-onda o1" d="M162 52 A62 62 0 0 0 162 132"/><path class="in-onda o2" d="M176 40 A80 80 0 0 0 176 144"/>
+    </g>
+    <g clip-path="url(#inTaca)"><rect class="in-liq" x="50" y="56" width="100" height="52" fill="url(#inB)"/></g>
+    <path class="in-traco" d="M54 56 H146 L100 108 Z" fill="none" stroke="url(#inG)" stroke-width="7" stroke-linejoin="round" pathLength="1"/>
+    <rect class="in-haste" x="96.5" y="106" width="7" height="44" rx="3" fill="url(#inG)"/>
+    <rect class="in-base" x="74" y="148" width="52" height="8" rx="4" fill="url(#inG)"/>
+    <g class="in-palito"><path d="M122 30 L100 88" stroke="url(#inG)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="107" cy="70" r="10" fill="#65a30d" stroke="url(#inG)" stroke-width="3"/><circle cx="104" cy="67" r="3" fill="#dc2626"/></g>
+  </svg>
+  <div class="in-nome">BAR <span>CONECT</span></div>
+  <div class="in-sub">CAIXA · PORTARIA · ESTOQUE</div>
+</div>
+<script>
+/* apresentação: some sozinha em ~2,4 s ou com um toque */
+(function(){const el=document.getElementById('intro');if(!el)return;
+  const sair=()=>{if(el.classList.contains('sai'))return;el.classList.add('sai');setTimeout(()=>el.hidden=true,500)};
+  el.addEventListener('click',sair);setTimeout(sair,2800)})();
+</script>
+<header class="marca" id="marca"><img src="icons/logo-horizontal.png" alt="Bar Conect"><span id="marcaAba"></span></header>
 <div class="frames">
   <iframe id="f-caixa" title="Caixa bar" data-src="caixa.html"></iframe>
   <iframe id="f-portaria" title="Portaria do Bar" data-src="portaria.html"></iframe>
@@ -61,6 +137,9 @@ nav button:active{background:rgba(255,255,255,.08)}
     <button type="submit">Entrar</button>
     <p style="margin-top:14px">Escolha um código difícil de adivinhar: quem souber o código consegue ver e mudar os dados.</p>
   </form>
+
+  <div class="painel" id="f-precos"></div>
+  <div class="painel" id="f-foto"></div>
 
   <div class="painel" id="f-backup">
     <h1>💾 Backup</h1>
@@ -109,6 +188,8 @@ nav button:active{background:rgba(255,255,255,.08)}
   <button data-tab="caixa"><span>🍸</span>Caixa</button>
   <button data-tab="portaria"><span>🚪</span>Portaria</button>
   <button data-tab="estoque"><span>📦</span>Estoque</button>
+  <button data-tab="precos"><span>💲</span>Preços</button>
+  <button data-tab="foto"><span>📸</span>Foto</button>
   <button data-tab="backup"><span>💾</span>Backup</button>
   <button data-tab="ajustes"><span>⚙️</span>Ajustes</button>
 </nav>
@@ -119,6 +200,8 @@ const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
+  const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
+  if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   document.querySelectorAll('iframe,.painel').forEach(f=>f.classList.toggle('on',f.id==='f-'+t));
@@ -206,7 +289,7 @@ $('#arquivo').onchange=async e=>{
     setTimeout(()=>location.reload(),1800);
   }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
 };
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{abrir(b.dataset.tab);if(b.dataset.tab==='foto'&&window.__barFotoAbrir)window.__barFotoAbrir()});
 document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStorage.setItem('bar-zoom',b.dataset.z);aplicarZoomTudo()});
 
 /* ---- Histórico ---- */
@@ -314,5 +397,7 @@ if(nuvem&&!codigo()){
 if('serviceWorker' in navigator&&window.Capacitor){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});if(window.caches)caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{})}
 else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+<script src="foto.js"></script>
+<script src="precos.js"></script>
 </body>
 </html>

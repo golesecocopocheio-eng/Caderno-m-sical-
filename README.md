@@ -3,6 +3,9 @@ Cardeno músical
 
 ## Bar Conect · Caixa, Portaria e Estoque (aplicativo)
 
+Logo: taça de coquetel dourada com palito e azeitona, ondas de conexão e o nome BAR CONECT ·
+CAIXA · PORTARIA · ESTOQUE, em roxo-escuro e dourado (`app/icons/`, `android-build/assets/`).
+
 Aplicativo que junta os projetos **Caixa bar**, **Portaria do Bar** e **Estoque do Bar** em um só, com uma aba
 para cada. Fica na pasta [`app/`](app/). É um PWA: pode ser instalado na tela inicial do
 celular e funciona sem internet.
@@ -48,6 +51,30 @@ dados ficam salvos só no aparelho.
 5. Em **Configurações do projeto (⚙️) → Seus apps → Web (</>)**, registre um app e copie o
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
+
+### Tabela de preços (aba 💲 Preços) e foto da nota de compra
+
+Tire foto da nota de compra (ou use o botão **📷 Foto da nota** na Ficha técnica). O app lê cada produto
+(quantidade, unidade UN/KG/CX..., preço unitário, total e tamanho: 750 ml, 1 kg, 12×350 ml) e sugere a
+ligação com o **ingrediente da Ficha técnica** e com o **item do Estoque**, lembrando a escolha para as
+próximas notas. Ao aplicar:
+
+- atualiza o custo das receitas (`meta.custo` do Caixa): bebidas pelo preço da garrafa e ml; itens
+  comprados por kg e usados por unidade (limão) pelo rendimento (unidades por kg e ml de suco por kg);
+  itens usados em dash/gota pelo número de doses da garrafa (≈1 ml cada);
+- soma a compra no Estoque (movimento de compra, preço e registro da compra);
+- guarda o produto na tabela de preços (`meta.tabPrecos`), com preço por litro/kg, data, nota,
+  quantidade e valor em estoque.
+
+### Fechamento por foto (aba 📸 Foto)
+
+Tire foto dos comprovantes de fechamento das maquininhas (ou escolha da galeria). O app lê os valores
+**sem internet** (Tesseract, em `app/vendor/ocr`) e separa **Crédito + Débito = Cartão** e
+**Pix + QR Code = Pix**; quando o comprovante tem linhas por bandeira e um resumo, usa o resumo para não
+contar duas vezes, e compara com o total lido na foto. O dinheiro é digitado à mão (calculadora: valores
+separados por + ou um por linha). O app soma todas as fotos da operação, monta o relatório e, com
+confirmação, preenche o fechamento do dia no Caixa (Bar: dinheiro, cartão, pix; ou Portaria), sem mexer
+nos outros campos do dia. Todos os valores lidos podem ser corrigidos antes de aplicar.
 
 ### Histórico de alterações
 

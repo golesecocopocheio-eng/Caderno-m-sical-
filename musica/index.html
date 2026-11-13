@@ -177,6 +177,10 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .lane .lh button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}.lane .fb.mini{padding:9px 12px;font-size:14px;width:auto;flex:0 0 auto;background:var(--card);color:var(--ink);border:1px solid var(--line)}
 .lane .au{border:0;border-top:1px solid var(--line);border-radius:0;margin:10px 0 0;padding:10px 0 0;background:none}
 .isel{flex:1;padding:7px 10px;font-size:14px}
+.sheet{position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto}.shin{max-width:560px;margin:0 auto;padding:16px 16px 90px}
+.wv{position:relative;height:90px;border-radius:14px;background:var(--card);border:1px solid var(--line);overflow:hidden;margin:12px 0}.wv canvas{width:100%;height:100%;display:block}.ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);left:0;pointer-events:none}
+.edc{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:10px 0;background:var(--card)}.edc summary{font-weight:700;cursor:pointer}.edc .row{margin-top:8px}.edc select{width:100%}
+#toast{z-index:80}
 </style>
 </head>
 <body>
@@ -273,7 +277,7 @@ function iniHome(my){const S=setList(),L=[...my].sort((a,b)=>b.upd-a.upd),c=L[0]
  ${andamento.length?`<h2 class="sec">Em andamento</h2><div class="songs">${andamento.map(songRow).join('')}</div>`:''}
  ${ideias.length?`<h2 class="sec">Ideias para desenvolver</h2><div class="songs">${ideias.map(songRow).join('')}</div>`:''}
  ${my.length?'':`<div class="empty" style="padding:26px 8px"><h2>Sua biblioteca começa aqui</h2><p>Grave uma ideia, escreva a cifra ou traga as músicas que você já tem.</p></div>`}`}
-function list(){cur=null;mixStop();
+function list(){cur=null;mixStop();if(typeof edClose==='function')edClose();
  const my=songs.filter(s=>!s.outro),nt=my.reduce((n,s)=>n+s.audios.length,0),S=setList();
  const cnt=f=>my.filter(s=>s.fase===f).length;
  const body=hv==='ini'?iniHome(my):hv==='play'?playHome():hv==='rep'?repHome():`${late()?'<div class="alert"><span><b>Faça uma cópia de segurança.</b> A última tem mais de uma semana.</span><button id="bk2">Fazer agora</button></div>':''}
@@ -357,7 +361,7 @@ function chain(ctx,a,dest){const fx=a.fx||{},input=ctx.createGain();let last=inp
  if(fx.low)bq('lowshelf',120,fx.low);
  if(fx.mid)bq('peaking',1500,fx.mid,0.9);
  if(fx.high)bq('highshelf',6000,fx.high);
- if(fx.comp){const c=ctx.createDynamicsCompressor();c.threshold.value=-26;c.knee.value=22;c.ratio.value=3.5;c.attack.value=0.012;c.release.value=0.22;add(c)}
+ if(fx.comp){const L=fx.comp===true?2:Math.max(1,Math.min(3,+fx.comp)),c=ctx.createDynamicsCompressor();c.threshold.value=[-20,-26,-32][L-1];c.knee.value=22;c.ratio.value=[2,3.5,6][L-1];c.attack.value=0.012;c.release.value=0.22;add(c)}
  const fader=ctx.createGain();add(fader);
  if(fx.rev>0){const cv=ctx.createConvolver();cv.buffer=impulse(ctx);const w=ctx.createGain();w.gain.value=Math.min(1,fx.rev)*0.55;fader.connect(cv);cv.connect(w);w.connect(dest)}
  fader.connect(dest);return{input:input,fader:fader}}
@@ -369,10 +373,10 @@ function masterChain(ctx,mode,dest){const inp=ctx.createGain();if(!mode){inp.con
  const mu=ctx.createGain();mu.gain.value=f?1.6:1.25;
  const li=ctx.createDynamicsCompressor();li.threshold.value=-2;li.knee.value=0;li.ratio.value=20;li.attack.value=0.002;li.release.value=0.08;
  inp.connect(hp);hp.connect(lo);lo.connect(hi);hi.connect(co);co.connect(mu);mu.connect(li);li.connect(dest);return inp}
-function mixStart(s,from){const ac=AC();if(!ac)return false;killSrc();
+function mixStart(s,from,only){const ac=AC();if(!ac)return false;if(only!==undefined)mx.only=only;killSrc();
  mx.master=ac.createGain();mx.master.gain.value=mx.mv;mx.mc=masterChain(ac,s.mast||0,ac.destination);mx.master.connect(mx.mc);
- const now=ac.currentTime+0.05;mx.dur=durOf(s);
- s.audios.forEach(a=>{const b=mx.buf[a.id];if(!b)return;const c=chain(ac,a,mx.master);c.fader.gain.value=eff(s,a);mx.gn[a.id]=c.fader;
+ const now=ac.currentTime+0.05;mx.dur=mx.only?Math.max(0,...s.audios.filter(a=>mx.only.has(a.id)&&mx.buf[a.id]).map(a=>mx.buf[a.id].duration+Math.max(0,(a.off||0)/1000))):durOf(s);
+ s.audios.forEach(a=>{const b=mx.buf[a.id];if(!b)return;if(mx.only&&!mx.only.has(a.id))return;const c=chain(ac,a,mx.master);c.fader.gain.value=mx.only?(a.vol==null?1:a.vol):eff(s,a);mx.gn[a.id]=c.fader;
   const src=ac.createBufferSource();src.buffer=b;src.connect(c.input);const tp=from-(a.off||0)/1000;
   if(tp>=b.duration)return;if(tp>=0)src.start(now,tp);else src.start(now-tp,0);mx.src.push(src)});
  mx.t0=now-from;mx.playing=true;tick();return true}
@@ -380,7 +384,7 @@ function mixStop(){killSrc();cancelAnimationFrame(mx.raf);mx.playing=false;mx.po
 function mixPause(){const p=mixPos();killSrc();cancelAnimationFrame(mx.raf);mx.playing=false;mx.pos=p;uiMix()}
 function tick(){cancelAnimationFrame(mx.raf);const f=()=>{if(!mx.playing)return;const p=mixPos();if(mx.dur&&p>=mx.dur){mixStop();return}uiMix(p);mx.raf=requestAnimationFrame(f)};f()}
 function uiMix(p){const b=$('#mxp');if(!b)return;if(p==null)p=mixPos();b.textContent=mx.playing?'⏸ Pausar':'▶ Tocar tudo';
- const t=$('#mxt');if(t)t.textContent=fmt(p)+' / '+fmt(mx.dur);const r=$('#mxs');if(r&&document.activeElement!==r){r.max=mx.dur||1;r.value=p}}
+ document.querySelectorAll('[data-ls]').forEach(x=>{const ids=x.dataset.ls.split(','),on=mx.playing&&mx.only&&ids.length===mx.only.size&&ids.every(i=>mx.only.has(i));const t=on?'■ Parar':(x.dataset.lane?'▶ Ouvir pista':'▶ Ouvir');if(x.textContent!==t)x.textContent=t});const t=$('#mxt');if(t)t.textContent=fmt(p)+' / '+fmt(mx.dur);const r=$('#mxs');if(r&&document.activeElement!==r){r.max=mx.dur||1;r.value=p}}
 function wav(b){const ch=b.numberOfChannels,n=b.length,sr=b.sampleRate,ab=new ArrayBuffer(44+n*ch*2),v=new DataView(ab);
  const w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
  w(0,'RIFF');v.setUint32(4,36+n*ch*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,sr,true);v.setUint32(28,sr*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*ch*2,true);
@@ -440,22 +444,94 @@ function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
  <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
  <label class="chk"><input type="checkbox" id="nsc" ${recNS?'checked':''}> Filtro de ruído do celular ao gravar</label>
  <div class="row"><label class="fb">Adicionar arquivo<input id="fl" type="file" accept="audio/*" multiple hidden></label><button id="rc" class="${rc?'rec':''}" style="flex:1">${rc?'■ Parar gravação':'● Gravar'}</button></div>
+ <details class="edc" id="ents"><summary>Entrada de áudio e BandLab</summary>
+ <p class="hint">Escolha de onde vem o som: microfone do celular, fone Bluetooth ou interface de áudio ligada por cabo (USB / OTG).</p>
+ <div class="row"><select id="dev" aria-label="Entrada de áudio"><option value="">Automática (microfone do celular)</option></select><button id="devr" style="flex:0 0 auto">Procurar</button></div><p class="hint" id="devs"></p>
+ <p class="hint">BandLab não tem conexão oficial com outros apps. O caminho é: abra a faixa no estúdio e toque em “Enviar para o BandLab”. Para trazer de volta, exporte o áudio no BandLab e use “+ Arquivo” em uma pista.</p>
+ <button id="bl">Abrir o BandLab</button></details>
  <label class="fb2">Gravar com o gravador do celular<input id="cap" type="file" accept="audio/*" capture hidden></label>
  <p class="hint" id="gst">${rc?'Gravando…':''}</p></div><h2 class="mh">Mixer</h2><div id="mxb"><p class="hint">Carregando faixas…</p></div>`;
  $('#tp').value=recTipo;$('#tp').onchange=e=>{recTipo=e.target.value};$('#bkc').onchange=e=>{recBk=e.target.checked};$('#nsc').onchange=e=>{recNS=e.target.checked};
  $('#rc').onclick=toggleRec;
+ const fillDev=async ask=>{const L=await devList(ask),sl=$('#dev'),st=$('#devs');if(!L){st.textContent='Não consegui ver as entradas. Permita o microfone e toque em Procurar.';return}sl.innerHTML='<option value="">Automática (microfone do celular)</option>'+L.map((d,i)=>`<option value="${esc(d.deviceId)}">${esc(d.label||('Entrada '+(i+1)))}</option>`).join('');sl.value=L.some(d=>d.deviceId===recDev)?recDev:'';st.textContent=L.length?L.length+(L.length===1?' entrada encontrada.':' entradas encontradas.'):'Só o microfone do celular por enquanto. Ligue o cabo ou o Bluetooth e toque em Procurar.'};
+ $('#dev').onchange=e=>{recDev=e.target.value;try{localStorage.setItem('cm_dev',recDev)}catch(x){}toast(recDev?'Entrada escolhida':'Microfone do celular')};$('#devr').onclick=()=>fillDev(true);$('#bl').onclick=()=>openExt('https://www.bandlab.com/');fillDev(false);
  $('#fl').onchange=$('#cap').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1}));save(s);put(s);mixStop();audioTab(p)};
  loadBufs(s).then(()=>{if(cur===s&&tab==='audio'&&$('#mxb'))mixUI(s)})}
 
+let recDev='';try{recDev=localStorage.getItem('cm_dev')||''}catch(e){}
+async function devList(ask){try{if(ask){const t=await navigator.mediaDevices.getUserMedia({audio:true});t.getTracks().forEach(x=>x.stop())}const d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='audioinput'&&x.deviceId&&x.deviceId!=='default'&&x.deviceId!=='communications');return d}catch(e){return null}}
 const INST=[['voz','Voz','🎤','#E5484D'],['violao','Violão','🎸','#F5A623'],['baixo','Baixo','🎸','#4DA3FF'],['teclado','Teclado','🎹','#9B6BFF'],['bateria','Bateria','🥁','#34C27A']];
 const INSTX=[...INST,['mix','Voz + violão juntos','🎶','#C9A227'],['outro','Outros','🎧','#8A8478']];
 const instOf=a=>a.inst||({voz:'voz',violao:'violao',baixo:'baixo',teclado:'teclado',bateria:'bateria',mix:'mix'})[a.tipo]||'outro';
 const instI=k=>INSTX.find(x=>x[0]===k)||INSTX[6];
 const PRESET={voz:{hp:true,comp:true,rev:.15,high:2},violao:{hp:true,comp:true,rev:.08,mid:1},baixo:{low:3,high:-4,comp:true},teclado:{hp:true,rev:.12},bateria:{comp:true,low:2,high:2},mix:{hp:true,comp:true},outro:{}};
 const tipoOpts=()=>'<option value="mix">Voz + violão juntos</option>'+INST.map(i=>`<option value="${i[0]}">${i[2]} ${i[1]}</option>`).join('')+'<option value="outro">🎧 Outro instrumento</option>';
+
+/* Estúdio da faixa: limpar ruído, compressor, equalizador, eco, nivelar e cortar. Salva como faixa nova. */
+let ed=null;
+function edStop(){if(!ed)return;const s=ed.src;ed.src=null;ed.playing=false;cancelAnimationFrame(ed.raf);try{s&&s.stop()}catch(e){}try{s&&s.disconnect()}catch(e){}const b=$('#edp');if(b)b.textContent='▶ Ouvir';const x=$('#edph');if(x)x.style.left='0'}
+async function edRender(e){const w=e.work,sr=w.sampleRate,du=e.t1-e.t0,len=Math.ceil((du+(e.rev>0?1.6:0))*sr),OC=window.OfflineAudioContext||window.webkitOfflineAudioContext,oc=new OC(w.numberOfChannels,len,sr),c=chain(oc,{fx:edFx()},oc.destination),src=oc.createBufferSource();
+ src.buffer=w;src.connect(c.input);src.start(0,e.t0,du);const r=await oc.startRendering();if(e.norm)normalize(r,-18,.92);return r}
+async function edBand(){const e=ed,st=$('#edst'),bt=$('#edbl');bt.disabled=true;edStop();st.textContent='Preparando o arquivo…';
+ try{const r=await edRender(e),nm=(e.a.name||'faixa').replace(/[^\w\- ]+/g,'').trim().slice(0,40)||'faixa',f=new File([wav(r)],nm+'.wav',{type:'audio/wav'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:nm});st.textContent='Escolha o BandLab na lista de apps para abrir esta faixa lá.'}catch(x){st.textContent=''}}
+  else{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);openExt('https://www.bandlab.com/');st.textContent='Arquivo baixado. No BandLab, importe esse arquivo no estúdio.'}}
+ catch(x){st.textContent='Não consegui preparar o arquivo.'}bt.disabled=false}
+function edClose(){edStop();ed=null;const e=$('#edsheet');if(e)e.remove()}
+const edFx=()=>({hp:ed.hp,low:ed.low,mid:ed.mid,high:ed.high,comp:ed.comp,rev:ed.rev});
+function edPlay(){const ac=AC();if(!ac||!ed)return;edStop();const e=ed,buf=e.ab?e.orig:e.work,c=chain(ac,{fx:e.ab?{}:edFx()},ac.destination);c.fader.gain.value=1;
+ const src=ac.createBufferSource();src.buffer=buf;src.connect(c.input);const st=e.t0,du=Math.max(.05,e.t1-e.t0);src.start(0,st,du);e.src=src;e.playing=true;const ts=ac.currentTime;
+ src.onended=()=>{if(ed===e&&e.src===src)edStop()};$('#edp').textContent='■ Parar';
+ const f=()=>{if(ed!==e||!e.playing)return;const x=$('#edph');if(x)x.style.left=((st+Math.min(du,ac.currentTime-ts))/e.orig.duration*100)+'%';e.raf=requestAnimationFrame(f)};f()}
+function edPeaks(){const d=ed.work.getChannelData(0),n=160,step=Math.max(1,Math.floor(d.length/n)),pk=new Float32Array(n);for(let i=0;i<n;i++){let m=0;const a=i*step,z=Math.min(d.length,a+step),sk=Math.max(1,Math.floor((z-a)/200));for(let j=a;j<z;j+=sk){const y=Math.abs(d[j]);if(y>m)m=y}pk[i]=m}let mx2=0;for(const v of pk)if(v>mx2)mx2=v;ed.pk=pk;ed.pm=mx2||1}
+function edDraw(){const cv=$('#edw');if(!cv||!ed)return;const W=cv.width=(cv.clientWidth||320)*2,H=cv.height=180,x=cv.getContext('2d'),n=ed.pk.length,bw=W/n,D=ed.orig.duration,acc=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#F5C242';
+ x.clearRect(0,0,W,H);for(let i=0;i<n;i++){const t=i/n*D,inn=t>=ed.t0-.001&&t<=ed.t1,h2=Math.max(3,ed.pk[i]/ed.pm*(H-10));x.globalAlpha=inn?1:.22;x.fillStyle=acc;x.fillRect(i*bw+1,(H-h2)/2,Math.max(1,bw-2),h2)}x.globalAlpha=1}
+function edLabels(){const g=(k,v)=>{const e=$('#edl_'+k);if(e)e.textContent=v};g('low',(ed.low>0?'+':'')+ed.low+' dB');g('mid',(ed.mid>0?'+':'')+ed.mid+' dB');g('high',(ed.high>0?'+':'')+ed.high+' dB');g('rev',Math.round(ed.rev*100)+'%');g('t0',ed.t0.toFixed(1)+' s');g('t1',ed.t1.toFixed(1)+' s')}
+function edSync(){const q=(i,v)=>{const e=$(i);if(e)e.value=v};q('#edc',ed.comp);['low','mid','high'].forEach(k=>q('[data-e='+k+']',ed[k]));q('[data-e=rev]',Math.round(ed.rev*100));q('[data-e=t0]',ed.t0);q('[data-e=t1]',ed.t1);$('#edhp').checked=!!ed.hp;$('#ednorm').checked=!!ed.norm;edLabels();edDraw()}
+function openEd(s,a){const b=a&&mx.buf[a.id];if(!b)return toast('Esta faixa ainda não foi lida.');mixStop();edClose();
+ const fx=a.fx||{},k=instOf(a),[,nm,em]=instI(k);
+ ed={s,a,orig:b,work:b,ab:false,hp:!!fx.hp,low:fx.low||0,mid:fx.mid||0,high:fx.high||0,comp:fx.comp===true?2:(+fx.comp||0),rev:fx.rev||0,norm:false,t0:0,t1:b.duration,nr:false,src:null,playing:false};
+ const e=ed,sh=document.createElement('div');sh.id='edsheet';sh.className='sheet';
+ sh.innerHTML=`<div class="shin"><div class="row"><h2 style="flex:1;margin:0;font-size:19px">${em} ${esc(a.name)}</h2><button id="edx" style="flex:0 0 auto">✕ Fechar</button></div>
+ <p class="hint">Corrija esta faixa aqui. A original fica guardada: o resultado vira uma faixa nova na pista ${esc(nm)}.</p>
+ <div class="wv"><canvas id="edw"></canvas><div id="edph" class="ph"></div></div>
+ <div class="row"><button class="pri" id="edp">▶ Ouvir</button><button class="tg on" data-ab="0">Editada</button><button class="tg" data-ab="1">Original</button></div>
+ <details class="edc" open><summary>Tirar ruído</summary><p class="hint">Ele aprende o ruído nos trechos mais silenciosos e remove. Mais forte limpa mais, mas pode deixar a voz “abafada”.</p>
+ <div class="row"><select id="ednrs"><option value="1">Leve</option><option value="2" selected>Médio</option><option value="3">Forte</option></select><button id="ednr">Reduzir ruído</button></div><progress id="ednp" max="1" value="0" hidden style="width:100%"></progress><p class="hint" id="edns"></p></details>
+ <details class="edc" open><summary>Compressor</summary><p class="hint">Deixa o volume mais uniforme: segura os picos e levanta os trechos fracos.</p>
+ <select id="edc"><option value="0">Desligado</option><option value="1">Leve</option><option value="2">Médio</option><option value="3">Forte</option></select></details>
+ <details class="edc"><summary>Equalizador</summary><label class="chk"><input type="checkbox" id="edhp"> Cortar graves (tira vento e barulho de manuseio)</label>
+ <div class="row"><small class="hint" style="flex:0 0 52px;margin:0">Graves</small><input type="range" min="-12" max="12" step="1" data-e="low"><b class="pc" id="edl_low"></b></div>
+ <div class="row"><small class="hint" style="flex:0 0 52px;margin:0">Médios</small><input type="range" min="-12" max="12" step="1" data-e="mid"><b class="pc" id="edl_mid"></b></div>
+ <div class="row"><small class="hint" style="flex:0 0 52px;margin:0">Agudos</small><input type="range" min="-12" max="12" step="1" data-e="high"><b class="pc" id="edl_high"></b></div></details>
+ <details class="edc"><summary>Eco</summary><div class="row"><small class="hint" style="flex:0 0 52px;margin:0">Reverb</small><input type="range" min="0" max="60" step="1" data-e="rev"><b class="pc" id="edl_rev"></b></div></details>
+ <details class="edc"><summary>Volume e corte</summary><label class="chk"><input type="checkbox" id="ednorm"> Nivelar o volume da faixa</label>
+ <div class="row"><small class="hint" style="flex:0 0 52px;margin:0">Início</small><input type="range" min="0" max="${b.duration.toFixed(1)}" step="0.1" data-e="t0"><b class="pc" id="edl_t0"></b></div>
+ <div class="row"><small class="hint" style="flex:0 0 52px;margin:0">Fim</small><input type="range" min="0" max="${b.duration.toFixed(1)}" step="0.1" data-e="t1"><b class="pc" id="edl_t1"></b></div></details>
+ <div class="row"><button id="edsug">Ajuste sugerido: ${esc(nm.replace(' juntos','').toLowerCase())}</button><button id="edrs">Zerar tudo</button></div>
+ <button class="pri" id="edsv" style="width:100%;margin-top:12px">Salvar como nova faixa</button><button id="edbl" style="width:100%;margin-top:8px">Enviar para o BandLab</button><p class="hint" id="edst"></p></div>`;
+ document.body.appendChild(sh);edPeaks();edSync();
+ const re=()=>{if(e.playing)edPlay()};
+ $('#edx').onclick=edClose;$('#edp').onclick=()=>e.playing?edStop():edPlay();
+ sh.querySelectorAll('[data-ab]').forEach(x=>x.onclick=()=>{e.ab=x.dataset.ab==='1';sh.querySelectorAll('[data-ab]').forEach(y=>y.classList.toggle('on',y===x));re()});
+ $('#edc').onchange=ev=>{e.comp=+ev.target.value;re()};$('#edhp').onchange=ev=>{e.hp=ev.target.checked;re()};$('#ednorm').onchange=ev=>{e.norm=ev.target.checked};
+ sh.querySelectorAll('[data-e]').forEach(x=>{const kk=x.dataset.e;x.oninput=()=>{let v=+x.value;if(kk==='rev')v/=100;e[kk]=v;if(kk==='t0'&&e.t0>e.t1-.2){e.t0=e.t1-.2;x.value=e.t0}if(kk==='t1'&&e.t1<e.t0+.2){e.t1=e.t0+.2;x.value=e.t1}edLabels();if(kk[0]==='t')edDraw()};x.onchange=re});
+ $('#ednr').onclick=async()=>{const str=[.35,.6,.85][+$('#ednrs').value-1],bar=$('#ednp'),bt=$('#ednr');bt.disabled=true;bar.hidden=false;bar.value=0;edStop();
+  try{const ac=AC(),nb=ac.createBuffer(b.numberOfChannels,b.length,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++){const out=await denoise(b.getChannelData(c),str,v=>{if(ed===e)bar.value=(c+v)/b.numberOfChannels});nb.copyToChannel(out,c)}
+   if(ed!==e)return;e.work=nb;e.nr=true;edPeaks();edDraw();$('#edns').textContent='Ruído reduzido. Compare tocando Editada e Original.';bt.textContent='Refazer a partir da original'}
+  catch(er){if(ed===e)$('#edns').textContent='Não consegui reduzir o ruído desta faixa.'}
+  if(ed===e){bt.disabled=false;bar.hidden=true}};
+ $('#edsug').onclick=()=>{const P=PRESET[k]||{};e.hp=!!P.hp;e.low=P.low||0;e.mid=P.mid||0;e.high=P.high||0;e.comp=P.comp?2:0;e.rev=P.rev||0;edSync();re();toast('Ajuste de '+nm.replace(' juntos','').toLowerCase()+' aplicado')};
+ $('#edrs').onclick=()=>{e.hp=false;e.low=e.mid=e.high=0;e.comp=0;e.rev=0;e.norm=false;e.t0=0;e.t1=e.orig.duration;e.work=e.orig;e.nr=false;$('#ednr').textContent='Reduzir ruído';$('#edns').textContent='';edPeaks();edSync();re()};
+ $('#edbl').onclick=edBand;
+ $('#edsv').onclick=async()=>{const bt=$('#edsv'),st=$('#edst');bt.disabled=true;edStop();st.textContent='Processando…';
+  try{const r=await edRender(e);
+   s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'editada',inst:k,name:a.name+' (estúdio)',blob:wav(r),vol:1,off:a.off||0});save(s);put(s);
+   edClose();toast('Faixa nova criada. A original foi mantida.');if(cur===s&&tab==='audio')audioTab($('#pane'))}
+  catch(er){st.textContent='Não consegui salvar esta edição.';bt.disabled=false}}}
 const fxOpen=new Set();
 function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
- const trk=a=>{const fx=a.fx||{},id=a.id;return `<div class="au"><div class="row"><input class="nm" data-n="${id}" value="${esc(a.name)}" aria-label="Nome da faixa"><button data-x="${id}" aria-label="Remover faixa" style="flex:0 0 auto">✕</button></div><div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Pista</small><select class="isel" data-in="${id}" aria-label="Instrumento da faixa">${INSTX.map(i=>`<option value="${i[0]}" ${instOf(a)===i[0]?'selected':''}>${i[2]} ${i[1]}</option>`).join('')}</select></div>
+ const trk=a=>{const fx=a.fx||{},id=a.id;return `<div class="au"><div class="row"><input class="nm" data-n="${id}" value="${esc(a.name)}" aria-label="Nome da faixa"><button data-x="${id}" aria-label="Remover faixa" style="flex:0 0 auto">✕</button></div><div class="row"><button data-ls="${id}">▶ Ouvir</button><button class="pri" data-ed="${id}">🎚 Abrir estúdio</button></div><div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Pista</small><select class="isel" data-in="${id}" aria-label="Instrumento da faixa">${INSTX.map(i=>`<option value="${i[0]}" ${instOf(a)===i[0]?'selected':''}>${i[2]} ${i[1]}</option>`).join('')}</select></div>
  ${a.blob&&!mx.bad[id]?'':a.cloud&&!a.blob?'<p class="hint">Baixando da nuvem…</p>':'<p class="hint" style="color:var(--danger)">Não consegui ler este áudio.</p>'}
  <div class="row"><button class="tg ${a.mute?'on':''}" data-m="${id}" style="flex:0 0 auto">Mudo</button><button class="tg ${a.solo?'on':''}" data-so="${id}" style="flex:0 0 auto">Solo</button><input type="range" min="0" max="150" value="${Math.round((a.vol==null?1:a.vol)*100)}" data-v="${id}" aria-label="Volume"><b class="pc" id="pv_${id}">${Math.round((a.vol==null?1:a.vol)*100)}%</b></div>
  <div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Atraso</small><input type="range" min="-500" max="500" step="5" value="${a.off||0}" data-o="${id}" aria-label="Atraso em milissegundos"><b class="pc" id="po_${id}">${a.off||0} ms</b></div>
@@ -471,7 +547,7 @@ function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
   <p class="hint">O redutor aprende o ruído nos trechos mais silenciosos e cria uma faixa nova, limpa. A original fica guardada.</p>
   <div class="row"><button data-fa="${id}" style="flex:1.4">Ajuste sugerido: ${instI(instOf(a))[1].replace(' juntos','').toLowerCase()}</button><button data-fz="${id}" style="flex:1">Zerar efeitos</button></div></details></div>`};
  const rcn=rec&&rec.state==='recording';
- const lane=k=>{const [,nm,em,col]=instI(k),L=s.audios.filter(a=>instOf(a)===k),me=rcn&&recTipo===k;return `<section class="lane" style="--lc:${col}"><div class="lh"><span class="ei">${em}</span><b>${nm}</b><small>${L.length} ${L.length===1?'faixa':'faixas'}</small><span style="flex:1"></span><button class="${me?'rec':''}" data-lr="${k}">${me?'■ Parar':'● Gravar'}</button><label class="fb mini">+ Arquivo<input type="file" accept="audio/*" multiple hidden data-lf="${k}"></label></div>${L.map(trk).join('')}</section>`};
+ const lane=k=>{const [,nm,em,col]=instI(k),L=s.audios.filter(a=>instOf(a)===k),me=rcn&&recTipo===k;return `<section class="lane" style="--lc:${col}"><div class="lh"><span class="ei">${em}</span><b>${nm}</b><small>${L.length} ${L.length===1?'faixa':'faixas'}</small><span style="flex:1"></span>${L.length?`<button data-ls="${L.map(a=>a.id).join(',')}" data-lane="1">▶ Ouvir pista</button>`:''}<button class="${me?'rec':''}" data-lr="${k}">${me?'■ Parar':'● Gravar'}</button><label class="fb mini">+ Arquivo<input type="file" accept="audio/*" multiple hidden data-lf="${k}"></label></div>${L.map(trk).join('')}</section>`};
  const tr=INST.map(i=>lane(i[0])).join('')+['mix','outro'].filter(k=>s.audios.some(a=>instOf(a)===k)).map(lane).join('');
  b.innerHTML=(s.audios.length?`<div class="card2"><div class="row"><button class="pri" id="mxp" style="flex:1">▶ Tocar tudo</button><button id="mxst" aria-label="Parar" style="flex:0 0 auto">■</button><span id="mxt" class="tone" style="min-width:96px">0:00 / ${fmt(mx.dur)}</span></div>
  <input type="range" id="mxs" min="0" max="${mx.dur||1}" step="0.01" value="${mixPos()}" aria-label="Posição" style="margin-top:8px">
@@ -482,12 +558,14 @@ function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
  const LA=id=>s.audios.find(x=>x.id===id);
  b.querySelectorAll('[data-lr]').forEach(i=>i.onclick=()=>{if(rec&&rec.state==='recording'){toggleRec();return}recTipo=i.dataset.lr;toggleRec()});
  b.querySelectorAll('[data-lf]').forEach(i=>i.onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',inst:i.dataset.lf,name:f.name,blob:f,vol:1}));save(s);put(s);mixStop();audioTab($('#pane'))});
+b.querySelectorAll('[data-ls]').forEach(i=>i.onclick=()=>{const ids=new Set(i.dataset.ls.split(','));const on=mx.playing&&mx.only&&ids.size===mx.only.size&&[...ids].every(x=>mx.only.has(x));if(on){mixStop();return}if(![...ids].some(x=>mx.buf[x]))return toast('Esta faixa ainda não foi lida.');mixStart(s,0,ids)});
+ b.querySelectorAll('[data-ed]').forEach(i=>i.onclick=()=>openEd(s,LA(i.dataset.ed)));
  b.querySelectorAll('[data-in]').forEach(i=>i.onchange=()=>{LA(i.dataset.in).inst=i.value;save(s);put(s);mixUI(s)});
  b.querySelectorAll('[data-fa]').forEach(i=>i.onclick=()=>{const a=LA(i.dataset.fa);a.fx={...PRESET[instOf(a)]};save(s);mixUI(s);if(mx.playing)mixStart(s,mixPos());toast('Ajuste de '+instI(instOf(a))[1].toLowerCase()+' aplicado')});
  if(!s.audios.length)return;uiMix();
  const upd=()=>{if(mx.playing)s.audios.forEach(a=>{if(mx.gn[a.id])mx.gn[a.id].gain.value=eff(s,a)})};
  const rs=()=>{if(mx.playing)mixStart(s,mixPos())};
- $('#mxp').onclick=()=>{if(mx.playing){mixPause();return}if(!s.audios.some(a=>mx.buf[a.id]))return toast('Nenhuma faixa pôde ser lida.');mixStart(s,mx.pos>=mx.dur?0:mx.pos)};
+ $('#mxp').onclick=()=>{if(mx.playing){mixPause();return}if(!s.audios.some(a=>mx.buf[a.id]))return toast('Nenhuma faixa pôde ser lida.');mixStart(s,mx.pos>=mx.dur?0:mx.pos,null)};
  $('#mxst').onclick=mixStop;
  $('#mxs').oninput=e=>{const t=$('#mxt');if(t)t.textContent=fmt(+e.target.value)+' / '+fmt(mx.dur)};
  $('#mxs').onchange=e=>{const v=+e.target.value;if(mx.playing)mixStart(s,v);else mx.pos=v;uiMix()};
@@ -516,7 +594,7 @@ async function toggleRec(){const s=cur;
  const tipo=recTipo,useBk=recBk&&tipo!=='mix'&&s.audios.some(a=>a.blob);
  mixStop();if(useBk){AC();await loadBufs(s)}
  let st;
- try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:useBk,noiseSuppression:recNS&&(tipo==='voz'||tipo==='mix'),autoGainControl:false}})}
+ try{const au={echoCancellation:useBk,noiseSuppression:recNS&&(tipo==='voz'||tipo==='mix'),autoGainControl:false};if(recDev)au.deviceId={exact:recDev};try{st=await navigator.mediaDevices.getUserMedia({audio:au})}catch(e0){if(!recDev)throw e0;delete au.deviceId;st=await navigator.mediaDevices.getUserMedia({audio:au});toast('Entrada escolhida não está disponível. Usei o microfone do celular.')}}
  catch(e){toast('Sem acesso ao microfone. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click();return}
  try{
   const ch=[],mr=new MediaRecorder(st);rec=mr;
@@ -528,7 +606,7 @@ async function toggleRec(){const s=cur;
    if(cur===s)refRec()};
   mr.start(1000);meterStart(st);
   const okL=(tipo==='voz'||tipo==='mix')?startLetra(s):false;
-  if(useBk)mixStart(s,0);
+  if(useBk)mixStart(s,0,null);
   refRec();const g=$('#gst');
   if(g)g.textContent=!(tipo==='voz'||tipo==='mix')?'Gravando '+instI(tipo)[1].toLowerCase()+'…':(okL?'Gravando… o que você cantar vai aparecendo e fica salvo no rascunho.':'Gravando. Este aparelho não escreve a letra sozinho.');
  }catch(e){st.getTracks().forEach(t=>t.stop());rec=null;toast('Não consegui gravar neste aparelho. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click()}}

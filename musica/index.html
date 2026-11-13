@@ -194,7 +194,7 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .dcl{position:absolute;top:3px;height:56px;border-radius:8px;background:color-mix(in srgb,var(--lc) 20%,var(--card));border:1px solid var(--lc);overflow:hidden;touch-action:none;box-sizing:border-box;cursor:grab}.dcl.sel{box-shadow:0 0 0 2px var(--ink)}.dcl canvas{display:block}
 #drec{position:absolute;top:3px;height:56px;border-radius:8px;background:color-mix(in srgb,var(--rec) 35%,transparent);border:1px solid var(--rec);box-sizing:border-box}
 .dph{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);z-index:3;pointer-events:none}
-.dsel .pc{min-width:48px}.dsel input[type=range]{min-width:0}.dsel{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;gap:8px;min-height:64px}
+.dsel{max-height:42vh;overflow:auto}.dsel select{flex:1;min-width:0}.dsel .pc{min-width:48px}.dsel input[type=range]{min-width:0}.dsel{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;gap:8px;min-height:64px}
 .nav button[data-t=audio] svg{background:var(--hl);color:var(--hlT);border-radius:12px;padding:4px;box-sizing:content-box;width:20px;height:20px}.nav button[data-t=audio]{color:var(--ink);font-weight:700}
 .hero2{display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:12px;border-radius:18px;background:linear-gradient(135deg,#050505,#171106);color:#F6F1E4;border:1px solid #3a2f10}.hero2 b{display:block;font-size:19px;color:#F5C242}.hero2 small{display:block;margin-top:4px;color:#CFC6B0;line-height:1.35}.hero2 div{flex:1;min-width:0}.hero2 button{flex:0 0 auto;padding:12px 16px;background:#F5C242;color:#2A1A00;border-color:#F5C242;font-weight:700}
 .kar{max-height:34vh;overflow:auto;margin:10px 0;padding:14px 16px;border-radius:18px;background:linear-gradient(160deg,#050505,#171106);border:1px solid #3a2f10;scroll-behavior:smooth}
@@ -571,6 +571,35 @@ function dawUI(){if(!daw)return;const pl=$('#dplay'),rb=$('#drecb'),nm=instI(daw
  if(rb){rb.textContent=daw.counting?'Contagem…':daw.recording?'■ Parar':'● Gravar '+nm.replace(' juntos','').toLowerCase();rb.classList.toggle('rec',!!daw.recording)}
  const e=$('#daw');if(e){e.querySelectorAll('[data-armk]').forEach(b=>b.classList.toggle('on',b.dataset.armk===daw.arm));const m=$('#dmet'),c=$('#dcnt');if(m)m.classList.toggle('on',daw.met);if(c)c.classList.toggle('on',daw.count)}}
 function dawGains(){const s=daw.s;s.audios.forEach(x=>{if(mx.gn[x.id]&&!mx.only)mx.gn[x.id].gain.value=eff(s,x)})}
+
+/* Remix automático: alinha as faixas no tempo (como o sync do BandLab) e equilibra os volumes */
+const ENVR=100;
+function dawEnv(a,len){const b=mx.buf[a.id];if(!b)return null;const sr=b.sampleRate,hop=Math.round(sr/ENVR),n=Math.floor(b.length/hop),d=b.getChannelData(0),e=new Float32Array(len),o=Math.round((a.off||0)/1000*ENVR);
+ const r=new Float32Array(n);for(let i=0;i<n;i++){let q=0;const s0=i*hop;for(let j=0;j<hop;j+=2){const y=d[s0+j];q+=y*y}r[i]=Math.sqrt(q/(hop/2))}
+ // realça o ritmo: tira a média móvel (50 quadros) e deixa só os picos de ataque
+ let acc=0;const W=50,m=new Float32Array(n);for(let i=0;i<n;i++){acc+=r[i];if(i>=W)acc-=r[i-W];m[i]=acc/Math.min(i+1,W)}
+ for(let i=0;i<n;i++){const k=i+o;if(k>=0&&k<len){const v=r[i]-m[i];e[k]=v>0?v:0}}return e}
+function dawLag(ref,x,range){let best=0,bl=0,nr=0,nx=0;for(let i=0;i<ref.length;i++){nr+=ref[i]*ref[i];nx+=x[i]*x[i]}if(!nr||!nx)return{lag:0,sc:0};const nn=Math.sqrt(nr*nx);
+ for(let L=-range;L<=range;L++){let s=0;const a0=Math.max(0,L),z=Math.min(ref.length,x.length+L);for(let i=a0;i<z;i++)s+=ref[i]*x[i-L];s/=nn;if(s>best){best=s;bl=L}}return{lag:bl,sc:best}}
+const dawLen=s=>Math.ceil((durOf(s)+10)*ENVR);
+function dawDbRms(a){const b=mx.buf[a.id];if(!b)return null;const d=b.getChannelData(0),hop=Math.round(b.sampleRate/20),f=[];for(let i=0;i+hop<=d.length;i+=hop){let q=0;for(let j=0;j<hop;j+=3)q+=d[i+j]*d[i+j];f.push(q/(hop/3))}const mx2=Math.max(...f);if(!mx2)return null;const ac=f.filter(v=>v>mx2*.05);return 10*Math.log10(ac.reduce((s,v)=>s+v,0)/ac.length)}
+async function dawAlign(mode){const d=daw,s=d.s;if(d.recording)return;const T=s.audios.filter(a=>mx.buf[a.id]);if(T.length<2)return toast('Precisa de pelo menos duas faixas.');
+ mixStop();toast('Analisando o tempo das faixas…');await new Promise(r=>setTimeout(r,60));const len=dawLen(s)+ENVR*8,E=new Map(T.map(a=>[a.id,dawEnv(a,len)]));
+ let moves=[];const sel=mode==='one'?T.find(a=>a.id===d.sel):null;if(mode==='one'&&!sel)return toast('Toque numa faixa primeiro.');
+ if(mode==='one'){const ref=new Float32Array(len);T.forEach(a=>{if(a!==sel&&!a.mute){const e=E.get(a.id);for(let i=0;i<len;i++)ref[i]+=e[i]}});const r=dawLag(ref,E.get(sel.id),ENVR*8);moves.push([sel,r])}
+ else{const R=T.find(a=>instOf(a)==='bateria')||T[0],ref=E.get(R.id);T.forEach(a=>{if(a!==R)moves.push([a,dawLag(ref,E.get(a.id),ENVR*8)])})}
+ const ok=moves.filter(([a,r])=>r.sc>=.1&&r.lag!==0);dawSnap();let txt=[];
+ ok.forEach(([a,r])=>{a.off=Math.round((a.off||0)+r.lag*1000/ENVR);txt.push(a.name+' '+(r.lag>0?'+':'')+Math.round(r.lag*1000/ENVR)+' ms')});
+ const mn=Math.min(0,...s.audios.map(a=>a.off||0));if(mn<0)s.audios.forEach(a=>{a.off=Math.round((a.off||0)-mn)});
+ if(!ok.length){d.undo.pop();toast(moves.some(([a,r])=>r.sc>=.1)?'As faixas já estão no mesmo tempo.':'Não achei ritmo parecido entre as faixas para alinhar.');return false}
+ save(s);put(s);dawRender();toast('Alinhadas: '+txt.join(', '));return true}
+async function dawRemix(){const d=daw,s=d.s;if(d.recording)return;if(s.audios.filter(a=>mx.buf[a.id]).length<2)return toast('Precisa de pelo menos duas faixas.');
+ await dawAlign('all');dawSnap();const tg=-20;let n=0;s.audios.forEach(a=>{const db=dawDbRms(a);if(db==null)return;const bonus=instOf(a)==='voz'?2:0;a.vol=Math.max(.3,Math.min(1.5,Math.pow(10,(tg+bonus-db)/20)));n++});
+ save(s);put(s);dawRender();toast('Remix pronto: tempo alinhado e volumes equilibrados.')}
+async function dawNoise(){const d=daw,s=d.s,a=s.audios.find(x=>x.id===d.sel),b=a&&mx.buf[a.id];if(!b)return;const bt=$('#dsn');if(bt){bt.disabled=true;bt.textContent='Limpando…'}mixStop();
+ try{const ac=AC(),nb=ac.createBuffer(b.numberOfChannels,b.length,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++){const out=await denoise(b.getChannelData(c),.6,v=>{if(bt&&daw===d)bt.textContent='Limpando '+Math.round((c+v)/b.numberOfChannels*100)+'%'});nb.copyToChannel(out,c)}
+  dawSnap();const n={...a,id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'limpo',name:a.name+' (sem ruído)',blob:wav(nb)};delete n._p;s.audios.splice(s.audios.indexOf(a)+1,0,n);d.sel=n.id;save(s);put(s);await loadBufs(s);dawRender();toast('Faixa sem ruído criada. A original foi mantida.')}
+ catch(e){toast('Não consegui limpar o ruído desta faixa.');if(bt){bt.disabled=false;bt.textContent='Tirar ruído'}}}
 function dawSnap(){const d=daw;d.undo=d.undo||[];d.undo.push(d.s.audios.map(a=>({...a})));if(d.undo.length>20)d.undo.shift()}
 function dawUndo(){const d=daw;if(!d||d.recording||!d.undo||!d.undo.length)return toast('Nada para desfazer.');mixStop();d.s.audios=d.undo.pop();d.sel=null;save(d.s);put(d.s);loadBufs(d.s).then(()=>{dawRender();toast('Desfeito')})}
 const dawSlice=(b,t0,t1)=>{const ac=AC(),sr=b.sampleRate,a=Math.max(0,Math.round(t0*sr)),z=Math.min(b.length,Math.round(t1*sr)),o=ac.createBuffer(b.numberOfChannels,Math.max(1,z-a),sr);for(let c=0;c<b.numberOfChannels;c++)o.copyToChannel(b.getChannelData(c).subarray(a,z),c);return o};
@@ -586,9 +615,11 @@ function dawSelUI(){const e=$('#dsel');if(!e||!daw)return;const s=daw.s,a=s.audi
  const em=instI(instOf(a))[2],vv=Math.round((a.vol==null?1:a.vol)*100);
  e.innerHTML=`<div class="row"><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${em} ${esc(a.name)}</b><button id="dse" class="pri" style="flex:0 0 auto">🎚 Estúdio da faixa</button><button id="dsx" style="flex:0 0 auto" aria-label="Remover faixa">✕</button></div>
  <div class="row"><button id="dsp">✂ Dividir no cursor</button><button id="ddp">⧉ Duplicar</button></div>
+ <div class="row"><small class="hint" style="flex:0 0 74px;margin:0">Compressor</small><select id="dsc" aria-label="Compressor"><option value="0">Desligado</option><option value="1">Leve</option><option value="2">Médio</option><option value="3">Forte</option></select></div>
+ <div class="row"><button id="dsn">Tirar ruído</button><button id="dsa">⏱ Alinhar no tempo</button></div>
  <div class="row"><small class="hint" style="flex:0 0 50px;margin:0">Volume</small><input type="range" min="0" max="150" value="${vv}" id="dsv"><b class="pc" id="dsvl">${vv}%</b></div>
  <div class="row"><small class="hint" style="flex:0 0 50px;margin:0">Início</small><button data-nd="-10" style="flex:0 0 auto">−10 ms</button><b class="pc" id="dso" style="min-width:90px;text-align:center">${a.off||0} ms</b><button data-nd="10" style="flex:0 0 auto">+10 ms</button></div>`;
- $('#dse').onclick=()=>openEd(s,a);$('#dsp').onclick=dawSplit;$('#ddp').onclick=dawDup;
+ $('#dse').onclick=()=>openEd(s,a);$('#dsp').onclick=dawSplit;$('#ddp').onclick=dawDup;$('#dsn').onclick=dawNoise;$('#dsa').onclick=()=>dawAlign('one');const cs=$('#dsc');cs.value=a.fx&&a.fx.comp?(a.fx.comp===true?2:a.fx.comp):0;cs.onchange=()=>{a.fx=a.fx||{};a.fx.comp=+cs.value||false;save(s);put(s);if(mx.playing)mixStart(s,mixPos(),null);toast(cs.value==='0'?'Compressor desligado':'Compressor ligado')};
  $('#dsx').onclick=()=>twice($('#dsx'),()=>{mixStop();dawSnap();s.audios=s.audios.filter(x=>x!==a);delete mx.buf[a.id];delBlob(a.id);save(s);put(s);daw.sel=null;toast('Faixa removida');dawRender();dawUI()});
  $('#dsv').oninput=ev=>{a.vol=+ev.target.value/100;$('#dsvl').textContent=ev.target.value+'%';dawGains()};$('#dsv').onchange=()=>{save(s);put(s)};
  e.querySelectorAll('[data-nd]').forEach(b=>b.onclick=()=>{a.off=Math.max(0,(a.off||0)+(+b.dataset.nd));$('#dso').textContent=a.off+' ms';const c=document.querySelector('#daw .dcl[data-id="'+a.id+'"]');if(c)c.style.left=(a.off/1000*daw.pps)+'px';save(s);put(s);if(mx.playing)mixStart(s,mixPos(),null)})}
@@ -639,7 +670,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  <div class="dt"><div class="row" style="gap:8px;flex-wrap:nowrap"><button id="dhome" aria-label="Voltar ao início" style="flex:0 0 auto">⏮</button><button id="dplay" class="pri" style="flex:0 0 56px" aria-label="Tocar">▶</button><button id="drecb" style="flex:1;font-weight:700">● Gravar</button></div>
  <div class="row" style="gap:8px;align-items:center"><b id="dtm" class="pc" style="min-width:0;flex:1;text-align:left">0:00.0 / 0:00.0</b><div class="lvl" id="dvu" aria-label="Nível do microfone" style="flex:0 0 64px"><i></i></div><button id="dzo" style="flex:0 0 auto;padding:6px 14px" aria-label="Menos zoom">−</button><button id="dzi" style="flex:0 0 auto;padding:6px 14px" aria-label="Mais zoom">+</button></div>
  <div class="row" style="gap:6px;flex-wrap:nowrap"><button class="tg" id="dmet">Metrônomo</button><button class="tg on" id="dcnt">Contagem</button><input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM" style="flex:0 0 64px;padding:8px"><small class="hint" style="margin:0">BPM</small></div>
- <div class="row" style="gap:6px;flex-wrap:nowrap"><button id="dun" style="flex:0 0 auto">↶ Desfazer</button><button class="tg" id="dlp" style="flex:0 0 auto">🔁 Repetir</button><small class="hint" style="margin:0">Use fones ao gravar por cima.</small></div></div>
+ <div class="row" style="gap:6px;flex-wrap:nowrap"><button id="dun" style="flex:0 0 auto">↶ Desfazer</button><button class="tg" id="dlp" style="flex:0 0 auto">🔁 Repetir</button><button class="pri" id="drx" style="flex:1">✨ Remix auto</button></div><p class="hint" style="margin:0">Remix auto alinha as faixas no tempo e equilibra os volumes. Use fones ao gravar.</p></div>
  <div class="dbody" id="dbody"><div class="dleft" id="dleft"></div><div class="dright" id="dscr"><div class="dinner" id="dinner"></div></div></div>
  <div class="dsel" id="dsel"></div>`;
  document.body.appendChild(e);
@@ -648,7 +679,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  $('#dmet').onclick=()=>{daw.met=!daw.met;dawMet(daw.met);dawUI()};$('#dcnt').onclick=()=>{daw.count=!daw.count;dawUI()};
  $('#dbpm').onchange=ev=>{s.bpm=Math.max(40,Math.min(220,+ev.target.value||90));ev.target.value=s.bpm;save(s);put(s);if(mx.playing&&daw.met)dawMet(true)};
  const zoom=f=>{const sc=$('#dscr'),old=daw.pps;daw.pps=Math.max(15,Math.min(120,Math.round(old*f)));const r=daw.pps/old;dawRender();sc.scrollLeft=sc.scrollLeft*r};
- $('#dun').onclick=dawUndo;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
+ $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
  $('#dzo').onclick=()=>zoom(.7);$('#dzi').onclick=()=>zoom(1.4);
  dawRender();dawLoop()}
 const fxOpen=new Set();

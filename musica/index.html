@@ -195,8 +195,9 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 #drec{position:absolute;top:3px;height:56px;border-radius:8px;background:color-mix(in srgb,var(--rec) 35%,transparent);border:1px solid var(--rec);box-sizing:border-box}
 .dph{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);z-index:3;pointer-events:none}
 .dsel{max-height:42vh;overflow:auto}.dsel select{flex:1;min-width:0}.dsel .pc{min-width:48px}.dsel input[type=range]{min-width:0}.dsel{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;gap:8px;min-height:64px}
-.nav button[data-t=audio] svg{background:var(--hl);color:var(--hlT);border-radius:12px;padding:4px;box-sizing:content-box;width:20px;height:20px}.nav button[data-t=audio]{color:var(--ink);font-weight:700}
-.hero2{display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:12px;border-radius:18px;background:linear-gradient(135deg,#050505,#171106);color:#F6F1E4;border:1px solid #3a2f10}.hero2 b{display:block;font-size:19px;color:#F5C242}.hero2 small{display:block;margin-top:4px;color:#CFC6B0;line-height:1.35}.hero2 div{flex:1;min-width:0}.hero2 button{flex:0 0 auto;padding:12px 16px;background:#F5C242;color:#2A1A00;border-color:#F5C242;font-weight:700}
+.hn button[data-h=mix] svg{background:var(--hl);color:var(--hlT);border-radius:10px;padding:2px;box-sizing:content-box;width:19px;height:19px}.hn button[data-h=mix]{color:var(--ink);font-weight:700}
+.nav button[data-t=audio] svg{background:var(--hl);color:var(--hlT);border-radius:10px;padding:2px;box-sizing:content-box;width:19px;height:19px}.nav button[data-t=audio]{color:var(--ink);font-weight:700}
+.mixhero{display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:12px;border-radius:18px;background:linear-gradient(135deg,#050505,#171106);color:#F6F1E4;border:1px solid #3a2f10}.mixhero b{display:block;font-size:19px;color:#F5C242}.mixhero small{display:block;margin-top:4px;color:#CFC6B0;line-height:1.35}.mixhero div{flex:1;min-width:0}.mixhero button{flex:0 0 auto;padding:12px 16px;background:#F5C242;color:#2A1A00;border-color:#F5C242;font-weight:700}
 .kar{max-height:34vh;overflow:auto;margin:10px 0;padding:14px 16px;border-radius:18px;background:linear-gradient(160deg,#050505,#171106);border:1px solid #3a2f10;scroll-behavior:smooth}
 .kl{font-size:24px;line-height:1.45;font-weight:600;margin:2px 0}.kw{color:#7a7260;cursor:pointer;transition:color .15s,transform .15s;display:inline-block}.kw.dn{color:#F5C242}.kw.cu{color:#fff;transform:scale(1.08);text-shadow:0 0 14px #F5C242;border-bottom:3px solid #F5C242}
 .khd{margin:12px 0 4px;font-size:13px;font-weight:700;color:#A8903E;letter-spacing:.04em}.ksp{height:12px}
@@ -280,6 +281,9 @@ const faseNome=f=>(FASES.find(x=>x[0]===f)||[,''])[1];
 const hello=()=>{const h=new Date().getHours();return h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'};
 const ago=t=>{const m=Math.round((Date.now()-t)/60000);return m<2?'agora há pouco':m<60?'há '+m+' min':m<1440?'há '+Math.round(m/60)+' h':m<2880?'ontem':'há '+Math.round(m/1440)+' dias'};
 function quickIdea(){const d=new Date(),s=newSong('Ideia '+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toTimeString().slice(0,5),'');s.fase='ideia';s.auto=true;songs.push(s);put(s);cur=s;tab='estudio';shift=0;edit=false;song();setTimeout(()=>{try{studioRec()}catch(e){}},60)}
+function goMixer(){let s=songs.slice().sort((a,b)=>(b.upd||0)-(a.upd||0))[0];
+ if(!s){s=newSong('Nova música','');s.fase='compondo';songs.push(s);put(s)}
+ cur=s;tab='audio';shift=0;edit=false;song();openDaw(s)}
 function newBlank(){cur=newSong('','');cur.fase='compondo';songs.push(cur);put(cur);tab='cifra';shift=0;edit=true;song()}
 function openSong(id,t){cur=songs.find(s=>s.id===id);tab=t||'cifra';shift=0;edit=!(cur.cifra||'').trim();song()}
 const songRow=s=>`<button class="song" data-id="${s.id}"><span class="key">${esc(s.key||'C')}${s.mode==='m'?'m':''}</span><span class="info"><b>${esc(s.title)||'Sem título'}</b><small>${esc(s.artist)||'Sem artista'}${s.fase?' · <i class="fz fz-'+s.fase+'"></i>'+faseNome(s.fase):''}</small></span>${s.audios.length?`<span class="tag">${s.audios.length} ${s.audios.length===1?'faixa':'faixas'}</span>`:''}</button>`;
@@ -306,8 +310,8 @@ function list(){cur=null;mixStop();if(typeof edClose==='function')edClose();if(t
  app.innerHTML=`<header class="hero2"><div class="row"><h1 class="brand">${MARK}Clan music</h1>${inst?'<button id="in" class="gh">Instalar</button>':''}<button class="ic gh" id="cl0" aria-label="Nuvem">${IC.cloud}<span id="cld" class="dot ${cl.on?'on':''}"></span></button><button class="ic gh" id="im0" aria-label="Trazer minhas músicas">${IC.imp}</button><button class="ic gh" id="bk" aria-label="Backup e restauração">${IC.bk}</button></div>
  <p class="hi">${hv==='ini'?hello()+', compositor.':hv==='lib'?'Suas músicas':hv==='rep'?'Repertório':'Ouvir'}</p><div class="stats"><span><b>${my.length}</b> ${my.length===1?'música':'músicas'}</span><span><b>${nt}</b> ${nt===1?'gravação':'gravações'}</span><span><b>${S.length}</b> no set</span></div></header>
  ${body}
- <nav class="nav hn" aria-label="Seções">${[['ini','Início',IC.home],['lib','Músicas',IC.notes],['rep','Repertório',IC.rep],['play','Tocar',IC.play]].map(t=>`<button data-h="${t[0]}" class="${hv===t[0]?'on':''}" aria-label="${t[1]}">${t[2]}<span>${t[1]}</span></button>`).join('')}</nav>`;
- document.querySelectorAll('.hn button').forEach(b=>b.onclick=()=>{hv=b.dataset.h;q='';list();window.scrollTo(0,0)});$('#im0').onclick=imp;$('#cl0').onclick=nuvem;$('#bk').onclick=backup;if($('#bk2'))$('#bk2').onclick=backup;if(inst)$('#in').onclick=()=>{inst.prompt();inst=null;list()};
+ <nav class="nav hn" aria-label="Seções">${[['ini','Início',IC.home],['lib','Músicas',IC.notes],['mix','Mixer',IC.mixr],['rep','Repertório',IC.rep],['play','Tocar',IC.play]].map(t=>`<button data-h="${t[0]}" class="${hv===t[0]?'on':''}" aria-label="${t[1]}">${t[2]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+ document.querySelectorAll('.hn button').forEach(b=>b.onclick=()=>{if(b.dataset.h==='mix'){goMixer();return}hv=b.dataset.h;q='';list();window.scrollTo(0,0)});$('#im0').onclick=imp;$('#cl0').onclick=nuvem;$('#bk').onclick=backup;if($('#bk2'))$('#bk2').onclick=backup;if(inst)$('#in').onclick=()=>{inst.prompt();inst=null;list()};
  if(hv==='play'){playBind();return}
  if(hv==='rep'){repBind();return}
  if(hv==='ini'){bindRows();document.querySelectorAll('.cont .big,.cont .pri').forEach(b=>b.onclick=()=>openSong(b.dataset.id));const c=[...my].sort((a,b)=>b.upd-a.upd)[0];if($('#cE'))$('#cE').onclick=()=>openSong(c.id,'estudio');if($('#cL'))$('#cL').onclick=()=>openSong(c.id,'letra');
@@ -459,7 +463,7 @@ async function nrTrack(s,a,strength){const b=mx.buf[a.id];if(!b){toast('Esta fai
  catch(e){toast('Não consegui reduzir o ruído desta faixa.');if(bt)bt.disabled=false;if(bar)bar.hidden=true}}
 
 function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
- p.innerHTML=`<div class="hero2"><div><b>🎛 Mixer estúdio</b><small>${s.audios.length?s.audios.length+(s.audios.length===1?' faixa':' faixas'):'Nenhuma faixa ainda'}. Pistas de voz, violão, baixo, teclado e bateria numa linha do tempo.</small></div><button class="pri" id="dawb">Entrar no estúdio</button></div><div class="card2"><select id="tp" aria-label="O que vou gravar">${tipoOpts()}</select>
+ p.innerHTML=`<div class="mixhero"><div><b>🎛 Mixer estúdio</b><small>${s.audios.length?s.audios.length+(s.audios.length===1?' faixa':' faixas'):'Nenhuma faixa ainda'}. Pistas de voz, violão, baixo, teclado e bateria numa linha do tempo.</small></div><button class="pri" id="dawb">Entrar no estúdio</button></div><div class="card2"><select id="tp" aria-label="O que vou gravar">${tipoOpts()}</select>
  <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
  <label class="chk"><input type="checkbox" id="nsc" ${recNS?'checked':''}> Filtro de ruído do celular ao gravar</label>
  <div class="row"><label class="fb">Adicionar arquivo<input id="fl" type="file" accept="audio/*" multiple hidden></label><button id="rc" class="${rc?'rec':''}" style="flex:1">${rc?'■ Parar gravação':'● Gravar'}</button></div>

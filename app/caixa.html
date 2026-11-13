@@ -36,6 +36,25 @@ pre{white-space:pre-wrap;font:14px/1.55 ui-monospace,Menlo,Consolas,monospace;ba
 .hint{color:var(--mute);font-size:14px}
 #toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.on{opacity:1}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:18px;text-align:left;min-height:112px;box-shadow:0 1px 2px rgba(16,24,40,.06);transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden}
+.tile::after{content:"";position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;background:var(--tc);opacity:.08}
+.tile:active{transform:scale(.97)}
+.tile .tic{font-size:24px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 16%,transparent);margin-bottom:6px}
+.tile b{font-size:15px;line-height:1.25}
+.tile small{color:var(--mute);font-size:12.5px;line-height:1.3}
+/* visual moderno das telas internas (Comissão, Equipe, Cofre, Fornecedores...) */
+.card{border-radius:18px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.item{border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+button{border-radius:12px;transition:transform .12s}
+button:active{transform:scale(.98)}
+button.pri{box-shadow:0 4px 14px color-mix(in srgb,var(--acc) 30%,transparent)}
+input,textarea{border-radius:12px}
+h2{font-weight:700}
+.r{gap:12px;align-items:baseline}
+.r>:last-child{white-space:nowrap;text-align:right;flex-shrink:0}
+.tot>:last-child{white-space:nowrap}
+select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px}
 </style>
 </head>
 <body>
@@ -79,16 +98,23 @@ function home(){const ks=Object.keys(days).sort().reverse(),ym=today().slice(0,7
  <button class="pri" id="hoje" style="width:100%;padding:14px;font-size:17px;margin-bottom:10px">${days[today()]?'Continuar fechamento de hoje':'Fechar o caixa de hoje'}</button>
  <div class="row" style="margin-bottom:14px"><input type="date" id="dt" value="${today()}" aria-label="Outra data"><button id="go">Abrir esta data</button></div>
  <div class="card"><h2>Mês atual</h2><div class="r"><span>Bar vendeu (sem portaria)</span><b>${R(mb)}</b></div><div class="r"><span>Vendas (bar + portaria)</span><b>${R(mv)}</b></div><div class="r"><span>Gasto com DJ</span><b>${R(mdj)}</b></div><div class="r"><span>Gasto com Extra bar</span><b>${R(mex)}</b></div><div class="r"><span>Pago a fornecedores</span><b>${R(FO(ym))}</b></div><div class="r"><span>Saídas (total)</span><b>${R(ms+FO(ym))}</b></div><div class="r"><span>Resultado</span><b class="${sign(mr)}">${R(mr)}</b></div>${mf?`<div class="r"><span>Dinheiro a menos no mês</span><b class="neg">${R(mf)}</b></div>`:''}</div>
- <h2>${meta.verArq?'Arquivados':'Fechamentos'}</h2>${ks.filter(k=>!!days[k].arq===!!meta.verArq).map(k=>{const c=calc(days[k]);return `<button class="item" data-k="${k}"><span><b>${short(k)}</b><small>Bar ${R(c.bar)} · Portaria ${R(c.por)}${c.dif<0?' · <span class="neg">A menos '+R(-c.dif)+'</span>':''}</small></span><b class="${sign(c.res)}">${R(c.res)}</b></button>`}).join('')||'<p class="hint">Nenhum fechamento ainda.</p>'}
- <button id="va" style="width:100%;margin-top:14px">${meta.verArq?'← Voltar aos fechamentos':'📁 Arquivados ('+ks.filter(k=>days[k].arq).length+')'}</button>
- <button id="sw" style="width:100%;margin-top:8px">💰 Comissão da semana</button>
- <button id="eq" style="width:100%;margin-top:8px">👥 Equipe: faltas, vales e feriados</button><button id="pz" style="width:100%;margin-top:8px">💼 Piso salarial</button>
- <button id="cf" style="width:100%;margin-top:8px">🔒 Cofre do mês</button>
- <button id="fn" style="width:100%;margin-top:8px">🧾 Fornecedores e contas a pagar</button>
- <button id="pt0" style="width:100%;margin-top:8px">🚪 Controle da portaria</button>
- <button id="ar" style="width:100%;margin-top:8px">📁 Arquivo: resumo geral</button>
- <button id="ck" style="width:100%;margin-top:8px">🍸 Ficha técnica dos cocktails</button>
- <button id="es" style="width:100%;margin-top:8px">📦 Controle de estoque</button>
+  ${(()=>{const I=cxPainel();const T=(id,ic,cor,t,sub)=>`<button class="tile" id="${id}" style="--tc:${cor}"><span class="tic">${ic}</span><b>${t}</b><small>${sub}</small></button>`;
+ return `<h2 style="margin-top:22px">Equipe e pagamentos</h2><div class="menu">`
+ +T('sw','💰','#f59e0b','Comissão da semana','Semana de '+I.semana)
+ +T('eq','👥','#3b82f6','Equipe',I.pessoas+' pessoas · vales '+R(I.vales))
+ +T('pz','💼','#8b5cf6','Piso salarial','Salários e piso do mês')
+ +T('cf','🔒','#10b981','Cofre do mês',R(I.cofre)+' guardado')
+ +`</div><h2 style="margin-top:18px">Contas e controles</h2><div class="menu">`
+ +T('fn','🧾','#ef4444','Fornecedores e contas',I.aPagar?I.aPagar+' com valor a pagar':'Tudo pago no mês')
+ +T('pt0','🚪','#c2410c','Controle da portaria','Entradas e valores')
+ +T('es','📦','#0ea5e9','Controle de estoque','Itens e compras')
+ +T('ck','🍸','#ec4899','Ficha técnica','Receitas dos cocktails')
+ +`</div><h2 style="margin-top:18px">Arquivo</h2><div class="menu">`
+ +T('va','📁','#64748b',meta.verArq?'← Voltar':'Arquivados',meta.verArq?'Voltar aos fechamentos':I.arquivados+' fechamentos')
+ +T('ar','📊','#14b8a6','Resumo geral','Todos os meses')
+ +`</div>`})()}
+ <div style="margin-top:22px"></div><h2>${meta.verArq?'Arquivados':'Fechamentos'}</h2>${ks.filter(k=>!!days[k].arq===!!meta.verArq).map(k=>{const c=calc(days[k]);return `<button class="item" data-k="${k}"><span><b>${short(k)}</b><small>Bar ${R(c.bar)} · Portaria ${R(c.por)}${c.dif<0?' · <span class="neg">A menos '+R(-c.dif)+'</span>':''}</small></span><b class="${sign(c.res)}">${R(c.res)}</b></button>`}).join('')||'<p class="hint">Nenhum fechamento ainda.</p>'}
+
  <p class="hint" id="cst" style="margin:8px 0 0">${CL.st}</p><button id="cls" style="width:100%;margin-top:4px">☁️ Sincronizar agora</button>
  <button class="pri" id="bm" style="width:100%;margin-top:8px">✉️ Enviar backup por e-mail</button><p class="hint" style="margin:4px 0 0">${meta.bkAt?'Último backup enviado: '+new Date(meta.bkAt).toLocaleDateString('pt-BR')+' '+new Date(meta.bkAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'Você ainda não enviou nenhum backup.'}</p>
  <div class="row" style="margin-top:8px"><button id="bk">Copiar backup</button><button id="rs">Restaurar backup</button></div><div id="rsbox" style="margin-top:8px"></div><p class="hint" style="margin-top:16px">Atalho: no Chrome, toque em ⋮ e depois em <b>Adicionar à tela inicial</b>. O atalho vai se chamar <b>Caixa bar</b>.</p>`;
@@ -152,7 +178,7 @@ function semana(s){
  const names=()=>nomes.map((x,i)=>{const e=$('#n'+i);return e?(e.value.trim()||'Funcionário '+(i+1)):x});
  part.forEach(i=>{$('#n'+i).oninput=()=>{meta.nomes=names();persist()}});
  const SAL=i=>num((meta.sal||[])[i]),CM=i=>part.includes(i)?sh[i]:0,SALN=i=>Math.max(0,SAL(i)-advS(advW(i))),CMN=i=>CM(i)-Math.max(0,advS(advW(i))-SAL(i)),LIQ=i=>SAL(i)+CM(i)-advS(advW(i));
- const upd=()=>{ctlU();let a=0,b=0;nomes.forEach((_,i)=>{a+=SALN(i);b+=CMN(i);$('#st'+i).textContent=M(LIQ(i))});$('#gs').textContent=M(a);$('#gc').textContent=M(b);$('#gt').textContent=M(a+b)};
+ const upd=()=>{ctlU();let a=0,b=0;nomes.forEach((_,i)=>{a+=SALN(i);b+=CMN(i);$('#st'+i).textContent=M(LIQ(i))});[['gs',a],['gc',b],['gt',a+b]].forEach(([id,v])=>{const e=$('#'+id);if(e)e.textContent=M(v)})};
  const comSem=w=>{const rs=[0,1,2,3,4,5,6].map(i=>addD(w,i)).filter((k,i)=>i<6||(days[k]&&calc(days[k]).bar)).map(k=>({k,v:days[k]?calc(days[k]).bar:0}));const raw=nomes.map(()=>0);let ds=0;rs.forEach(r=>{if(!r.v)return;const wk=part.filter(i=>!fl(i,r.k));if(!wk.length)return;ds+=r.v;wk.forEach(i=>raw[i]+=r.v*0.08/wk.length)});const x=raw.map(v=>Math.round(v*100)/100),df=Math.round((Math.round(ds*8)/100-x.reduce((a,b)=>a+b,0))*100)/100,f=x.findIndex(v=>v>0);if(f>=0&&Math.abs(df)<0.05)x[f]=Math.round((x[f]+df)*100)/100;return x};
  const ym0=e6.slice(0,7),recM=()=>{const t=nomes.map(()=>({s:0,c:0}));Object.entries(meta.pg||{}).forEach(([key,o])=>{if(!o||!o.d||o.d.slice(0,7)!==ym0)return;const p=key.split('|'),i=+p[1];if(!t[i])return;if(p[2]==='c')t[i].c+=num(o.v);else t[i].s+=num(o.v)});$('#rcm').innerHTML='<h2>Recebido no mês · '+new Date(ym0+'-15T12:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'})+'</h2>'+nomes.map((n,i)=>`<div class="r"><span>${he(n)}<small style="display:block;color:var(--mute)">Salário ${M(t[i].s)} · Comissão ${M(t[i].c)}</small></span><b>${M(t[i].s+t[i].c)}</b></div>`).join('')+'<div class="r big"><span>Total pago no mês</span><b>'+M(t.reduce((a,x)=>a+x.s+x.c,0))+'</b></div>';const mc=nomes.map(()=>0);for(let w=addD(wStart(ym0+'-01'),-7);w<=ym0+'-31';w=addD(w,7)){if(addD(w,6).slice(0,7)===ym0)comSem(w).forEach((x,i)=>{mc[i]+=x})}$('#cmm').innerHTML='<h2>Salário + comissão do mês (menos vales/adiantamentos)</h2>'+nomes.map((n,i)=>`<div class="r"><span>${he(n)}<small style="display:block;color:var(--mute)">Salário ${M(SAL(i))} · Comissão do mês ${M(mc[i])} · Vales/adiantamentos ${M(advS(advM(i)))}</small></span><b>${M(SAL(i)+mc[i]-advS(advM(i)))}</b></div>`).join('')+`<div class="r"><span>Total salários</span><b>${M(nomes.reduce((a,_,i)=>a+SAL(i),0))}</b></div><div class="r"><span>Total comissões do mês</span><b>${M(mc.reduce((a,x)=>a+x,0))}</b></div><div class="r big"><span>Total a receber (sem vales/adiantamentos)</span><b>${M(nomes.reduce((a,_,i)=>a+SAL(i)+mc[i]-advS(advM(i)),0))}</b></div>`};
  const advL=()=>meta.adv=meta.adv||[],advW=i=>advL().filter(a=>a.i===i&&a.d>=s&&a.d<=e6),advM=i=>advL().filter(a=>a.i===i&&a.d.slice(0,7)===ym0),advS=l=>l.reduce((t,x)=>t+num(x.v),0);
@@ -370,17 +396,18 @@ const COCK=[
 {n:'Maria Bonita',i:['60 ml Cachaça','1 limão taiti','2 ponteiros de manjericão','3 fatias de gengibre','30 ml syrup sugar','Completar com soda','30 ml chá de hibisco (em cima)']},
 {n:'Virgulino Lampião',i:['60 ml Cachaça','1 limão taiti','1 punhado de capim santo','40 ml açúcar mascavo','Completar com soda','Finalizar com chá de hibisco','3 gotas de pimenta tabasco']},
 {n:'Corisco',i:['60 ml Cachaça','½ limão taiti','4 pedaços de abacaxi','1 punhado de capim santo','30 ml syrup sugar','Completar com soda','Chá de hibisco / pimenta tabasco']}];
-function fichas(){app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Ficha técnica</h1></header><button class="pri" id="cu" style="width:100%;margin-bottom:10px">💰 Custo das receitas</button>${COCK.map((c,k)=>`<button class="item" data-c="${k}"><span><b>${he(c.n)}</b><small>${c.i.length} itens</small></span><b>›</b></button>`).join('')}`;$('#back').onclick=home;$('#cu').onclick=custo;document.querySelectorAll('.item').forEach(b=>b.onclick=()=>ficha(+b.dataset.c))}
+function fichas(){app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Ficha técnica</h1></header><div class="row" style="margin-bottom:10px"><button class="pri" id="cu">💰 Custo das receitas</button><button class="pri" id="nfF" style="background:#ec4899;border-color:#ec4899">📷 Foto da nota</button></div>${COCK.map((c,k)=>`<button class="item" data-c="${k}"><span><b>${he(c.n)}</b><small>${c.i.length} itens</small></span><b>›</b></button>`).join('')}`;$('#back').onclick=home;$('#cu').onclick=custo;$('#nfF').onclick=()=>{try{window.parent.__barAbrirNota()}catch(e){toast('Abra pelo app Bar Conect')}};document.querySelectorAll('.item').forEach(b=>b.onclick=()=>ficha(+b.dataset.c))}
 function ficha(k){const c=COCK[k];app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>${he(c.n)}</h1></header><div class="card"><h2>Ingredientes</h2><ol style="padding-left:22px;margin:0">${c.i.map(x=>`<li style="margin-bottom:6px">${he(x)}</li>`).join('')}</ol></div><div class="card"><div class="r big"><span>Custo da receita</span><b>${M(costOf(c).t)}</b></div>${costOf(c).mi?`<p class="hint" style="margin:6px 0 0">Faltam ${costOf(c).mi} preço(s) em Custo das receitas.</p>`:''}</div>${c.p?`<div class="card"><h2>Modo de preparo</h2><p style="margin:0">${he(c.p)}</p></div>`:''}<div class="row"><button id="pv">‹ Anterior</button><button id="nx">Próximo ›</button></div>`;$('#back').onclick=fichas;$('#pv').onclick=()=>ficha((k+COCK.length-1)%COCK.length);$('#nx').onclick=()=>ficha((k+1)%COCK.length)}
 const norm=t=>t.toLowerCase().replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim();
 const NUMF=s=>({'½':.5,'¼':.25,'¾':.75}[s]??(parseFloat(s.replace(',','.'))||0));
 const parseI=t=>{let m=t.match(/^([\d.,½¼¾]+)\s*ml\s+(.+)$/i);if(m)return{k:norm(m[2]),q:NUMF(m[1]),u:'ml'};m=t.match(/^([\d.,½¼¾]+)\s*(?:dash|gotas?|folhas?|fatias?|ponteiros?|peda[çc]os?|punhado|buqu[eê])?\s*(?:de\s+)?(.+)$/i);if(m)return{k:norm(m[2]),q:NUMF(m[1]),u:'un'};return{k:norm(t)+' (dose)',q:1,u:'un'}};
 COCK.forEach(c=>{c.l=c.i.map(parseI)});
+window.__cxIngredientes=()=>{const o={};COCK.forEach(c=>c.l.forEach(x=>{if(!o[x.k]||x.u==='ml')o[x.k]=x.u}));return o};
 const costOf=c=>{let t=0,mi=0;c.l.forEach(x=>{const f=(meta.custo||{})[x.k];if(!f||!num(f.p)){mi++;return}t+=x.u==='ml'?x.q*num(f.p)/(num(f.v)||1000):x.q*num(f.p)});return{t,mi}};
 function custo(){const keys={};COCK.forEach(c=>c.l.forEach(x=>{if(!keys[x.k]||x.u==='ml')keys[x.k]=x.u}));const ks=Object.keys(keys).sort();
  const draw=()=>{$('#cc').innerHTML=COCK.map(c=>{const o=costOf(c);return `<div class="r"><span>${he(c.n)}${o.mi?`<small style="display:block;color:var(--mute)">faltam ${o.mi} preço(s)</small>`:''}</span><b>${M(o.t)}</b></div>`}).join('')};
- app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Custo das receitas</h1></header><div class="card"><h2>Custo por receita</h2><div id="cc"></div></div><details class="card" open><summary style="font-weight:700;cursor:pointer">Preços dos ingredientes</summary><p class="hint" style="margin:8px 0">Bebidas em ml: preço da garrafa e ml da garrafa (se vazio, usa 1000). Outros itens: preço por unidade (dash, gota, folha, fatia, dose).</p>${ks.map((k,i)=>{const f=(meta.custo||{})[k]||{};return `<div class="f"><label for="cp${i}">${he(k)}</label><div style="display:flex;gap:6px;flex:1"><input id="cp${i}" inputmode="decimal" placeholder="R$" value="${he(f.p||'')}">${keys[k]==='ml'?`<input id="cv${i}" inputmode="decimal" placeholder="ml (1000)" value="${he(f.v||'')}">`:''}</div></div>`}).join('')}</details>`;
- ks.forEach((k,i)=>{const sv=()=>{(meta.custo=meta.custo||{})[k]={p:$('#cp'+i).value,v:keys[k]==='ml'?$('#cv'+i).value:''};persist();draw()};$('#cp'+i).oninput=sv;if(keys[k]==='ml')$('#cv'+i).oninput=sv});draw();$('#back').onclick=fichas}
+ app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Custo das receitas</h1></header><button class="pri" id="nfC" style="width:100%;margin-bottom:10px;background:#ec4899;border-color:#ec4899">📷 Foto da nota: atualizar preços</button><div class="card"><h2>Custo por receita</h2><div id="cc"></div></div><details class="card" open><summary style="font-weight:700;cursor:pointer">Preços dos ingredientes</summary><p class="hint" style="margin:8px 0">Bebidas em ml: preço da garrafa e ml da garrafa (se vazio, usa 1000). Outros itens: preço por unidade (dash, gota, folha, fatia, dose).</p>${ks.map((k,i)=>{const f=(meta.custo||{})[k]||{};return `<div class="f"><label for="cp${i}">${he(k)}</label><div style="display:flex;gap:6px;flex:1"><input id="cp${i}" inputmode="decimal" placeholder="R$" value="${he(f.p||'')}">${keys[k]==='ml'?`<input id="cv${i}" inputmode="decimal" placeholder="ml (1000)" value="${he(f.v||'')}">`:''}</div></div>`}).join('')}</details>`;
+ ks.forEach((k,i)=>{const sv=()=>{(meta.custo=meta.custo||{})[k]={p:$('#cp'+i).value,v:keys[k]==='ml'?$('#cv'+i).value:''};persist();draw()};$('#cp'+i).oninput=sv;if(keys[k]==='ml')$('#cv'+i).oninput=sv});draw();$('#back').onclick=fichas;$('#nfC').onclick=()=>{try{window.parent.__barAbrirNota()}catch(e){toast('Abra pelo app Bar Conect')}}}
 if(!meta.est){meta.est=[['Destilados',['Jack Daniels','Rum','Vodka','Gin','Cachaça']],['Licores e aperitivos',['Campari','Aperol','Jägermeister','Amaretto','Cointreau','Licor 43','Vermute tinto']],['Vinhos e espumantes',['Vinho tinto','Vinho branco','Espumante brut']],['Cervejas',[]],['Refrigerantes e mixers',['Tônica','Soda','Suco de laranja','Água']],['Frutas e ervas',['Limão taiti','Limão siciliano','Abacaxi','Gengibre','Manjericão','Capim santo','Maracujá']],['Outros insumos',['Angostura bitter','Clara de ovo','Açúcar','Açúcar mascavo','Pimenta tabasco']]].map(([n,a],g)=>({id:'g'+g,n,items:a.map((x,i)=>({id:'i'+g+'_'+i,n:x,q:'',m:''}))}));persist()}
 let ESTM='all';
 const estLow=i=>num(i.m)>0&&num(i.q)<=num(i.m);
@@ -399,6 +426,12 @@ function estoque(tab){tab=tab||'est';const G=meta.est,rr=()=>{const y=window.scr
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const g=G.find(z=>z.id===b.dataset.a),n=$('#ni_'+g.id).value.trim();if(!n)return;g.items.push({id:'i'+Date.now(),n,q:'',m:''});persist();rr()});
   $('#nga').onclick=()=>{const n=$('#ng').value.trim();if(!n)return;G.push({id:'g'+Date.now(),n,items:[]});persist();rr()}}
  $('#back').onclick=home;$('#t1').onclick=()=>estoque('est');$('#t2').onclick=()=>estoque('sh')}
+function cxPainel(){const o={semana:'',pessoas:(meta.nomes||[]).length,vales:0,cofre:0,aPagar:0,arquivados:0};
+ try{const t=today(),m=t.slice(0,7),w=wStart(t);o.semana=w.slice(8,10)+'/'+w.slice(5,7);
+  Object.keys(days).forEach(k=>{if(days[k].arq)o.arquivados++;if(k.slice(0,7)===m)o.cofre+=num(days[k].cofre)});
+  (meta.adv||[]).forEach(a=>{if((a.d||'').slice(0,7)===m)o.vales+=num(a.v)});
+  const f=(meta.fin||{})[m]||{};Object.values(f).forEach(x=>{const pago=(x.pays||[]).reduce((s,y)=>s+num(y.v),0);if(num(x.due)-pago>0.009)o.aPagar++})}catch(e){}
+ return o}
 home();
 window.addEventListener('online',()=>{if(!CL.ready)cloudSync();else cloudPush()});
 cloudSync();

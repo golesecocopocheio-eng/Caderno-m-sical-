@@ -84,7 +84,21 @@ jobs:
             BarConect.apk
             Bar.apk
           body: |
-            Bar Conect: Caixa, Portaria e Estoque do bar, para Android.
+            ## 🍸 Bar Conect · versão 1.${{ github.run_number }}
+            **Caixa · Portaria · Estoque** do bar, num app só para Android.
 
-            Como instalar: no celular Android, toque em **BarConect.apk** abaixo para baixar,
-            abra o arquivo e permita "instalar apps desconhecidos" quando o Android pedir.
+            ### 📥 Como instalar
+            1. No celular, toque em **BarConect.apk** aqui embaixo (abra no Chrome).
+            2. Toque na notificação do download e em **Instalar** / **Atualizar**.
+            3. Se o Android pedir, permita **instalar apps desconhecidos**.
+
+            Instala **por cima** da versão anterior e **mantém todos os dados**.
+
+            ### ✨ O que tem no app
+            - 🍸 **Caixa**: fechamento do dia, painel com comissão, equipe, cofre, fornecedores, ficha técnica e custo das receitas
+            - 🚪 **Portaria**: entradas da noite por categoria e forma de pagamento, QR Code para a equipe
+            - 📦 **Estoque**: itens, compras, mínimo ideal e valor em estoque
+            - 💲 **Preços**: foto da nota de compra atualiza a ficha técnica, o estoque e a tabela de preços
+            - 📸 **Foto**: fechamento pelas fotos dos comprovantes das maquininhas (crédito + débito, Pix + QR Code)
+            - 💾 **Backup**: backup completo, restaurar e histórico de alterações com "Voltar"
+            - ⚙️ **Ajustes**: tamanho da letra, importar dados e versão do app

@@ -113,6 +113,18 @@ button.rec{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:
 .pbar .pc .ic{color:var(--mute)}.pbar .pc .ic.on{color:var(--acc)}.pbar .pc .ic .i{width:24px;height:24px}
 .pb{width:58px;height:58px;border-radius:50%;background:var(--acc);color:var(--accT);border:0;display:grid;place-items:center;padding:0}.pb .i{width:28px;height:28px}
 #app:has(#pbar){padding-bottom:240px}
+
+.stc .stt{display:flex;align-items:center;gap:14px;margin-bottom:12px}.tmr{font:700 34px var(--mono);letter-spacing:-1px}
+.lvl{flex:1;height:10px;background:var(--line);border-radius:6px;overflow:hidden}.lvl i{display:block;height:100%;width:0;background:var(--rec);transition:width .08s}
+.recbig{flex:1;padding:16px;font-size:17px;font-weight:800;background:var(--rec);color:#fff;border-color:var(--rec)}.recbig.rec{background:var(--ink);border-color:var(--ink)}
+.live{min-height:26px;color:var(--mute);font-size:19px;margin:10px 0 6px;font-style:italic}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}.chips button{padding:6px 11px;border-radius:999px;font-size:13px}
+.bd{display:flex;gap:8px;justify-content:center;margin:12px 0}.bd i{width:18px;height:18px;border-radius:50%;background:var(--line)}.bd i.on{background:var(--acc)}
+.tun{margin-top:10px}.tnn{font:800 56px var(--ui);text-align:center;line-height:1.1}
+.nb{position:relative;height:14px;background:var(--line);border-radius:8px;margin:10px 8px}.nb .nz{position:absolute;left:47.5%;width:5%;top:0;bottom:0;background:var(--hl);opacity:.6}.nb .nd{position:absolute;top:-5px;width:6px;height:24px;margin-left:-3px;border-radius:3px;background:var(--ink)}.nb .nd.okk{background:#1f9d55}
+.take{border-bottom:1px solid var(--line);padding:8px 0}.take:last-child{border:0}
+details.card2>summary{cursor:pointer;list-style:none}details.card2>summary::-webkit-details-marker{display:none}
+.savebar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));padding-top:6px;z-index:4}.savebar button{width:100%;padding:15px;font-size:16px;box-shadow:0 6px 20px rgba(20,30,80,.25)}
 </style>
 </head>
 <body>
@@ -206,19 +218,19 @@ ${songs.length?`<input id="q" type="search" placeholder="Buscar música ou artis
  rows()}
 
 function setSv(t){const e=$('#sv');if(e)e.textContent=t}
-function song(){const s=cur;if(tab==='ouvir'&&!SRok)tab='cifra';
- const tabs=[['cifra','Cifra'],['letra','Letra'],['ouvir','Ouvir'],['campo','Campo'],['audio','Áudio']].filter(t=>t[0]!=='ouvir'||SRok);
+function song(){const s=cur;if(tab==='ouvir')tab='estudio';
+ const tabs=[['cifra','Cifra'],['letra','Letra'],['estudio','Estúdio'],['campo','Campo'],['audio','Áudio']];
  app.innerHTML=`<header class="sh"><button class="ic" id="back" aria-label="Voltar">${IC.back}</button><div class="tt"><input id="ti" class="ti" placeholder="Título da música" value="${esc(s.title)}" aria-label="Título"><input id="ar" class="ar" placeholder="Artista" value="${esc(s.artist)}" aria-label="Artista"></div><div class="side"><button class="ic" id="del" aria-label="Excluir música">${IC.trash}</button><span id="sv" class="sv"></span></div></header>
  <div class="meta2"><label class="sel"><span>Tom</span><select id="ky">${N.map(n=>`<option ${n===s.key?'selected':''}>${n}</option>`).join('')}</select></label><label class="sel"><span>Modo</span><select id="md"><option value="M" ${s.mode==='M'?'selected':''}>Maior</option><option value="m" ${s.mode==='m'?'selected':''}>Menor</option></select></label></div>
  <div id="pane"></div>
  <nav class="nav" aria-label="Seções">${tabs.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}" aria-label="${t[1]}">${IC[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
- $('#back').onclick=()=>{stopSR();mixStop();if(rec&&rec.state==='recording')rec.stop();else if(!s.title&&!s.cifra&&!s.letra&&!s.ouvido&&!s.audios.length){songs=songs.filter(x=>x!==s);delSong(s)}else flushAll();list()};
+ $('#back').onclick=()=>{stopSR();metStop();tunerStop();meterStop();mixStop();if(rec&&rec.state==='recording')rec.stop();else if(!s.title&&!s.cifra&&!s.letra&&!s.ouvido&&!s.audios.length){songs=songs.filter(x=>x!==s);delSong(s)}else flushAll();list()};
  $('#del').onclick=()=>twice($('#del'),()=>{stopSR();mixStop();if(rec&&rec.state==='recording')rec.stop();songs=songs.filter(x=>x!==s);delSong(s);toast('Música excluída');list()},'<span style="font:700 13px var(--ui)">Confirmar?</span>');
  $('#ti').oninput=e=>{s.title=e.target.value;save()};
  $('#ar').oninput=e=>{s.artist=e.target.value;save()};
  $('#ky').onchange=e=>{s.key=e.target.value;shift=0;save();pane()};
  $('#md').onchange=e=>{s.mode=e.target.value;save();pane()};
- document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;if(tab!=='audio'&&!(rec&&rec.state==='recording'))mixStop();document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));pane()});
+ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{if(tab==='estudio'&&b.dataset.t!=='estudio'){tunerStop();if(!(rec&&rec.state==='recording')){metStop();if(srOn)stopSR()}}tab=b.dataset.t;if(tab!=='audio'&&!(rec&&rec.state==='recording'))mixStop();document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));pane()});
  pane()}
 
 function pane(){const p=$('#pane'),s=cur;
@@ -233,7 +245,7 @@ function pane(){const p=$('#pane'),s=cur;
    $('#mn').onclick=()=>{shift--;pane()};$('#pl').onclick=()=>{shift++;pane()};
    if(shift){$('#ap').onclick=()=>{s.cifra=tx;s.key=nm[r];shift=0;save();$('#ky').value=s.key;toast('Cifra salva no novo tom');pane()};$('#rs').onclick=()=>{shift=0;pane()}}}}
  else if(tab==='letra'){p.innerHTML=`<textarea class="code" id="lt" style="white-space:pre-wrap" placeholder="Escreva a letra aqui">${esc(s.letra)}</textarea><label class="fb2">Trazer letra de um arquivo .txt<input id="lf" type="file" accept=".txt,text/plain" hidden></label>`;$('#lt').oninput=e=>{s.letra=e.target.value;save()};$('#lf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const t=(await f.text()).replace(/\r\n?/g,'\n').trim();if(!t)return toast('Arquivo vazio.');s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+t:t;save();pane();toast('Letra trazida')}}
- else if(tab==='ouvir')ouvir(p);
+ else if(tab==='estudio')studio(p);
  else if(tab==='campo'){
   const r=idx(s.key||'C'),mj=s.mode==='M',nm=flatKey(r,mj)?F:N,iv=mj?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10];
   const q3=mj?['','m','m','','','m','dim']:['m','dim','','m','m','',''],q7=mj?['maj7','m7','m7','maj7','7','m7','m7b5']:['m7','m7b5','maj7','m7','m7','maj7','7'];
@@ -246,32 +258,6 @@ function pane(){const p=$('#pane'),s=cur;
 
 let sr=null,srOn=false,recTipo='mix',recBk=true,recNS=true;
 function stopSR(){srOn=false;try{sr&&sr.stop()}catch(e){}}
-function ouvir(p){const s=cur,SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- p.innerHTML=`<div class="row"><button class="pri" id="sr" style="flex:1">${srOn?'Parar de ouvir':'Começar a ouvir'}</button><button id="tl" style="flex:1">Passar para a Letra</button></div>
- <p class="hint" id="sst">${SR?(srOn?'Ouvindo… deixe a música tocar perto do microfone ou cante.':'Toque em Começar e deixe a música tocar ou cante perto do microfone.'):'Este navegador não reconhece voz. Abra no Chrome.'}</p>
- <textarea class="code" id="ou" style="white-space:pre-wrap;min-height:42vh" placeholder="A letra aparece aqui enquanto você ouve">${esc(s.ouvido||'')}</textarea>
- <div class="row" style="margin-top:8px"><button id="lp" style="flex:1">Limpar</button></div>
- <p class="hint">A letra é escrita e gravada sozinha. Em música com instrumentos o reconhecimento erra bastante, então revise o texto. Precisa de internet.</p>`;
- $('#ou').oninput=e=>{s.ouvido=e.target.value;save()};
- $('#tl').onclick=()=>{if(!(s.ouvido||'').trim())return toast('Ainda não há texto para passar.');s.letra=(s.letra?s.letra.replace(/\s+$/,'')+'\n\n':'')+s.ouvido;save();toast('Passada para a aba Letra')};
- $('#lp').onclick=()=>twice($('#lp'),()=>{s.ouvido='';save();ouvir(p)});
- $('#sr').onclick=()=>{
-  if(srOn){stopSR();ouvir(p);return}
-  if(!SR)return toast('Este navegador não reconhece voz. Abra no Chrome.');
-  sr=new SR();sr.lang='pt-BR';sr.continuous=true;sr.interimResults=true;srOn=true;
-  sr.onresult=e=>{if(cur!==s)return;let fin='',itm='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=t.trim()+'\n';else itm+=t}
-   if(fin){s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n':'')+fin.replace(/\s+$/,'');save();const ta=$('#ou');if(ta)ta.value=s.ouvido}
-   const st=$('#sst');if(st)st.textContent=itm?'Ouvindo: '+itm:'Ouvindo…'};
-  sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;srOn=false;toast(e.error==='network'?'O reconhecimento de voz precisa de internet.':'Sem permissão para o microfone aqui. Abra o app direto no Chrome.');if(cur===s&&tab==='ouvir')ouvir($('#pane'))};
-  sr.onend=()=>{if(srOn&&cur===s){try{sr.start()}catch(e){}}};
-  try{sr.start();ouvir(p)}catch(e){srOn=false;toast('Não consegui iniciar o microfone.')}}}
-function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
- try{stopSR();sr=new SR();sr.lang='pt-BR';sr.continuous=true;sr.interimResults=false;srOn=true;
-  sr.onresult=e=>{let fin='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)fin+=e.results[i][0].transcript.trim()+'\n';
-   if(fin.trim()){s.letra=(s.letra?s.letra.replace(/\s+$/,'')+'\n':'')+fin.replace(/\s+$/,'');save(s);const st=$('#gst');if(st)st.textContent='Letra salva: '+fin.trim().slice(0,70)}};
-  sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;srOn=false;const st=$('#gst');if(st)st.textContent='Não consegui escrever a letra durante a gravação ('+e.error+'). O áudio continua gravando. Use a aba Ouvir se precisar.'};
-  sr.onend=()=>{if(srOn&&rec&&rec.state==='recording'){try{sr.start()}catch(e){}}};
-  sr.start();return true}catch(e){srOn=false;return false}}
 /* ---------- mixer ---------- */
 const mx={ac:null,buf:{},bad:{},src:[],gn:{},master:null,playing:false,t0:0,pos:0,dur:0,raf:0,mv:1};
 const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
@@ -430,6 +416,7 @@ function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
  b.querySelectorAll('[data-fz]').forEach(i=>i.onclick=()=>{A(i.dataset.fz).fx={};save(s);mixUI(s);rs()});
  b.querySelectorAll('[data-nr]').forEach(i=>i.onclick=()=>{const id=i.dataset.nr,st=b.querySelector('[data-nrs="'+id+'"]');nrTrack(s,A(id),+st.value)})}
 
+const refRec=()=>{const p=$('#pane');if(!p)return;if(tab==='estudio')studio(p);else if(tab==='audio')audioTab(p)};
 async function toggleRec(){const s=cur;
  if(rec&&rec.state==='recording'){rec.stop();return}
  if(!navigator.mediaDevices||!window.MediaRecorder){toast('Abrindo o gravador do celular…');$('#cap').click();return}
@@ -442,15 +429,15 @@ async function toggleRec(){const s=cur;
   const ch=[],mr=new MediaRecorder(st);rec=mr;
   const sid='r'+Date.now();let cn=0;mr.ondataavailable=e=>{if(e.data&&e.data.size){ch.push(e.data);rput({id:sid+'-'+String(cn++).padStart(5,'0'),sid:sid,song:s.id,tipo:tipo,mime:mr.mimeType||'audio/webm',t:Date.now(),blob:e.data})}};
   mr.onerror=()=>toast('A gravação falhou. Tente de novo.');
-  mr.onstop=()=>{stopSR();mixStop();st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
+  mr.onstop=()=>{stopSR();meterStop();if(stu.keep)metStop();mixStop();st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
    if(blob.size){s.audios.push({id:'a'+Date.now(),tipo:tipo,name:({mix:'Gravação',violao:'Violão',voz:'Voz'})[tipo]+' '+new Date().toLocaleString('pt-BR'),blob:blob,vol:1});s.upd=Date.now();put(s);setTimeout(()=>rdelSid(sid),1500);toast('Gravação salva')}
    else toast('A gravação saiu vazia. Tente de novo.');
-   if(cur===s&&tab==='audio')audioTab($('#pane'))};
-  mr.start(1000);
+   if(cur===s)refRec()};
+  mr.start(1000);meterStart(st);
   const okL=tipo==='violao'?false:startLetra(s);
   if(useBk)mixStart(s,0);
-  audioTab($('#pane'));const g=$('#gst');
-  if(g)g.textContent=tipo==='violao'?'Gravando o violão…':(okL?'Gravando… o que você cantar vai sendo escrito e salvo na aba Letra.':'Gravando. Este aparelho não escreve a letra sozinho.');
+  refRec();const g=$('#gst');
+  if(g)g.textContent=tipo==='violao'?'Gravando o violão…':(okL?'Gravando… o que você cantar vai aparecendo e fica salvo no rascunho.':'Gravando. Este aparelho não escreve a letra sozinho.');
  }catch(e){st.getTracks().forEach(t=>t.stop());rec=null;toast('Não consegui gravar neste aparelho. Abrindo o gravador do celular…');const c=$('#cap');if(c)c.click()}}
 
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();inst=e;if(!cur&&$('#bk'))list()});
@@ -504,7 +491,7 @@ async function exportAll(){flushAll();toast('Preparando a cópia…');
 // aviso de versão nova (APK): compara a versão instalada com a publicada
 (async()=>{try{if(!location.protocol.startsWith('http')&&location.protocol!=='https:')return;
 const mine=parseInt(await (await fetch('versao.txt',{cache:'no-store'})).text());
-const rem=parseInt(await (await fetch('https://golesecocopocheio-eng.github.io/Caderno-m-sical-/versao.txt?'+Date.now(),{cache:'no-store'})).text());
+const rem=parseInt(await (await fetch('https://golesecocopocheio-eng.github.io/Caderno-m-sical-/musica/versao.txt?'+Date.now(),{cache:'no-store'})).text());
 if(mine&&rem&&rem>mine){const d=document.createElement('div');d.className='upd';d.innerHTML='<b>Nova versão do Clan music.</b> <a href="https://github.com/golesecocopocheio-eng/Caderno-m-sical-/releases/latest" target="_blank" rel="noopener">Baixar e instalar por cima</a>';document.body.prepend(d)}}catch(e){}})();
 try{if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
@@ -582,6 +569,106 @@ function playBind(){const L=playable();
  $('#pnx').onclick=()=>{if(pl.i<0){if(!L.length)return;pl.q=L;plLoad(0,true)}else plNext(1)};$('#ppv').onclick=()=>{if(pl.i>=0)plNext(-1)};
  $('#psh').onclick=()=>{pl.shuf=!pl.shuf;plUI()};$('#prp').onclick=()=>{pl.rep=(pl.rep+1)%3;plUI();toast(['Sem repetir','Repetir a lista','Repetir esta música'][pl.rep])};
  if(pl.i>=0&&!pl.q.length)pl.q=L;plUI()}
+
+/* ---------- estúdio ---------- */
+IC.estudio=IC.ouvir;
+const stu={met:false,id:0,next:0,beat:0,cnt:false,keep:false,lang:'pt-BR',tun:null,m:null,sw:null};
+function clk(ac,t,acc){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=acc?1600:1000;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.7,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+.06);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.08)}
+function dots(i){document.querySelectorAll('.bd i').forEach((d,k)=>d.classList.toggle('on',k===i))}
+function metStart(s,cb){const ac=AC();if(!ac)return;metStop();stu.met=true;stu.beat=0;stu.next=ac.currentTime+.08;
+ stu.id=setInterval(()=>{const dt=60/(s.bpm||90),sig=s.sig||4;while(stu.next<ac.currentTime+.12){const b=stu.beat,tt=stu.next;clk(ac,tt,b%sig===0);setTimeout(()=>dots(b%sig),Math.max(0,(tt-ac.currentTime)*1000));if(cb)cb(b);stu.beat++;stu.next+=dt}},25);uiMet()}
+function metStop(){clearInterval(stu.id);stu.met=false;dots(-1);uiMet()}
+function uiMet(){const b=$('#mt');if(b){b.textContent=stu.met?'■ Parar':'▶ Ligar';b.classList.toggle('pri',!stu.met)}}
+function meterStart(st){try{meterStop();const ac=AC(),src=ac.createMediaStreamSource(st),an=ac.createAnalyser();an.fftSize=1024;src.connect(an);const b=new Uint8Array(1024);stu.m={src,an,raf:0,t0:Date.now()};
+ const f=()=>{if(!stu.m)return;an.getByteTimeDomainData(b);let p=0;for(let i=0;i<b.length;i++)p=Math.max(p,Math.abs(b[i]-128));const l=$('#lvl'),t=$('#tmr');if(l)l.style.width=Math.min(100,p/128*140)+'%';if(t)t.textContent=fmt((Date.now()-stu.m.t0)/1000);stu.m.raf=requestAnimationFrame(f)};f()}catch(e){}}
+function meterStop(){const m=stu.m;if(!m)return;cancelAnimationFrame(m.raf);try{m.src.disconnect()}catch(e){}stu.m=null;const l=$('#lvl');if(l)l.style.width='0'}
+/* afinador */
+const STR=[['E2',82.41],['A2',110],['D3',146.83],['G3',196],['B3',246.94],['E4',329.63]];
+function pitch(b,sr){const n=b.length;let rms=0;for(let i=0;i<n;i++)rms+=b[i]*b[i];rms=Math.sqrt(rms/n);if(rms<.008)return 0;
+ const mn=Math.floor(sr/500),mx2=Math.min(Math.floor(sr/60),n>>1),c=new Float32Array(mx2+3);let gm=0;
+ for(let l=mn-1;l<=mx2+1;l++){let s=0;for(let i=0;i<n-l;i++)s+=b[i]*b[i+l];c[l]=s;if(l>=mn&&l<=mx2&&s>gm)gm=s}
+ if(gm<=0)return 0;let best=-1;for(let l=mn;l<=mx2;l++)if(c[l]>.85*gm&&c[l]>=c[l-1]&&c[l]>=c[l+1]){best=l;break}
+ if(best<0)return 0;const a=c[best-1],bb=c[best],cc=c[best+1],d=a-2*bb+cc,sh=d?(a-cc)/(2*d):0;return sr/(best+sh)}
+const noteOf=f=>{const m=69+12*Math.log2(f/440),r=Math.round(m);return{name:N[((r%12)+12)%12]+(Math.floor(r/12)-1),cents:Math.round((m-r)*100)}};
+async function tunerStart(){if(rec&&rec.state==='recording')return toast('Pare a gravação para usar o afinador.');
+ try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});const ac=AC(),src=ac.createMediaStreamSource(st),an=ac.createAnalyser();an.fftSize=4096;src.connect(an);
+  const t=stu.tun={st,src,an,buf:new Float32Array(4096),raf:0,last:0,hist:[],sr:ac.sampleRate};
+  const f=()=>{if(stu.tun!==t)return;const now=performance.now();if(now-t.last>70){t.last=now;an.getFloatTimeDomainData(t.buf);const hz=pitch(t.buf,t.sr);if(hz){t.hist.push(hz);if(t.hist.length>5)t.hist.shift();const h=[...t.hist].sort((x,y)=>x-y);tunUI(h[h.length>>1])}else{t.hist=[];tunUI(0)}}t.raf=requestAnimationFrame(f)};f();uiTun()}
+ catch(e){toast('Sem acesso ao microfone para o afinador.')}}
+function tunerStop(){const t=stu.tun;if(!t)return;cancelAnimationFrame(t.raf);t.st.getTracks().forEach(x=>x.stop());try{t.src.disconnect()}catch(e){}stu.tun=null;tunUI(0);uiTun()}
+function uiTun(){const b=$('#tn');if(b){b.textContent=stu.tun?'■ Parar':'🎤 Começar';b.classList.toggle('pri',!stu.tun)}}
+function tunUI(hz){const n=$('#tnn'),h=$('#tnh'),nd=$('#tnd'),st=$('#tns');if(!n)return;
+ if(!hz){n.textContent='—';h.textContent=stu.tun?'Toque uma corda':'';nd.style.left='50%';nd.className='nd';st.textContent='';return}
+ const o=noteOf(hz);n.textContent=o.name;h.textContent=hz.toFixed(1)+' Hz · '+(o.cents>0?'+':'')+o.cents+' cents';nd.style.left=(50+Math.max(-50,Math.min(50,o.cents)))+'%';nd.className='nd '+(Math.abs(o.cents)<=5?'okk':'');
+ let b=STR[0];STR.forEach(x=>{if(Math.abs(Math.log2(hz/x[1]))<Math.abs(Math.log2(hz/b[1])))b=x});const cs=Math.round(1200*Math.log2(hz/b[1]));
+ st.textContent='Corda mais próxima: '+b[0]+(Math.abs(cs)<=5?' — afinada':cs>0?' — afrouxe':' — aperte')}
+/* letra ao vivo */
+const wc=t=>(t.trim().match(/\S+/g)||[]).length;
+function cnts(){const s=cur,e=$('#cn');if(!s||!e)return;const t=s.ouvido||'';e.textContent=wc(t)+' palavras · '+(t.trim()?t.trim().split('\n').length:0)+' linhas';}
+function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
+ try{stopSR();sr=new SR();sr.lang=stu.lang;sr.continuous=true;sr.interimResults=true;srOn=true;
+  sr.onresult=e=>{let fin='',itm='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=t.trim()+'\n';else itm+=t}
+   if(fin.trim()){s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n':'')+fin.replace(/\s+$/,'');save(s);if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}
+   const v=$('#lvi');if(v&&cur===s)v.textContent=itm||'Ouvindo…'};
+  sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;const msg=e.error==='network'?'Para escrever a letra o Chrome precisa de internet.':e.error==='audio-capture'?'O microfone está ocupado e não deu para escrever a letra junto com a gravação. A gravação continua.':'Sem permissão do microfone para escrever a letra.';
+   srOn=false;const g=$('#gst');if(g&&cur===s)g.textContent=msg;const v=$('#lvi');if(v)v.textContent='';const so=$('#so');if(so)so.textContent='✎ Só escrever'};
+  sr.onend=()=>{if(srOn){try{sr.start()}catch(e){}}};
+  sr.start();return true}catch(e){srOn=false;return false}}
+async function studioRec(){const s=cur;if(rec&&rec.state==='recording'){toggleRec();return}
+ if(stu.tun)tunerStop();
+ if(stu.cnt){const sig=s.sig||4;stu.cnt2=true;metStart(s,b=>{const g=$('#gst');if(b<sig){if(g)g.textContent='Contagem: '+(sig-b)}else if(stu.cnt2){stu.cnt2=false;if(!stu.keep)setTimeout(metStop,0);toggleRec()}});return}
+ if(stu.keep)metStart(s);toggleRec()}
+function saveAll(){const s=cur;if(!s)return;
+ const wasRec=rec&&rec.state==='recording';if(wasRec)rec.stop();stopSR();meterStop();metStop();
+ let merged=0;const d=(s.ouvido||'').trim();
+ if(d&&!(s.letra||'').includes(d.slice(0,60))){s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+d:d;merged=d.split('\n').length}
+ save(s);put(s);flushAll();
+ setTimeout(()=>{if(cur!==s)return;const n=s.audios.filter(a=>a.blob).length;const o=$('#sum');if(o)o.innerHTML=`<b>Tudo salvo às ${hhmm()}.</b><br>${n} ${n===1?'gravação':'gravações'} · ${wc(s.letra||'')} palavras na letra${merged?' ('+merged+' linhas novas passadas do rascunho)':''}.`;toast('Tudo salvo');if(tab==='estudio')studio($('#pane'))},wasRec?900:50)}
+function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ const keepSum=$('#sum')?$('#sum').innerHTML:'';
+ if(!s.bpm)s.bpm=90;if(!s.sig)s.sig=4;
+ p.innerHTML=`<div class="card2 stc"><div class="stt"><span id="tmr" class="tmr">0:00</span><div class="lvl" aria-label="Nível do microfone"><i id="lvl"></i></div></div>
+ <div class="row" style="gap:10px;flex-wrap:nowrap"><button id="rc" class="recbig ${rc?'rec':''}">${rc?'■ Parar':'● Gravar e escrever'}</button><button id="so" class="${srOn&&!rc?'pri':''}">${srOn&&!rc?'■ Parar':'✎ Só escrever'}</button></div>
+ <p class="hint" id="gst">${rc?'Gravando…':SR?'A letra que você cantar aparece abaixo e fica guardada no rascunho.':'Neste app instalado o Android não escreve a letra sozinho. Para ver as palavras enquanto canta, abra o Clan music pelo Chrome. A gravação funciona normal.'}</p></div>
+ <div class="card2"><div class="row" style="align-items:center"><b style="flex:1">Letra ao vivo</b><select id="lg" aria-label="Idioma" style="width:auto"><option value="pt-BR">Português</option><option value="en-US">English</option><option value="es-ES">Español</option></select></div>
+ <div id="lvi" class="live" aria-live="polite"></div>
+ <div class="chips">${['Intro','Verso','Pré-refrão','Refrão','Ponte','Final'].map(x=>`<button data-sec="${x}">${x}</button>`).join('')}</div>
+ <textarea class="code" id="dr" style="white-space:pre-wrap;min-height:30vh;font-size:19px;line-height:1.5" placeholder="Rascunho da letra. O que você cantar aparece aqui sozinho; você pode corrigir com o dedo.">${esc(s.ouvido||'')}</textarea>
+ <div class="row" style="margin-top:8px;align-items:center"><small id="cn" class="hint" style="flex:1;margin:0"></small><button id="tl">Passar para a Letra</button><button id="lp">Limpar</button></div></div>
+ <details class="card2"><summary><b>Opções de gravação</b></summary><div style="margin-top:10px"> <select id="tp" aria-label="Tipo de gravação"><option value="mix">Voz + violão juntos</option><option value="violao">Só o violão</option><option value="voz">Só a voz</option></select>
+ <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
+ <label class="chk"><input type="checkbox" id="nsc" ${recNS?'checked':''}> Filtro de ruído do celular</label>
+ <label class="fb2" style="margin-top:8px">Gravar com o gravador do celular<input id="cap" type="file" accept="audio/*" capture hidden></label></div></details>
+ <details class="card2" ${stu.met?'open':''}><summary><b>Metrônomo</b></summary><div class="row" style="align-items:center;margin-top:10px"><button id="bm" aria-label="Diminuir">−</button><span class="tone" id="bv">${s.bpm}</span><button id="bp" aria-label="Aumentar">+</button><span class="hint" style="margin:0">BPM</span><select id="sg" aria-label="Compasso" style="width:auto;margin-left:auto"><option value="4">4/4</option><option value="3">3/4</option><option value="6">6/8</option><option value="2">2/4</option></select></div>
+ <input type="range" id="br" min="40" max="220" value="${s.bpm}" aria-label="Andamento"><div class="bd">${Array.from({length:s.sig},()=>'<i></i>').join('')}</div>
+ <div class="row"><button id="mt" class="pri" style="flex:1">▶ Ligar</button></div>
+ <label class="chk"><input type="checkbox" id="cc" ${stu.cnt?'checked':''}> Contar um compasso antes de gravar</label><label class="chk"><input type="checkbox" id="ck" ${stu.keep?'checked':''}> Manter o metrônomo tocando na gravação (use fones)</label></div></details>
+ <details class="card2"><summary><b>Afinador de violão</b></summary><div class="tun"><div class="tnn" id="tnn">—</div><div class="hint" id="tnh" style="margin:0;text-align:center"></div><div class="nb"><i class="nz"></i><i id="tnd" class="nd" style="left:50%"></i></div><div class="hint" id="tns" style="text-align:center;margin:6px 0 0"></div><p class="hint" style="text-align:center">Cordas soltas: E A D G B E</p><button id="tn" class="pri" style="width:100%">🎤 Começar</button></div></details>
+ <details class="card2"><summary><b>Notas e ideias</b></summary><textarea class="code" id="nt" style="white-space:pre-wrap;min-height:20vh;margin-top:10px" placeholder="Ideias de melodia, acordes, rimas, tema da música…">${esc(s.notas||'')}</textarea></details>
+ <div class="card2"><b>Gravações desta música</b><div id="tk" style="margin-top:8px"></div></div>
+ <div class="card2" id="sum" style="${keepSum?'':'display:none'}">${keepSum}</div>
+ <div class="savebar"><button class="pri" id="sa">Salvar tudo</button></div>`;
+ $('#tp').value=recTipo;$('#tp').onchange=e=>{recTipo=e.target.value};$('#bkc').onchange=e=>{recBk=e.target.checked};$('#nsc').onchange=e=>{recNS=e.target.checked};
+ $('#lg').value=stu.lang;$('#lg').onchange=e=>{stu.lang=e.target.value;if(srOn){stopSR();startLetra(s)}};
+ $('#rc').onclick=studioRec;
+ $('#cap').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1}));save(s);put(s);studio(p)};
+ $('#so').onclick=()=>{if(rc)return toast('Já está escrevendo junto com a gravação.');if(srOn){stopSR();studio(p);return}if(!SR)return toast('Este app não escreve a letra sozinho. Abra pelo Chrome.');if(!startLetra(s))toast('Não consegui iniciar o microfone.');else studio(p)};
+ const dr=$('#dr');dr.oninput=e=>{s.ouvido=e.target.value;save();cnts()};cnts();
+ document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n\n':'')+'['+b.dataset.sec+']\n';dr.value=s.ouvido;dr.scrollTop=dr.scrollHeight;save();cnts()});
+ $('#tl').onclick=()=>{const d=(s.ouvido||'').trim();if(!d)return toast('Ainda não há texto para passar.');if((s.letra||'').includes(d.slice(0,60)))return toast('Esse texto já está na Letra.');s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+d:d;save();toast('Passada para a aba Letra')};
+ $('#lp').onclick=()=>twice($('#lp'),()=>{if((s.ouvido||'').trim()&&!(s.letra||'').includes((s.ouvido||'').trim().slice(0,60))){s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+s.ouvido.trim():s.ouvido.trim()}s.ouvido='';save();studio(p);toast('Rascunho limpo (o texto foi mantido na Letra)')},'Confirmar?');
+ const bp=v=>{s.bpm=Math.max(40,Math.min(220,v));$('#bv').textContent=s.bpm;$('#br').value=s.bpm;save()};
+ $('#bm').onclick=()=>bp(s.bpm-1);$('#bp').onclick=()=>bp(s.bpm+1);$('#br').oninput=e=>bp(+e.target.value);
+ $('#sg').value=String(s.sig);$('#sg').onchange=e=>{s.sig=+e.target.value;save();const was=stu.met;metStop();studio(p);if(was)metStart(s)};
+ $('#mt').onclick=()=>{stu.met?metStop():metStart(s)};uiMet();
+ $('#cc').onchange=e=>{stu.cnt=e.target.checked};$('#ck').onchange=e=>{stu.keep=e.target.checked};
+ $('#tn').onclick=()=>stu.tun?tunerStop():tunerStart();uiTun();
+ $('#nt').oninput=e=>{s.notas=e.target.value;save()};
+ $('#sa').onclick=saveAll;
+ const tk=$('#tk'),L=s.audios.filter(a=>a.blob);
+ tk.innerHTML=L.length?L.map(a=>`<div class="take" data-a="${a.id}"><div class="row" style="align-items:center"><button class="ic" data-pl="${a.id}" aria-label="Ouvir">${IC.play}</button><span class="info" style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name||'Faixa')}</b><small class="hint">${((a.blob.size||0)/1048576).toFixed(1)} MB</small></span><button class="ic" data-dl="${a.id}" aria-label="Excluir gravação">${IC.trash}</button></div><div class="pl"></div></div>`).join(''):'<p class="hint" style="margin:0">Ainda não há gravação. Toque em Gravar e escrever.</p>';
+ tk.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{const a=s.audios.find(x=>x.id===b.dataset.pl),box=b.closest('.take').querySelector('.pl');if(box.firstChild){box.innerHTML='';return}document.querySelectorAll('#tk .pl audio').forEach(x=>{x.pause();x.parentNode.innerHTML=''});const el=document.createElement('audio');el.controls=true;el.src=URL.createObjectURL(a.blob);el.style.width='100%';el.onended=()=>URL.revokeObjectURL(el.src);box.appendChild(el);el.play().catch(()=>{})});
+ tk.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>twice(b,()=>{const i=s.audios.findIndex(x=>x.id===b.dataset.dl);if(i<0)return;const a=s.audios[i];s.audios.splice(i,1);delBlob(a.id);save(s);put(s);studio(p);toast('Gravação excluída')},'<span style="font:700 12px var(--ui)">Excluir?</span>'))}
 
 (async()=>{await openDB();songs=await getAll();const rn=await recoverRecs();list();if(rn)toast(rn+' gravação(ões) interrompida(s) recuperada(s)')})();
 </script>

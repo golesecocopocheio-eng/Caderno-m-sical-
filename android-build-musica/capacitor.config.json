@@ -1,0 +1,8 @@
+{
+  "appId": "br.bar.cadernomusical",
+  "appName": "Caderno Musical",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

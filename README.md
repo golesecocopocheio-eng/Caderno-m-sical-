@@ -52,6 +52,23 @@ dados ficam salvos só no aparelho.
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
 
+### Ficha técnica
+
+Na Ficha técnica (Caixa → Ficha técnica) dá para **criar**, **editar** e **apagar** fichas: nome do drink,
+ingredientes (um por linha, com a quantidade na frente: `40 ml Gin`, `½ limão taiti`, `2 dash Angostura bitter`)
+e modo de preparo. Cada receita mostra o custo total e o custo de cada ingrediente. As fichas ficam em
+`meta.fichas` do Caixa (entram no backup e na sincronização); as 12 originais continuam como padrão.
+
+### Ferramentas (aba ⚙️ Ajustes)
+
+- **Abas:** mostrar, esconder e mudar a ordem das abas da barra de baixo.
+- **Cores do app:** Roxo (padrão), Azul-noite, Verde-garrafa, Vinho ou Grafite.
+- **Apresentação de abertura:** ligar/desligar e velocidade (rápida, normal, longa).
+- **Fichas técnicas:** atalho e "voltar às fichas originais".
+- **Editor avançado:** ver e corrigir qualquer dado (fechamentos de um mês, configurações do Caixa,
+  Portaria, Estoque). Antes de salvar, faz um backup automático (os últimos 3), que pode ser restaurado.
+- **Manutenção:** recarregar, limpar a cópia offline e ver o espaço usado.
+
 ### Tabela de preços (aba 💲 Preços) e foto da nota de compra
 
 Tire foto da nota de compra (ou use o botão **📷 Foto da nota** na Ficha técnica). O app lê cada produto

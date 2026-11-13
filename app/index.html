@@ -68,27 +68,42 @@ nav button:active{background:rgba(255,255,255,.08)}
 .painel .pc-check input{width:auto}
 @media (prefers-color-scheme:dark){.painel select{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel .pc-check{color:#ecedf6}}
 /* apresentação animada de abertura */
-#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(circle at 50% 38%,#7c3aed 0%,#3b0764 46%,#12051f 100%);transition:opacity .45s ease,transform .45s ease}
-#intro.sai{opacity:0;transform:scale(1.06);pointer-events:none}
+#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle at 50% 38%,#7c3aed 0%,#3b0764 46%,#12051f 100%);transition:opacity .9s ease,transform .9s ease}
+#intro.sai{opacity:0;transform:scale(1.04);pointer-events:none}
 #intro[hidden]{display:none}
-.in-emb{width:min(56vw,260px);height:auto;filter:drop-shadow(0 10px 30px rgba(245,158,11,.25))}
-.in-traco{stroke-dasharray:1;stroke-dashoffset:1;animation:inDesenha .7s ease-out .1s forwards}
-.in-haste,.in-base{opacity:0;transform-origin:100px 150px;animation:inSobe .35s ease-out .55s forwards}
-.in-liq{transform:translateY(52px);animation:inEnche .7s cubic-bezier(.3,.7,.4,1) .7s forwards}
-.in-palito{opacity:0;transform:translate(14px,-40px) rotate(12deg);animation:inCai .55s cubic-bezier(.3,1.4,.5,1) 1.05s forwards}
-.in-onda{opacity:0;transform-origin:100px 92px;animation:inOnda 1.1s ease-out 1.15s forwards}
-.in-onda.o2{animation-delay:1.3s}
-.in-nome{font:900 clamp(34px,11vw,52px)/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;letter-spacing:.02em;opacity:0;transform:translateY(18px);animation:inTexto .5s ease-out 1.2s forwards;text-shadow:0 6px 24px rgba(0,0,0,.45)}
-.in-nome span{background:linear-gradient(100deg,#b45309 0%,#fde68a 35%,#fff7d6 45%,#f59e0b 60%,#b45309 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:inBrilho 1.2s ease-in-out 1.5s forwards}
-.in-sub{font:700 clamp(10px,3.2vw,14px)/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fcd34d;letter-spacing:.22em;opacity:0;animation:inTexto .5s ease-out 1.45s forwards}
+.in-emb{width:min(58vw,270px);height:auto;filter:drop-shadow(0 10px 30px rgba(245,158,11,.25));animation:inBrilhoTaca 2.4s ease-in-out 2.6s infinite alternate}
+.in-traco{stroke-dasharray:1;stroke-dashoffset:1;animation:inDesenha 1.2s ease-in-out .3s forwards}
+.in-haste,.in-base{opacity:0;transform-origin:100px 150px;animation:inSobe .6s ease-out 1.2s forwards}
+.in-liq{transform:translateY(52px);animation:inEnche 1.3s cubic-bezier(.3,.7,.4,1) 1.6s forwards}
+.in-palito{opacity:0;transform:translate(14px,-40px) rotate(12deg);animation:inCai .8s cubic-bezier(.3,1.4,.5,1) 2.6s forwards}
+.in-onda{opacity:0;transform-origin:100px 92px;animation:inOnda 1.3s ease-out 3.1s 2 forwards}
+.in-onda.o2{animation-delay:3.35s}
+.in-nome{font:900 clamp(34px,11vw,52px)/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;letter-spacing:.02em;opacity:0;transform:translateY(22px);animation:inTexto .9s ease-out 3.3s forwards;text-shadow:0 6px 24px rgba(0,0,0,.45)}
+.in-nome span{background:linear-gradient(100deg,#b45309 0%,#fde68a 35%,#fff7d6 45%,#f59e0b 60%,#b45309 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:inBrilho 1.6s ease-in-out 3.9s forwards}
+.in-sub{font:700 clamp(10px,3.2vw,14px)/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fcd34d;letter-spacing:.22em;opacity:0;transform:translateY(10px);animation:inTexto .8s ease-out 3.9s forwards}
 @keyframes inDesenha{to{stroke-dashoffset:0}}
 @keyframes inSobe{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:none}}
 @keyframes inEnche{to{transform:translateY(0)}}
 @keyframes inCai{to{opacity:1;transform:none}}
 @keyframes inOnda{0%{opacity:0;transform:scale(.8)}50%{opacity:.9}100%{opacity:.45;transform:scale(1)}}
 @keyframes inTexto{to{opacity:1;transform:none}}
+@keyframes inBrilhoTaca{from{filter:drop-shadow(0 10px 30px rgba(245,158,11,.25))}to{filter:drop-shadow(0 10px 44px rgba(245,158,11,.55))}}
 @keyframes inBrilho{from{background-position:100% 0}to{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){#intro{display:none}}
+.fr-g summary{font-weight:700;cursor:pointer;padding:4px 0;font-size:16px}
+.fr-g[open] summary{margin-bottom:6px}
+.fr-aba{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #dcdfe8}
+.fr-aba:first-child{border-top:0}
+.painel .fr-s{width:auto!important;margin:0 0 0 6px!important;padding:8px 14px!important}
+.painel .fr-s:disabled{opacity:.35}
+.fr-temas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.painel .fr-tema{margin:0!important;color:#fff!important;padding:16px 8px!important}
+.painel .fr-tema.on{outline:3px solid #f59e0b;outline-offset:2px}
+@media (prefers-color-scheme:dark){.fr-aba{border-color:#2c2e40}}
+.in-assina{position:absolute;left:0;right:0;bottom:calc(22px + var(--sab));text-align:center;font:500 11px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:rgba(255,255,255,.62);letter-spacing:.08em;opacity:0;animation:inTexto .9s ease-out 4.2s forwards}
+.in-assina b{font-weight:700;color:rgba(252,211,77,.85)}
+.assinatura{text-align:center;color:#98a2b3;font-size:12px;margin:24px 0 6px;letter-spacing:.05em}
+.assinatura b{color:#7c3aed}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
@@ -114,12 +129,17 @@ nav button:active{background:rgba(255,255,255,.08)}
   </svg>
   <div class="in-nome">BAR <span>CONECT</span></div>
   <div class="in-sub">CAIXA · PORTARIA · ESTOQUE</div>
+  <div class="in-assina">desenvolvedor <b>Sanka Brunelli</b></div>
 </div>
 <script>
-/* apresentação: some sozinha em ~2,4 s ou com um toque */
+/* apresentação: some sozinha em ~5,6 s ou com um toque */
 (function(){const el=document.getElementById('intro');if(!el)return;
-  const sair=()=>{if(el.classList.contains('sai'))return;el.classList.add('sai');setTimeout(()=>el.hidden=true,500)};
-  el.addEventListener('click',sair);setTimeout(sair,2800)})();
+  let cfg={on:1,v:1};try{cfg=Object.assign(cfg,JSON.parse(localStorage.getItem('bar-intro')||'{}'))}catch(e){}
+  const forcar=sessionStorage.getItem('bar-intro-forcar');sessionStorage.removeItem('bar-intro-forcar');
+  if(!+cfg.on&&!forcar){el.hidden=true;return}
+  const v=+cfg.v||1;if(v!==1)requestAnimationFrame(()=>el.getAnimations({subtree:true}).forEach(a=>a.playbackRate=1/v));
+  const sair=()=>{if(el.classList.contains('sai'))return;el.classList.add('sai');setTimeout(()=>el.hidden=true,950)};
+  el.addEventListener('click',sair);setTimeout(sair,5600*v)})();
 </script>
 <header class="marca" id="marca"><img src="icons/logo-horizontal.png" alt="Bar Conect"><span id="marcaAba"></span></header>
 <div class="frames">
@@ -200,6 +220,7 @@ const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
+  if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
   const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
   if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
@@ -294,7 +315,7 @@ document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStora
 
 /* ---- Histórico ---- */
 const NOMEAPP={caixa:'🍸 Caixa',portaria:'🚪 Portaria',estoque:'📦 Estoque'};
-const META={sup:'fornecedores',fin:'pagamentos a fornecedores',adv:'vales',reg:'faltas e feriados',pg:'comissões e salários pagos',nomes:'equipe',sal:'salários',piso:'piso salarial',est:'estoque do caixa',semCom:'quem não tem comissão',fer:'feriados',base:'saldo inicial'};
+const META={fichas:'fichas técnicas',custo:'preços dos ingredientes',tabPrecos:'tabela de preços',sup:'fornecedores',fin:'pagamentos a fornecedores',adv:'vales',reg:'faltas e feriados',pg:'comissões e salários pagos',nomes:'equipe',sal:'salários',piso:'piso salarial',est:'estoque do caixa',semCom:'quem não tem comissão',fer:'feriados',base:'saldo inicial'};
 const PGN={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',cortesia:'Cortesia'},CATN={turista:'Turista',morador:'Morador',clan:'Clã'};
 const brl=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dm=k=>k.slice(8,10)+'/'+k.slice(5,7);
@@ -399,5 +420,7 @@ else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serv
 </script>
 <script src="foto.js"></script>
 <script src="precos.js"></script>
+<script src="ferramentas.js"></script>
+<script>(function(){const a=document.getElementById('f-ajustes');if(!a)return;const d=document.createElement('p');d.className='assinatura';d.innerHTML='desenvolvedor <b>Sanka Brunelli</b>';a.appendChild(d)})();</script>
 </body>
 </html>

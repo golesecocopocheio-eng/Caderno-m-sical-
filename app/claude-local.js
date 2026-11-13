@@ -275,6 +275,22 @@
     return { total, onde: 'aparelho' };
   };
 
+  /* ---------------- Apagar registros (Ferramentas → editor avançado) ---------------- */
+  window.__barApagar = async function (app, col, ids) {
+    if (!ids || !ids.length) return 0;
+    const c = await iniciarCore().catch(() => null);
+    if (c) {
+      for (const id of ids) await c.bar.collection(app + '_' + col).doc(id).delete();
+      return ids.length;
+    }
+    const KEY = 'app-bar-db:' + app + '.html';
+    let atual = {};
+    try { atual = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+    ids.forEach((id) => { if (atual[col]) delete atual[col][id]; });
+    localStorage.setItem(KEY, JSON.stringify(atual));
+    return ids.length;
+  };
+
   /* ---------------- Exportar tudo (aba Backup) ----------------
    * Junta Caixa, Portaria e Estoque no mesmo formato que __barImportar aceita.
    * O Caixa vem do próprio celular (é onde ele grava primeiro); Portaria e Estoque vêm

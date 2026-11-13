@@ -55,6 +55,12 @@ h2{font-weight:700}
 .r>:last-child{white-space:nowrap;text-align:right;flex-shrink:0}
 .tot>:last-child{white-space:nowrap}
 select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px}
+.fic{align-items:center}.fic .ficv{text-align:right;flex-shrink:0;margin-left:10px}.fic .ficv b{display:block;font-size:16px}.fic .ficv small{color:var(--mute);font-size:12px}
+.fhero{display:grid;grid-template-columns:1fr auto;gap:10px;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border:0}
+.fhero small{display:block;opacity:.8;font-size:12.5px}.fhero b{font-size:26px;font-weight:800}
+.ing{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:9px 0;border-top:1px solid var(--line)}
+.ing:first-of-type{border-top:0}.ing .q{font-weight:800;color:var(--acc);white-space:nowrap;min-width:52px}.ing .v{white-space:nowrap;font-weight:700}.ing .v.neg{font-weight:500;font-size:13px}
+button.neg{color:var(--neg)}
 </style>
 </head>
 <body>
@@ -396,18 +402,65 @@ const COCK=[
 {n:'Maria Bonita',i:['60 ml Cachaça','1 limão taiti','2 ponteiros de manjericão','3 fatias de gengibre','30 ml syrup sugar','Completar com soda','30 ml chá de hibisco (em cima)']},
 {n:'Virgulino Lampião',i:['60 ml Cachaça','1 limão taiti','1 punhado de capim santo','40 ml açúcar mascavo','Completar com soda','Finalizar com chá de hibisco','3 gotas de pimenta tabasco']},
 {n:'Corisco',i:['60 ml Cachaça','½ limão taiti','4 pedaços de abacaxi','1 punhado de capim santo','30 ml syrup sugar','Completar com soda','Chá de hibisco / pimenta tabasco']}];
-function fichas(){app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Ficha técnica</h1></header><div class="row" style="margin-bottom:10px"><button class="pri" id="cu">💰 Custo das receitas</button><button class="pri" id="nfF" style="background:#ec4899;border-color:#ec4899">📷 Foto da nota</button></div>${COCK.map((c,k)=>`<button class="item" data-c="${k}"><span><b>${he(c.n)}</b><small>${c.i.length} itens</small></span><b>›</b></button>`).join('')}`;$('#back').onclick=home;$('#cu').onclick=custo;$('#nfF').onclick=()=>{try{window.parent.__barAbrirNota()}catch(e){toast('Abra pelo app Bar Conect')}};document.querySelectorAll('.item').forEach(b=>b.onclick=()=>ficha(+b.dataset.c))}
-function ficha(k){const c=COCK[k];app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>${he(c.n)}</h1></header><div class="card"><h2>Ingredientes</h2><ol style="padding-left:22px;margin:0">${c.i.map(x=>`<li style="margin-bottom:6px">${he(x)}</li>`).join('')}</ol></div><div class="card"><div class="r big"><span>Custo da receita</span><b>${M(costOf(c).t)}</b></div>${costOf(c).mi?`<p class="hint" style="margin:6px 0 0">Faltam ${costOf(c).mi} preço(s) em Custo das receitas.</p>`:''}</div>${c.p?`<div class="card"><h2>Modo de preparo</h2><p style="margin:0">${he(c.p)}</p></div>`:''}<div class="row"><button id="pv">‹ Anterior</button><button id="nx">Próximo ›</button></div>`;$('#back').onclick=fichas;$('#pv').onclick=()=>ficha((k+COCK.length-1)%COCK.length);$('#nx').onclick=()=>ficha((k+1)%COCK.length)}
+function fichas(){const L=COCK.map((c,k)=>{const o=costOf(c);return `<button class="item fic" data-c="${k}"><span><b>${he(c.n)}</b><small>${c.i.length} ingrediente${c.i.length===1?'':'s'}${o.mi?` · <span class="neg">faltam ${o.mi} preço${o.mi===1?'':'s'}</span>`:''}</small></span><span class="ficv"><b>${M(o.t)}</b><small>custo</small></span></button>`}).join('');
+ app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Ficha técnica</h1></header>
+ <button class="pri" id="nova" style="width:100%;padding:14px">➕ Nova ficha técnica</button>
+ <div class="row" style="margin:10px 0 14px"><button id="cu">💰 Preços dos ingredientes</button><button id="nfF">📷 Foto da nota</button></div>
+ <h2>${COCK.length} receita${COCK.length===1?'':'s'}</h2>${L||'<p class="hint">Nenhuma ficha ainda. Toque em Nova ficha técnica.</p>'}`;
+ $('#back').onclick=home;$('#cu').onclick=custo;$('#nova').onclick=()=>fichaEditar(-1);
+ $('#nfF').onclick=()=>{try{window.parent.__barAbrirNota()}catch(e){toast('Abra pelo app Bar Conect')}};
+ document.querySelectorAll('.fic').forEach(b=>b.onclick=()=>ficha(+b.dataset.c))}
+function custoIng(x){return precoIng(x)}
+function ficha(k){const c=COCK[k];if(!c)return fichas();const o=costOf(c);
+ const linhas=c.i.map((t,n)=>{const x=c.l[n],v=custoIng(x),m=t.match(/^([\d.,½¼¾]+\s*(?:ml|dash|gotas?|folhas?|fatias?|ponteiros?|peda[çc]os?|punhado|buqu[eê])?)\s+(?:de\s+)?(.+)$/i);
+  return `<div class="ing"><span class="q">${m?he(m[1]):baseDose(x.k)?'1 dose':'—'}</span><span class="n">${he(m?m[2]:t)}</span><span class="v ${v===null?'neg':''}">${v===null?'sem preço':M(v)}</span></div>`}).join('');
+ app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>${he(c.n)}</h1></header>
+ <div class="card fhero"><div><small>Custo da receita</small><b>${M(o.t)}</b></div><div><small>Ingredientes</small><b>${c.i.length}</b></div></div>
+ ${o.mi?`<p class="hint" style="margin:-4px 0 10px">⚠️ ${o.mi} ingrediente${o.mi===1?'':'s'} sem preço: tire foto da nota ou preencha em Preços dos ingredientes.</p>`:''}
+ <div class="card"><h2>Ingredientes</h2>${linhas||'<p class="hint">Sem ingredientes.</p>'}</div>
+ ${c.p?`<div class="card"><h2>Modo de preparo</h2><p style="margin:0;white-space:pre-wrap">${he(c.p)}</p></div>`:''}
+ <div class="row"><button id="ed">✏️ Editar</button><button id="del" class="neg">🗑️ Apagar</button></div>
+ <div class="row" style="margin-top:8px"><button id="pv">‹ Anterior</button><button id="nx">Próxima ›</button></div>`;
+ $('#back').onclick=fichas;$('#ed').onclick=()=>fichaEditar(k);
+ $('#del').onclick=()=>twice($('#del'),()=>{COCK.splice(k,1);salvarFichas();toast('Ficha apagada');fichas()});
+ $('#pv').onclick=()=>ficha((k+COCK.length-1)%COCK.length);$('#nx').onclick=()=>ficha((k+1)%COCK.length)}
+function fichaEditar(k){const c=k>=0?COCK[k]:{n:'',i:[],p:''};
+ app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>${k>=0?'Editar ficha':'Nova ficha técnica'}</h1></header>
+ <div class="card"><h2>Nome do drink</h2><input id="fn_" value="${he(c.n)}" placeholder="ex.: Negroni da casa"></div>
+ <div class="card"><h2>Ingredientes</h2><p class="hint" style="margin:0 0 8px">Um por linha, com a quantidade na frente: <b>40 ml Gin</b> · <b>½ limão taiti</b> · <b>2 dash Angostura bitter</b> · <b>Completar com tônica</b></p>
+ <textarea id="fi_" rows="8" placeholder="40 ml Gin&#10;20 ml Campari&#10;½ limão taiti">${he(c.i.join('\n'))}</textarea><div id="fprev" class="hint" style="margin-top:8px"></div></div>
+ <div class="card"><h2>Modo de preparo</h2><textarea id="fp_" rows="4" placeholder="ex.: Bater na coqueteleira com gelo e coar na taça.">${he(c.p||'')}</textarea></div>
+ <div class="row"><button id="can">Cancelar</button><button class="pri" id="sv">💾 Salvar ficha</button></div>`;
+ const prev=()=>{const it=$('#fi_').value.split('\n').map(t=>t.trim()).filter(Boolean);const tmp={l:it.map(parseI)};const o=costOf(tmp);
+  $('#fprev').textContent=it.length?`${it.length} ingrediente${it.length===1?'':'s'} · custo ${M(o.t)}${o.mi?` (faltam ${o.mi} preço${o.mi===1?'':'s'})`:''}`:''};
+ $('#fi_').oninput=prev;prev();
+ const volta=()=>k>=0?ficha(k):fichas();$('#back').onclick=volta;$('#can').onclick=volta;
+ $('#sv').onclick=()=>{const n=$('#fn_').value.trim(),it=$('#fi_').value.split('\n').map(t=>t.trim()).filter(Boolean),pr=$('#fp_').value.trim();
+  if(!n){toast('Dê um nome para a ficha');return}if(!it.length){toast('Coloque pelo menos um ingrediente');return}
+  const nova={n,i:it,p:pr};let pos=k;if(k>=0)COCK[k]=nova;else{COCK.push(nova);pos=COCK.length-1}
+  salvarFichas();toast('Ficha salva');ficha(pos)}}
 const norm=t=>t.toLowerCase().replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim();
 const NUMF=s=>({'½':.5,'¼':.25,'¾':.75}[s]??(parseFloat(s.replace(',','.'))||0));
 const parseI=t=>{let m=t.match(/^([\d.,½¼¾]+)\s*ml\s+(.+)$/i);if(m)return{k:norm(m[2]),q:NUMF(m[1]),u:'ml'};m=t.match(/^([\d.,½¼¾]+)\s*(?:dash|gotas?|folhas?|fatias?|ponteiros?|peda[çc]os?|punhado|buqu[eê])?\s*(?:de\s+)?(.+)$/i);if(m)return{k:norm(m[2]),q:NUMF(m[1]),u:'un'};return{k:norm(t)+' (dose)',q:1,u:'un'}};
-COCK.forEach(c=>{c.l=c.i.map(parseI)});
+const COCK_PADRAO=COCK.map(c=>({n:c.n,i:[...c.i],p:c.p||''}));
+if(Array.isArray(meta.fichas)&&meta.fichas.length)COCK.splice(0,COCK.length,...meta.fichas.map(c=>({n:c.n,i:[...(c.i||[])],p:c.p||''})));
+const reparseFichas=()=>COCK.forEach(c=>{c.l=c.i.map(parseI)});reparseFichas();
+const salvarFichas=()=>{meta.fichas=COCK.map(c=>({n:c.n,i:c.i,p:c.p||''}));reparseFichas();persist()};
+window.__cxFichasPadrao=()=>{COCK.splice(0,COCK.length,...COCK_PADRAO.map(c=>({n:c.n,i:[...c.i],p:c.p})));delete meta.fichas;reparseFichas();persist();fichas()};
+window.__cxAbrirFichas=()=>fichas();
 window.__cxIngredientes=()=>{const o={};COCK.forEach(c=>c.l.forEach(x=>{if(!o[x.k]||x.u==='ml')o[x.k]=x.u}));return o};
-const costOf=c=>{let t=0,mi=0;c.l.forEach(x=>{const f=(meta.custo||{})[x.k];if(!f||!num(f.p)){mi++;return}t+=x.u==='ml'?x.q*num(f.p)/(num(f.v)||1000):x.q*num(f.p)});return{t,mi}};
+const DOSE=()=>num(meta.doseMl)||50;
+const GARRAFA=()=>num(meta.garrafaMl)||750;
+const baseDose=k=>/\s*\(dose\)$/.test(k)?k.replace(/\s*\(dose\)$/,''):'';
+const doseDe=k=>{const f=(meta.custo||{})[k];return f&&num(f.p)?DOSE()*num(f.p)/(num(f.v)||GARRAFA()):null};
+function precoIng(x){const f=(meta.custo||{})[x.k];if(f&&num(f.p))return x.u==='ml'?x.q*num(f.p)/(num(f.v)||GARRAFA()):x.q*num(f.p);
+ const b=baseDose(x.k);if(b){const d=doseDe(b);if(d!==null)return x.q*d}return null}
+const costOf=c=>{let t=0,mi=0;c.l.forEach(x=>{const v=precoIng(x);if(v===null){mi++;return}t+=v});return{t,mi}};
 function custo(){const keys={};COCK.forEach(c=>c.l.forEach(x=>{if(!keys[x.k]||x.u==='ml')keys[x.k]=x.u}));const ks=Object.keys(keys).sort();
  const draw=()=>{$('#cc').innerHTML=COCK.map(c=>{const o=costOf(c);return `<div class="r"><span>${he(c.n)}${o.mi?`<small style="display:block;color:var(--mute)">faltam ${o.mi} preço(s)</small>`:''}</span><b>${M(o.t)}</b></div>`}).join('')};
- app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Custo das receitas</h1></header><button class="pri" id="nfC" style="width:100%;margin-bottom:10px;background:#ec4899;border-color:#ec4899">📷 Foto da nota: atualizar preços</button><div class="card"><h2>Custo por receita</h2><div id="cc"></div></div><details class="card" open><summary style="font-weight:700;cursor:pointer">Preços dos ingredientes</summary><p class="hint" style="margin:8px 0">Bebidas em ml: preço da garrafa e ml da garrafa (se vazio, usa 1000). Outros itens: preço por unidade (dash, gota, folha, fatia, dose).</p>${ks.map((k,i)=>{const f=(meta.custo||{})[k]||{};return `<div class="f"><label for="cp${i}">${he(k)}</label><div style="display:flex;gap:6px;flex:1"><input id="cp${i}" inputmode="decimal" placeholder="R$" value="${he(f.p||'')}">${keys[k]==='ml'?`<input id="cv${i}" inputmode="decimal" placeholder="ml (1000)" value="${he(f.v||'')}">`:''}</div></div>`}).join('')}</details>`;
- ks.forEach((k,i)=>{const sv=()=>{(meta.custo=meta.custo||{})[k]={p:$('#cp'+i).value,v:keys[k]==='ml'?$('#cv'+i).value:''};persist();draw()};$('#cp'+i).oninput=sv;if(keys[k]==='ml')$('#cv'+i).oninput=sv});draw();$('#back').onclick=fichas;$('#nfC').onclick=()=>{try{window.parent.__barAbrirNota()}catch(e){toast('Abra pelo app Bar Conect')}}}
+ app.innerHTML=`<header><button class="ic" id="back" aria-label="Voltar">‹</button><h1>Custo das receitas</h1></header><button class="pri" id="nfC" style="width:100%;margin-bottom:10px;background:#ec4899;border-color:#ec4899">📷 Foto da nota: atualizar preços</button><div class="card"><h2>Custo por receita</h2><div id="cc"></div></div><div class="card"><h2>Tamanho da dose</h2><div class="f" style="margin:0"><label for="doseMl">Uma dose tem (ml)</label><input id="doseMl" inputmode="numeric" placeholder="50" value="${he(meta.doseMl||'')}"></div><div class="f" style="margin:8px 0 0"><label for="garrafaMl">Garrafa padrão (ml), quando não informada</label><input id="garrafaMl" inputmode="numeric" placeholder="750" value="${he(meta.garrafaMl||'')}"></div><p class="hint" style="margin:6px 0 0">Usado para calcular o valor da dose de cada garrafa e os ingredientes sem quantidade (ex.: "Jack Daniels" = 1 dose).</p></div><details class="card" open><summary style="font-weight:700;cursor:pointer">Preços dos ingredientes</summary><p class="hint" style="margin:8px 0">Bebidas: <b>preço da garrafa</b> e <b>ml da garrafa</b> (se vazio, usa a garrafa padrão). O app mostra o valor da dose. Outros itens: preço por unidade (dash, gota, folha, fatia).</p>${ks.map((k,i)=>{const f=(meta.custo||{})[k]||{},b=baseDose(k);return `<div class="f" style="align-items:start"><label for="cp${i}">${he(k)}<small id="cd${i}" style="display:block;color:var(--mute);font-size:12.5px"></small></label><div style="display:flex;gap:6px;flex:1"><input id="cp${i}" inputmode="decimal" placeholder="${b&&doseDe(b)!==null?'da garrafa':'R$'}" value="${he(f.p||'')}">${keys[k]==='ml'?`<input id="cv${i}" inputmode="decimal" placeholder="ml (${GARRAFA()})" value="${he(f.v||'')}">`:''}</div></div>`}).join('')}</details>`;
+ const doseTxt=()=>ks.forEach((k,i)=>{const e=$('#cd'+i);if(!e)return;const b=baseDose(k);if(keys[k]==='ml'){const d=doseDe(k);e.textContent=d===null?'':'garrafa '+M(num(((meta.custo||{})[k]||{}).p))+' · dose '+DOSE()+' ml '+M(d)}else if(b&&!num(((meta.custo||{})[k]||{}).p)){const d=doseDe(b);e.textContent=d===null?'':'1 dose de '+b+': '+M(d)}else e.textContent=''});
+ ks.forEach((k,i)=>{const sv=()=>{(meta.custo=meta.custo||{})[k]={p:$('#cp'+i).value,v:keys[k]==='ml'?$('#cv'+i).value:''};persist();draw();doseTxt()};$('#cp'+i).oninput=sv;if(keys[k]==='ml')$('#cv'+i).oninput=sv});$('#doseMl').oninput=e=>{meta.doseMl=e.target.value;persist();draw();doseTxt()};$('#garrafaMl').oninput=e=>{meta.garrafaMl=e.target.value;persist();draw();doseTxt()};draw();doseTxt();$('#back').onclick=fichas;$('#nfC').onclick=()=>{try{window.parent.__barAbrirNota()}catch(e){toast('Abra pelo app Bar Conect')}}}
 if(!meta.est){meta.est=[['Destilados',['Jack Daniels','Rum','Vodka','Gin','Cachaça']],['Licores e aperitivos',['Campari','Aperol','Jägermeister','Amaretto','Cointreau','Licor 43','Vermute tinto']],['Vinhos e espumantes',['Vinho tinto','Vinho branco','Espumante brut']],['Cervejas',[]],['Refrigerantes e mixers',['Tônica','Soda','Suco de laranja','Água']],['Frutas e ervas',['Limão taiti','Limão siciliano','Abacaxi','Gengibre','Manjericão','Capim santo','Maracujá']],['Outros insumos',['Angostura bitter','Clara de ovo','Açúcar','Açúcar mascavo','Pimenta tabasco']]].map(([n,a],g)=>({id:'g'+g,n,items:a.map((x,i)=>({id:'i'+g+'_'+i,n:x,q:'',m:''}))}));persist()}
 let ESTM='all';
 const estLow=i=>num(i.m)>0&&num(i.q)<=num(i.m);

@@ -43,13 +43,11 @@ jobs:
       - name: Criar o projeto Android
         run: npx cap add android
 
-      - name: Liberar a câmera (Android 11+ precisa declarar o app de câmera no manifesto)
-        run: |
-          sed -i 's#</manifest>#    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>\n    </queries>\n</manifest>#' android/app/src/main/AndroidManifest.xml
-          grep -n "IMAGE_CAPTURE" android/app/src/main/AndroidManifest.xml
-
       - name: Gerar ícones e tela de abertura
         run: npx capacitor-assets generate --android --iconBackgroundColor '#3b0764' --splashBackgroundColor '#12051f' --splashBackgroundColorDark '#12051f'
+
+      - name: Ajustes do Android (abertura sem tela branca e câmera)
+        run: python3 ajustar-android.py
 
       - name: Definir a versão do app
         run: |

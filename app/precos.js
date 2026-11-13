@@ -29,6 +29,9 @@
   const chaveNome = (s) => semAcento(s).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
   const hoje = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const lerJSON = (k) => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch (e) { return {}; } };
+  const doseMl = () => num(lerJSON('caixa-bar-meta').doseMl) || 50;
+  // valor da garrafa (ou unidade) e da dose, a partir do preço unitário e dos ml
+  const garrafaDose = (it) => it.tipo === 'ml' && it.conteudo > 0 ? 'garrafa ' + brl(it.preco) + ' · dose ' + doseMl() + ' ml ' + brl(it.preco * doseMl() / it.conteudo) : '';
 
   /* ---------- leitura da nota ---------- */
   const PULAR = /\b(TOTAL|SUBTOTAL|SUB-TOTAL|DESCONTO|ACRESCIMO|TROCO|ICMS|IPI|PIS|COFINS|CNPJ|CPF|IE\b|VALOR A PAGAR|FORMA DE PAG|DINHEIRO|CARTAO|CREDITO|DEBITO|PIX|TRIBUTOS|FRETE|QTD\.? TOTAL|ITENS)\b/;
@@ -124,6 +127,8 @@
     it.rende = alias && alias.rende ? alias.rende : (it.un === 'KG' ? rendePadrao(it.ficha || it.produto) : it.un === 'DZ' ? 12
       : it.ficha && ingredientes[it.ficha] === 'un' && it.tipo === 'ml' && it.conteudo ? it.conteudo : 1);
     it.mlkg = alias && alias.mlkg ? alias.mlkg : mlkgPadrao(it.ficha || it.produto);
+    // bebida sem ml na nota: usa a garrafa padrão (750 ml, ajustável na Ficha técnica)
+    if (!it.conteudo && it.un !== 'KG' && it.ficha && ingredientes[it.ficha] === 'ml') { it.conteudo = num(lerJSON('caixa-bar-meta').garrafaMl) || 750; it.tipo = 'ml'; }
     it.somar = !!it.estoque;
   }
 
@@ -159,8 +164,9 @@
         <div class="ft-grid pc-g3">
           <label>Qtd<input inputmode="decimal" data-k="qtd" value="${campo(it.qtd, it.qtd % 1 ? 3 : 0)}"></label>
           <label>Unidade<select data-k="un">${['UN', 'KG', 'CX', 'PCT', 'FD', 'DZ', 'LT', 'GF'].map((u) => `<option${u === it.un ? ' selected' : ''}>${u}</option>`).join('')}</select></label>
-          <label>Preço (R$)<input inputmode="decimal" data-k="preco" value="${campo(it.preco)}"></label>
+          <label>Preço un. (R$)<input inputmode="decimal" data-k="preco" value="${campo(it.preco)}"></label>
         </div>
+        <label>Total pago (R$) <small>— o app divide pela quantidade</small><input inputmode="decimal" data-k="totalPago" value="${campo(it.qtd * it.preco)}"></label>
         <div class="ft-grid">
           <label>Conteúdo por ${esc(it.un)}<input inputmode="decimal" data-k="conteudo" value="${it.conteudo ? campo(it.conteudo, 0) : ''}" placeholder="ex.: 750"></label>
           <label>Medida<select data-k="tipo">${[['ml', 'ml'], ['g', 'g'], ['un', 'unidades']].map(([v, n]) => `<option value="${v}"${v === it.tipo ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
@@ -170,7 +176,7 @@
         ${it.ficha && ingredientes[it.ficha] === 'ml' && it.un === 'KG' ? `<label>Rende quantos ml por kg? (suco / volume)<input inputmode="decimal" data-k="mlkg" value="${campo(it.mlkg, 0)}"></label>` : ''}
         <label>📦 Item do estoque<select data-k="estoque">${opcoes(opE, it.estoque)}</select></label>
         ${it.estoque ? `<label class="pc-check"><input type="checkbox" data-k="somar"${it.somar ? ' checked' : ''}> Somar ${campo(it.qtd, it.qtd % 1 ? 3 : 0)} ${esc(it.un)} no estoque</label>` : ''}
-        <small class="ft-ok">Total da linha: ${brl(it.qtd * it.preco)}${it.total && Math.abs(it.total - it.qtd * it.preco) > 0.05 ? ' · ⚠️ na nota: ' + brl(it.total) : ''}${it.ficha ? ' · custo na receita: ' + custoReceita(it) : ''}</small>
+        <small class="ft-ok">${esc(rodape(it))}</small>
       </div>`;
     }).join('');
     $('#pcAcoes', painel).hidden = !rascunho.some((x) => !x.lendo);
@@ -188,17 +194,24 @@
     if (ingredientes[it.ficha] === 'ml') return c.v ? brl(c.p / c.v) + ' por ml' : 'informe o conteúdo';
     return brl(c.p) + ' por unidade';
   }
+  const rodape = (it) => [garrafaDose(it), 'total ' + brl(it.qtd * it.preco) + (it.total && Math.abs(it.total - it.qtd * it.preco) > 0.05 ? ' (na nota: ' + brl(it.total) + ' ⚠️)' : ''), it.ficha ? 'na receita: ' + custoReceita(it) : ''].filter(Boolean).join(' · ');
   function atualizarRodape(box, it) {
     const r = box.querySelector('.ft-ok');
-    if (r) r.textContent = 'Total da linha: ' + brl(it.qtd * it.preco) + (it.total && Math.abs(it.total - it.qtd * it.preco) > 0.05 ? ' · ⚠️ na nota: ' + brl(it.total) : '') + (it.ficha ? ' · custo na receita: ' + custoReceita(it) : '');
+    if (r) r.textContent = rodape(it);
   }
   painel.addEventListener('input', (e) => {
     const box = e.target.closest('.pc-it'); if (!box) return;
     const it = rascunho[+box.dataset.i], k = e.target.dataset.k; if (!k) return;
+    if (k === 'totalPago') {
+      const t = num(e.target.value); if (it.qtd > 0) it.preco = Math.round(t / it.qtd * 100) / 100;
+      const pr = box.querySelector('[data-k="preco"]'); if (pr) pr.value = campo(it.preco);
+      atualizarRodape(box, it); return;
+    }
     it[k] = e.target.type === 'checkbox' ? e.target.checked : ['qtd', 'preco', 'conteudo', 'rende', 'mlkg'].includes(k) ? num(e.target.value) : e.target.value;
-    if (['ficha', 'estoque', 'un', 'somar'].includes(k)) desenharLeitura(); else atualizarRodape(box, it);
+    if (k === 'preco' || k === 'qtd') { const tp = box.querySelector('[data-k="totalPago"]'); if (tp && document.activeElement !== tp) tp.value = campo(it.qtd * it.preco); }
+    if (['ficha', 'estoque', 'un', 'somar'].includes(k)) setTimeout(desenharLeitura, 0); else atualizarRodape(box, it);
   });
-  painel.addEventListener('change', (e) => { if (e.target.closest('.pc-it') && e.target.dataset.k === 'qtd') desenharLeitura(); });
+  painel.addEventListener('change', (e) => { if (e.target.closest('.pc-it') && e.target.dataset.k === 'qtd') setTimeout(desenharLeitura, 0); });
   painel.addEventListener('click', (e) => {
     const x = e.target.closest('[data-x]'); if (!x || !x.closest('#pcLeitura')) return;
     if (!x.dataset.arm) { x.dataset.arm = '1'; x.textContent = 'Remover?'; setTimeout(() => { x.dataset.arm = ''; x.textContent = '✕'; }, 3000); return; }
@@ -293,7 +306,7 @@
       const q = p.estoque ? qtdEstoque(p.estoque) : null;
       const valor = q !== null ? q * p.preco : null;
       if (valor) valorTotal += valor;
-      const porMedida = p.conteudo ? (p.tipo === 'g' ? brl(p.preco / p.conteudo * 1000) + '/kg' : p.tipo === 'ml' ? brl(p.preco / p.conteudo * 1000) + '/litro' : brl(p.preco / p.conteudo) + '/un') : '';
+      const porMedida = p.conteudo ? (p.tipo === 'g' ? brl(p.preco / p.conteudo * 1000) + '/kg' : p.tipo === 'ml' ? brl(p.preco / p.conteudo * 1000) + '/litro · <b>dose ' + doseMl() + ' ml ' + brl(p.preco * doseMl() / p.conteudo) + '</b>' : brl(p.preco / p.conteudo) + '/un') : '';
       return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div></div>`;
     }).join('');
     $('#pcTabela', painel).innerHTML = linhas || '<p>Nenhum produto ainda. Tire foto de uma nota de compra.</p>';

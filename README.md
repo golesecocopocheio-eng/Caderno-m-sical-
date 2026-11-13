@@ -52,6 +52,23 @@ dados ficam salvos só no aparelho.
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
 
+### Ficha técnica
+
+Na Ficha técnica (Caixa → Ficha técnica) dá para **criar**, **editar** e **apagar** fichas: nome do drink,
+ingredientes (um por linha, com a quantidade na frente: `40 ml Gin`, `½ limão taiti`, `2 dash Angostura bitter`)
+e modo de preparo. Cada receita mostra o custo total e o custo de cada ingrediente. As fichas ficam em
+`meta.fichas` do Caixa (entram no backup e na sincronização); as 12 originais continuam como padrão.
+
+### Ferramentas (aba ⚙️ Ajustes)
+
+- **Abas:** mostrar, esconder e mudar a ordem das abas da barra de baixo.
+- **Cores do app:** Roxo (padrão), Azul-noite, Verde-garrafa, Vinho ou Grafite.
+- **Apresentação de abertura:** ligar/desligar e velocidade (rápida, normal, longa).
+- **Fichas técnicas:** atalho e "voltar às fichas originais".
+- **Editor avançado:** ver e corrigir qualquer dado (fechamentos de um mês, configurações do Caixa,
+  Portaria, Estoque). Antes de salvar, faz um backup automático (os últimos 3), que pode ser restaurado.
+- **Manutenção:** recarregar, limpar a cópia offline e ver o espaço usado.
+
 ### Tabela de preços (aba 💲 Preços) e foto da nota de compra
 
 Tire foto da nota de compra (ou use o botão **📷 Foto da nota** na Ficha técnica). O app lê cada produto
@@ -62,6 +79,10 @@ próximas notas. Ao aplicar:
 - atualiza o custo das receitas (`meta.custo` do Caixa): bebidas pelo preço da garrafa e ml; itens
   comprados por kg e usados por unidade (limão) pelo rendimento (unidades por kg e ml de suco por kg);
   itens usados em dash/gota pelo número de doses da garrafa (≈1 ml cada);
+- calcula o **valor da garrafa** (total pago ÷ quantidade) e o **valor da dose** pelos ml da garrafa
+  (dose padrão de 50 ml e garrafa padrão de 750 ml quando os ml não aparecem, ambos ajustáveis em
+  Ficha técnica → Preços dos ingredientes); ingredientes sem
+  quantidade nas receitas (ex.: "Jack Daniels") contam como 1 dose;
 - soma a compra no Estoque (movimento de compra, preço e registro da compra);
 - guarda o produto na tabela de preços (`meta.tabPrecos`), com preço por litro/kg, data, nota,
   quantidade e valor em estoque.

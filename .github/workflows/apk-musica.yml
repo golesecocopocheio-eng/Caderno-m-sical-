@@ -53,7 +53,7 @@ jobs:
           grep -n "RECORD_AUDIO\|MODIFY_AUDIO" "$M"
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#1F0C3C' --splashBackgroundColor '#1F0C3C'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#09090B' --splashBackgroundColor '#09090B'
 
       - name: Definir a versão do app
         run: |

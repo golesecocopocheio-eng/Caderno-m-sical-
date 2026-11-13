@@ -125,11 +125,14 @@ button.rec{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:
 .take{border-bottom:1px solid var(--line);padding:8px 0}.take:last-child{border:0}
 details.card2>summary{cursor:pointer;list-style:none}details.card2>summary::-webkit-details-marker{display:none}
 .savebar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));padding-top:6px;z-index:4}.savebar button{width:100%;padding:15px;font-size:16px;box-shadow:0 6px 20px rgba(20,30,80,.25)}
+.ic{position:relative}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line);vertical-align:middle}.ic .dot{position:absolute;right:5px;top:5px;border:2px solid var(--card);width:11px;height:11px;box-sizing:border-box}.dot.on{background:#1f9d55}
+.code2{font:700 24px var(--mono);text-align:center;padding:16px 8px;margin:10px 0;background:var(--bg);border:1px dashed var(--line);border-radius:12px;word-break:break-all;user-select:all}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" role="status"></div>
+<script src="firebase-config.js" onerror="void 0"></script>
 <script>
 const N=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],F=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 const idx=n=>{let i=N.indexOf(n);return i<0?F.indexOf(n):i};
@@ -148,7 +151,7 @@ async function getAll(){let ss=[];
  if(!ss.length){try{const m=JSON.parse(localStorage.getItem('cm_mirror')||'[]');if(m.length){ss=m.map(s=>({...s,audios:[]}));ss.forEach(s=>put(s));setTimeout(()=>toast('Recuperei '+m.length+' música(s) (só o texto) da cópia interna.'),600)}}catch(e){}}
  for(const s of ss){s.audios=s.audios||[];let leg=false;for(const a of s.audios){if(a.blob){leg=true}else{const x=db?await rd('a',a.id):null;a.blob=x?x.blob:null;a._p=true}}if(leg)put(s)}
  return ss}
-function put(s){try{
+function put(s){clPush(s);try{
  const m={...s,audios:s.audios.map(a=>{const{blob,_p,...r}=a;return r})};
  if(!db){mirrorSoon();setSv('Salvo '+hhmm()+' (só texto)');return}
  const tx=db.transaction(['s','a'],'readwrite'),as=tx.objectStore('a');
@@ -159,7 +162,7 @@ function put(s){try{
  catch(e){setSv('Erro ao salvar');toast('Não foi possível salvar neste aparelho. Faça uma cópia de segurança.')}}
 function delBlob(id){try{if(db)db.transaction('a','readwrite').objectStore('a').delete(id)}catch(e){}}
 function del(id){try{if(db)db.transaction('s','readwrite').objectStore('s').delete(id)}catch(e){}}
-function delSong(s){(s.audios||[]).forEach(a=>delBlob(a.id));del(s.id);mirrorSoon()}
+function delSong(s){clDel(s);(s.audios||[]).forEach(a=>delBlob(a.id));del(s.id);mirrorSoon()}
 const sT=new Map();
 function save(o){o=o||cur;if(!o)return;o.upd=Date.now();setSv('Salvando…');clearTimeout(sT.get(o.id));sT.set(o.id,setTimeout(()=>{sT.delete(o.id);put(o)},300))}
 function flushAll(){songs.forEach(s=>{if(sT.has(s.id)){clearTimeout(sT.get(s.id));sT.delete(s.id);put(s)}})}
@@ -200,7 +203,7 @@ function rows(){const f=songs.filter(s=>((s.title||'')+' '+(s.artist||'')).toLow
  document.querySelectorAll('.song').forEach(b=>b.onclick=()=>{cur=songs.find(s=>s.id===b.dataset.id);tab='cifra';shift=0;edit=!(cur.cifra||'').trim();song()})}
 function list(){cur=null;mixStop();
  const nt=songs.reduce((n,s)=>n+s.audios.length,0);
- app.innerHTML=`<header class="top"><div class="row"><h1 class="brand">Clan music</h1>${inst?'<button id="in">Instalar</button>':''}<button class="ic" id="im0" aria-label="Trazer minhas músicas">${IC.imp}</button><button class="ic" id="bk" aria-label="Backup e restauração">${IC.bk}</button></div>
+ app.innerHTML=`<header class="top"><div class="row"><h1 class="brand">Clan music</h1>${inst?'<button id="in">Instalar</button>':''}<button class="ic" id="cl0" aria-label="Nuvem">${IC.cloud}<span id="cld" class="dot ${cl.on?'on':''}"></span></button><button class="ic" id="im0" aria-label="Trazer minhas músicas">${IC.imp}</button><button class="ic" id="bk" aria-label="Backup e restauração">${IC.bk}</button></div>
  <p class="stat">${songs.length?songs.length+(songs.length===1?' música':' músicas')+(nt?' · '+nt+(nt===1?' faixa gravada':' faixas gravadas'):''):'Sua biblioteca começa aqui'}</p><div class="staff" aria-hidden="true"></div></header>
  <div class="seg" role="tablist"><button data-v="lib" class="${hv==='lib'?'on':''}">Músicas</button><button data-v="play" class="${hv==='play'?'on':''}">Tocar</button></div>
  ${hv==='play'?playHome():''}
@@ -210,7 +213,7 @@ ${songs.length?`<input id="q" type="search" placeholder="Buscar música ou artis
  <div class="songs" id="rows"></div>
  ${songs.length?'':'<div class="empty"><div class="staff big" aria-hidden="true"></div><h2>Nenhuma música ainda</h2><p>Escreva a cifra, guarde a letra e grave voz e violão em faixas separadas.</p></div>'}
  <button class="cta" id="new">+ Nova música</button>`}`;
- document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{hv=b.dataset.v;list()});$('#im0').onclick=imp;
+ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{hv=b.dataset.v;list()});$('#im0').onclick=imp;$('#cl0').onclick=nuvem;
  if(hv==='play'){$('#bk').onclick=backup;if($('#bk2'))$('#bk2').onclick=backup;playBind();return}
  if($('#q'))$('#q').oninput=e=>{q=e.target.value;rows()};
  $('#new').onclick=()=>{cur={id:'s'+Date.now(),title:'',artist:'',key:'C',mode:'M',cifra:'',letra:'',audios:[],upd:Date.now()};songs.push(cur);put(cur);tab='cifra';shift=0;edit=true;song()};
@@ -371,7 +374,7 @@ function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
 const fxOpen=new Set();
 function mixUI(s){const b=$('#mxb');mx.dur=durOf(s);
  const tr=s.audios.map(a=>{const fx=a.fx||{},id=a.id;return `<div class="au"><div class="row"><input class="nm" data-n="${id}" value="${esc(a.name)}" aria-label="Nome da faixa"><button data-x="${id}" aria-label="Remover faixa" style="flex:0 0 auto">✕</button></div>
- ${a.blob&&!mx.bad[id]?'':'<p class="hint" style="color:var(--danger)">Não consegui ler este áudio.</p>'}
+ ${a.blob&&!mx.bad[id]?'':a.cloud&&!a.blob?'<p class="hint">Baixando da nuvem…</p>':'<p class="hint" style="color:var(--danger)">Não consegui ler este áudio.</p>'}
  <div class="row"><button class="tg ${a.mute?'on':''}" data-m="${id}" style="flex:0 0 auto">Mudo</button><button class="tg ${a.solo?'on':''}" data-so="${id}" style="flex:0 0 auto">Solo</button><input type="range" min="0" max="150" value="${Math.round((a.vol==null?1:a.vol)*100)}" data-v="${id}" aria-label="Volume"><b class="pc" id="pv_${id}">${Math.round((a.vol==null?1:a.vol)*100)}%</b></div>
  <div class="row"><small class="hint" style="flex:0 0 auto;margin:0">Atraso</small><input type="range" min="-500" max="500" step="5" value="${a.off||0}" data-o="${id}" aria-label="Atraso em milissegundos"><b class="pc" id="po_${id}">${a.off||0} ms</b></div>
  <details class="fx" data-id="${id}" ${fxOpen.has(id)?'open':''}><summary>Efeitos</summary>
@@ -670,7 +673,75 @@ function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechR
  tk.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{const a=s.audios.find(x=>x.id===b.dataset.pl),box=b.closest('.take').querySelector('.pl');if(box.firstChild){box.innerHTML='';return}document.querySelectorAll('#tk .pl audio').forEach(x=>{x.pause();x.parentNode.innerHTML=''});const el=document.createElement('audio');el.controls=true;el.src=URL.createObjectURL(a.blob);el.style.width='100%';el.onended=()=>URL.revokeObjectURL(el.src);box.appendChild(el);el.play().catch(()=>{})});
  tk.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>twice(b,()=>{const i=s.audios.findIndex(x=>x.id===b.dataset.dl);if(i<0)return;const a=s.audios[i];s.audios.splice(i,1);delBlob(a.id);save(s);put(s);studio(p);toast('Gravação excluída')},'<span style="font:700 12px var(--ui)">Excluir?</span>'))}
 
-(async()=>{await openDB();songs=await getAll();const rn=await recoverRecs();list();if(rn)toast(rn+' gravação(ões) interrompida(s) recuperada(s)')})();
+/* ---------- nuvem (Firebase) ---------- */
+IC.cloud='<svg class="i" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 9.5a4.2 4.2 0 0 1 0 8.5z"/></svg>';
+const cl={on:false,starting:false,got:false,col:null,fs:null,audio:false,busy:0,msg:'',apply:new Set(),timers:new Map(),dead:new Set(),unsub:null};
+const lsg=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},lss=(k,v)=>{try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}};
+const loadJs=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('não carregou '+src));document.head.appendChild(s)});
+function clCfg(){try{if(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey)return window.FIREBASE_CONFIG;const j=lsg('cm_fbcfg');return j?JSON.parse(j):null}catch(e){return null}}
+function parseCfg(t){const o={};for(const m of String(t).matchAll(/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g))o[m[1]]=m[2];return o.apiKey&&o.projectId?o:null}
+const clCode=()=>lsg('cm_code');
+function newCode(){const A='abcdefghjkmnpqrstuvwxyz23456789',b=new Uint8Array(16);(window.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.random()*256)}).getRandomValues(b);let c='';b.forEach((v,i)=>{c+=A[v%A.length];if(i%4===3&&i<15)c+='-'});return c}
+function clStatus(t){cl.msg=t;const e=$('#cls');if(e)e.textContent=t;const d=$('#cld');if(d)d.className='dot '+(cl.on?'on':'')}
+async function clStart(){if(cl.on||cl.starting)return;const cfg=clCfg(),code=clCode();if(!cfg||!code)return;cl.starting=true;
+ try{
+  if(!window.firebase)for(const f of ['app','auth','firestore'])await loadJs('vendor/firebase-'+f+'-compat.js');
+  const fb=window.firebase,app=fb.apps.length?fb.app():fb.initializeApp(cfg),auth=app.auth();
+  await new Promise((ok,no)=>{const off=auth.onAuthStateChanged(u=>{if(u){off();ok()}});if(!auth.currentUser)auth.signInAnonymously().catch(no)});
+  cl.fs=app.firestore();try{cl.fs.settings({ignoreUndefinedProperties:true})}catch(e){}
+  try{await cl.fs.enablePersistence({synchronizeTabs:true})}catch(e){}
+  cl.col=cl.fs.collection('musicas').doc(code).collection('songs');cl.got=false;
+  if(lsg('cm_audio')==='1'){try{await loadJs('vendor/cm-storage.js');await window.cmStore.init(cfg);cl.audio=true}catch(e){cl.audio=false;clStatus('Áudio na nuvem indisponível: '+(e.code||e.message))}}
+  cl.on=true;clStatus('Conectando…');
+  cl.unsub=cl.col.onSnapshot(clPull,e=>clStatus('Sem acesso à nuvem ('+(e.code||'erro')+'). Veja as regras do Firebase.'));
+ }catch(e){cl.on=false;clStatus('Não conectou: '+(e.code==='auth/operation-not-allowed'?'ative o login "Anônimo" no Firebase':e.code||e.message))}
+ cl.starting=false}
+function clStop(){try{cl.unsub&&cl.unsub()}catch(e){}cl.on=false;cl.got=false;cl.unsub=null;clStatus('')}
+const clPay=s=>{const{audios,_p,...r}=s;return{...r,id:s.id,audios:(audios||[]).map(a=>{const{blob,_p,...x}=a;return x}),upd:s.upd||0}};
+function clPush(s){if(!cl.on||!cl.got||!s||cl.apply.has(s.id)||cl.dead.has(s.id))return;clearTimeout(cl.timers.get(s.id));
+ cl.timers.set(s.id,setTimeout(()=>{cl.timers.delete(s.id);if(!cl.on||cl.dead.has(s.id))return;
+  cl.col.doc(s.id).set(clPay(s)).then(()=>{clStatus('Sincronizado às '+hhmm());clAudio()}).catch(e=>clStatus('Erro ao enviar ('+(e.code||e.message)+')'))},1200))}
+function clDel(s){if(!cl.on||!s)return;cl.dead.add(s.id);clearTimeout(cl.timers.get(s.id));cl.col.doc(s.id).set({...clPay(s),del:true,upd:Date.now()}).catch(()=>{})}
+function clApply(r){if(!r||!r.id)return;const l=songs.find(x=>x.id===r.id);
+ if(r.del){if(l&&(r.upd||0)>=(l.upd||0)){songs=songs.filter(x=>x!==l);(l.audios||[]).forEach(a=>delBlob(a.id));del(l.id);mirrorSoon();if(cur===l){cur=null}if(!cur)list()}return}
+ cl.dead.delete(r.id);
+ if(l&&(l.upd||0)>=(r.upd||0)){if((l.upd||0)>(r.upd||0))clPush(l);return}
+ const m={...r,audios:(r.audios||[]).map(a=>{const lo=l&&l.audios.find(y=>y.id===a.id);return lo&&lo.blob?{...a,blob:lo.blob,_p:true}:{...a,blob:null}})};
+ if(l)l.audios.forEach(a=>{if(!a.cloud&&!m.audios.some(y=>y.id===a.id))m.audios.push(a);else if(a.cloud&&!m.audios.some(y=>y.id===a.id))delBlob(a.id)});
+ cl.apply.add(m.id);try{if(l)songs[songs.indexOf(l)]=m;else songs.push(m);if(cur===l&&l){cur=m;toast('Atualizado de outro aparelho')}put(m)}finally{cl.apply.delete(m.id)}
+ if(!cur)list()}
+function clPull(snap){const first=!cl.got;cl.got=true;
+ snap.docChanges().forEach(ch=>{if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;clApply(ch.doc.data())});
+ if(first){const ids=new Set(snap.docs.map(d=>d.id));songs.forEach(s=>{if(!ids.has(s.id))clPush(s)})}
+ clStatus('Sincronizado às '+hhmm());clAudio()}
+async function clAudio(){if(!cl.on||!cl.audio||cl.busy)return;cl.busy=1;const code=clCode();let err='';
+ try{for(const s of songs.slice()){for(const a of (s.audios||[]).slice()){
+  try{
+   if(a.blob&&!a.cloud){clStatus('Enviando áudio "'+(a.name||'').slice(0,24)+'"…');await window.cmStore.upload('musicas/'+code+'/'+a.id,a.blob);a.cloud=true;s.upd=Date.now();put(s)}
+   else if(!a.blob&&a.cloud){clStatus('Baixando áudio "'+(a.name||'').slice(0,24)+'"…');const b=await window.cmStore.download('musicas/'+code+'/'+a.id);a.blob=b;a._p=false;cl.apply.add(s.id);try{put(s)}finally{cl.apply.delete(s.id)}if(!cur)list();else if(cur===s&&tab==='estudio'&&$('#pane'))studio($('#pane'))}
+  }catch(e){err=e.code||e.message}}}
+ }finally{cl.busy=0;clStatus(err?'Áudio não sincronizou ('+err+')':'Sincronizado às '+hhmm())}}
+function nuvem(){cur=null;mixStop();const cfg=clCfg(),code=clCode();
+ app.innerHTML=`<header class="sh"><button class="ic" id="back" aria-label="Voltar">${IC.back}</button><div class="tt"><h1 class="ti" style="margin:0;font-size:24px">Nuvem</h1></div></header>
+ <p class="hint" style="margin-top:0">Deixa o Chrome e o APK com as mesmas músicas, sozinho, sempre que houver internet. Sem internet o app continua funcionando e sincroniza depois.</p>
+ ${!cfg?`<div class="card2"><b>1. Configuração do Firebase</b><p class="hint" style="margin:4px 0 8px">Cole o bloco "firebaseConfig" do projeto no Firebase (o passo a passo está na página de ajuda).</p><textarea class="code" id="fc" style="min-height:140px" placeholder='{ apiKey: "…", authDomain: "…", projectId: "…", storageBucket: "…", appId: "…" }'></textarea><button class="pri" id="fs" style="width:100%;padding:13px;margin-top:8px">Guardar configuração</button></div>`
+ :!code?`<div class="card2"><b>2. Código da sua conta</b><p class="hint" style="margin:4px 0 10px">O código é a chave das suas músicas na nuvem. Quem tem o código vê e edita tudo, então não compartilhe.</p><button class="pri" id="nc" style="width:100%;padding:13px">Criar um código novo</button><p class="hint" style="text-align:center;margin:12px 0 8px">ou, se já criou em outro aparelho:</p><input id="ec" placeholder="xxxx-xxxx-xxxx-xxxx" autocapitalize="off" autocomplete="off" spellcheck="false"><button id="en" style="width:100%;padding:12px;margin-top:8px">Entrar com este código</button></div>`
+ :`<div class="card2"><div class="row" style="align-items:center"><span id="cld" class="dot ${cl.on?'on':''}"></span><b style="flex:1">Nuvem ligada</b></div><p id="cls" class="hint" style="margin:6px 0 0">${esc(cl.msg||(cl.on?'Conectado.':'Conectando…'))}</p></div>
+ <div class="card2"><b>Seu código</b><div class="code2" id="cc2">${esc(code)}</div><div class="row"><button id="cp" style="flex:1">Copiar código</button></div><p class="hint">Para ligar outro aparelho: abra Nuvem nele, escolha "já criou em outro aparelho" e digite este código.</p></div>
+ <div class="card2"><label class="chk" style="margin:0"><input type="checkbox" id="au" ${lsg('cm_audio')==='1'?'checked':''}> Sincronizar também os áudios (precisa do Storage ligado no Firebase)</label></div>
+ <button id="sn" style="width:100%;padding:13px;margin-bottom:10px">Sincronizar agora</button>
+ <button id="of" style="width:100%;padding:13px">Desligar a nuvem neste aparelho</button><p class="hint">Desligar não apaga nada: suas músicas continuam aqui e na nuvem.</p>`}`;
+ $('#back').onclick=list;
+ if($('#fs'))$('#fs').onclick=()=>{const c=parseCfg($('#fc').value);if(!c)return toast('Não reconheci. Cole o bloco inteiro, com apiKey e projectId.');lss('cm_fbcfg',JSON.stringify(c));nuvem()};
+ if($('#nc'))$('#nc').onclick=()=>{lss('cm_code',newCode());nuvem();clStart().then(()=>nuvem())};
+ if($('#en'))$('#en').onclick=()=>{const c=$('#ec').value.trim().toLowerCase();if(!/^[a-z0-9]{4}(-[a-z0-9]{4}){3}$/.test(c))return toast('O código tem 16 letras e números em 4 grupos.');lss('cm_code',c);nuvem();clStart().then(()=>nuvem())};
+ if($('#cp'))$('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(clCode());toast('Código copiado')}catch(e){toast('Copie o código na tela.')}};
+ if($('#au'))$('#au').onchange=e=>{lss('cm_audio',e.target.checked?'1':'0');clStop();clStart().then(()=>nuvem())};
+ if($('#sn'))$('#sn').onclick=()=>{if(!cl.on){clStart().then(()=>nuvem());return}songs.forEach(s=>{cl.col.doc(s.id).get().then(d=>{if(!d.exists||(d.data().upd||0)<(s.upd||0))cl.col.doc(s.id).set(clPay(s))})});clAudio();toast('Sincronizando…')};
+ if($('#of'))$('#of').onclick=()=>twice($('#of'),()=>{clStop();lss('cm_code',null);nuvem();toast('Nuvem desligada neste aparelho')},'Confirmar?');
+ clStatus(cl.msg)}
+
+(async()=>{await openDB();songs=await getAll();const rn=await recoverRecs();list();if(rn)toast(rn+' gravação(ões) interrompida(s) recuperada(s)');clStart()})();
 </script>
 </body>
 </html>

@@ -96,6 +96,7 @@ button.rec{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:
 #toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 17px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center;z-index:9}
 #toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.upd{background:var(--hl);color:var(--hlT);padding:10px 16px;font-size:14px;text-align:center}.upd a{color:inherit;font-weight:700}
 </style>
 </head>
 <body>
@@ -478,6 +479,12 @@ async function exportAll(){flushAll();toast('Preparando a cópia…');
    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();toast('Cópia salva em Downloads')}}
   try{localStorage.setItem('lastBk',Date.now())}catch(e){}backup()}
  catch(e){if(e&&e.name==='AbortError')return;toast('Não consegui gerar a cópia neste aparelho.')}}
+
+// aviso de versão nova (APK): compara a versão instalada com a publicada
+(async()=>{try{if(!location.protocol.startsWith('http')&&location.protocol!=='https:')return;
+const mine=parseInt(await (await fetch('versao.txt',{cache:'no-store'})).text());
+const rem=parseInt(await (await fetch('https://golesecocopocheio-eng.github.io/Caderno-m-sical-/versao.txt?'+Date.now(),{cache:'no-store'})).text());
+if(mine&&rem&&rem>mine){const d=document.createElement('div');d.className='upd';d.innerHTML='<b>Nova versão do Clan music.</b> <a href="https://github.com/golesecocopocheio-eng/Caderno-m-sical-/releases/latest" target="_blank" rel="noopener">Baixar e instalar por cima</a>';document.body.prepend(d)}}catch(e){}})();
 try{if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 (async()=>{await openDB();songs=await getAll();const rn=await recoverRecs();list();if(rn)toast(rn+' gravação(ões) interrompida(s) recuperada(s)')})();

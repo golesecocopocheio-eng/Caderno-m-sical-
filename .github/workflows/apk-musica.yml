@@ -23,6 +23,8 @@ jobs:
         working-directory: android-build-musica
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -39,7 +41,7 @@ jobs:
       - name: Copiar o aplicativo (pasta musica/)
         run: |
           rm -rf www && cp -r ../musica www
-          echo "1.${{ github.run_number }}" > www/versao.txt
+          git rev-list --count HEAD > www/versao.txt
 
       - name: Criar o projeto Android
         run: npx cap add android

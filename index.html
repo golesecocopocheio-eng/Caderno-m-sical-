@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#161826">
+<meta name="theme-color" content="#12051f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bar Conect">
 <title>Bar Conect · Caixa, Portaria e Estoque</title>
@@ -14,10 +14,14 @@
 /* Área segura: no APK (Android com tela de ponta a ponta) o Capacitor informa a altura da barra de
    status e da barra de navegação em --safe-area-inset-*; no navegador vale o env(). */
 :root{--sat:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
-html,body{margin:0;height:100%;background:#f2f3f7;color:#161826;font:16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
-@media (prefers-color-scheme:dark){html,body{background:#0f1018;color:#ecedf6}}
+html,body{margin:0;height:100%;background:#12051f;color:#161826;font:16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){html,body{color:#ecedf6}.frames{background:#0f1018!important}}
 body{display:flex;flex-direction:column;padding-top:var(--sat);box-sizing:border-box}
-.frames{flex:1;position:relative}
+.frames{flex:1;position:relative;background:#f2f3f7}
+.marca{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 14px 9px;background:linear-gradient(100deg,#12051f 0%,#2e0a52 55%,#4c1d95 100%);box-shadow:0 4px 18px rgba(18,5,31,.35);position:relative;z-index:2}
+.marca img{height:34px;width:auto;display:block}
+.marca span{font:700 13px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:#fcd34d;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.marca[hidden]{display:none}
 iframe,.painel{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;box-sizing:border-box}
 iframe.on,.painel.on{display:block}
 .painel{overflow:auto;padding:28px 18px 24px;max-width:480px;margin:0 auto;left:0;right:0}
@@ -25,15 +29,15 @@ iframe.on,.painel.on{display:block}
 .painel p{color:#667085;font-size:14px;margin:0 0 16px}
 .painel label{display:block;font-size:13px;color:#667085;margin:12px 0 4px}
 .painel input{width:100%;box-sizing:border-box;padding:12px;font-size:17px;border:1px solid #dcdfe8;border-radius:12px;background:#fff;color:#161826}
-.painel button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#6d28d9;color:#fff;font-size:16px;font-weight:700}
+.painel button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;font-size:16px;font-weight:700;box-shadow:0 6px 16px rgba(76,29,149,.25)}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:#161826;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
+nav{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:linear-gradient(180deg,#1e0b36,#12051f);border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
 nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 11px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
 nav button span{font-size:23px;line-height:1;transition:transform .2s}
-nav button.on{color:#fff;background:rgba(167,139,250,.22)}
+nav button.on{color:#fcd34d;background:linear-gradient(180deg,rgba(245,158,11,.22),rgba(245,158,11,.08));box-shadow:inset 0 0 0 1px rgba(252,211,77,.25)}
 nav button.on span{transform:translateY(-1px) scale(1.08)}
 nav button:active{background:rgba(255,255,255,.08)}
 .hs{background:#fff;border:1px solid #dcdfe8;border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:center}
@@ -68,6 +72,7 @@ nav button:active{background:rgba(255,255,255,.08)}
 <script src="claude-local.js"></script>
 </head>
 <body>
+<header class="marca" id="marca"><img src="icons/logo-horizontal.png" alt="Bar Conect · Clan Music"><span id="marcaAba"></span></header>
 <div class="frames">
   <iframe id="f-caixa" title="Caixa bar" data-src="caixa.html"></iframe>
   <iframe id="f-portaria" title="Portaria do Bar" data-src="portaria.html"></iframe>
@@ -146,6 +151,7 @@ const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
+  const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
   if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));

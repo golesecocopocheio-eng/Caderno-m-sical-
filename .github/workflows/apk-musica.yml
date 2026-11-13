@@ -1,0 +1,84 @@
+name: Gerar APK do Caderno Musical
+
+on:
+  push:
+    branches: [main, claude/caderno-musical-apk]
+    paths: ['musica/**', 'android-build-musica/**', '.github/workflows/apk-musica.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-musica-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-build-musica
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar o Capacitor
+        run: npm install
+
+      - name: Copiar o aplicativo (pasta musica/)
+        run: |
+          rm -rf www && cp -r ../musica www
+          echo "1.${{ github.run_number }}" > www/versao.txt
+
+      - name: Criar o projeto Android
+        run: npx cap add android
+
+      - name: Permitir o microfone (gravação e letra)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <application#' "$M"
+          grep -n "RECORD_AUDIO\|MODIFY_AUDIO" "$M"
+
+      - name: Gerar ícones e tela de abertura
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#0f5c4f' --splashBackgroundColor '#0f5c4f'
+
+      - name: Definir a versão do app
+        run: |
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Usar sempre a mesma chave de assinatura (permite atualizar sem desinstalar)
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ../android-build/debug.keystore ]; then echo "keystore não encontrado"; exit 1; fi
+          cp ../android-build/debug.keystore ~/.android/debug.keystore
+
+      - name: Gerar o APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Renomear
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ../CadernoMusical.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CadernoMusical-apk
+          path: CadernoMusical.apk
+
+      - name: Publicar para download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: musica-apk-${{ github.run_number }}
+          name: Caderno Musical (Android) · versão 1.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: false
+          files: CadernoMusical.apk

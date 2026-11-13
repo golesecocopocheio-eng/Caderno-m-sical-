@@ -1,0 +1,13 @@
+{
+  "name": "caderno-musical-android",
+  "private": true,
+  "description": "Gera o APK Android do Caderno Musical (pasta musica/) com o Capacitor.",
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0"
+  }
+}

@@ -88,10 +88,10 @@
     return worker;
   }
   // diminui e passa para tons de cinza (mais rápido e lê melhor)
-  async function prepararImagem(arquivo) {
+  async function prepararImagem(arquivo, max = 1800) {
     const url = URL.createObjectURL(arquivo);
     const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = url; });
-    const max = 1800, k = Math.min(1, max / Math.max(img.width, img.height));
+    const k = Math.min(1, max / Math.max(img.width, img.height));
     const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
     const g = c.getContext('2d'); g.drawImage(img, 0, 0, c.width, c.height);
     const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
@@ -259,5 +259,13 @@
   // Ao tocar na aba 📸 Foto: abre a câmera direto se o fechamento do dia ainda não tem foto.
   window.__barFotoAbrir = () => { if (!estado.fotos.length) $('#ftCam', painel).click(); };
   window.__barFotoLer = lerComprovante; // usado nos testes
+  // Leitura de foto compartilhada com a aba 💲 Preços (notas de compra)
+  window.__barOCR = async (arquivo, aoProgredir, max) => {
+    const { canvas, miniatura } = await prepararImagem(arquivo, max);
+    progresso = aoProgredir || (() => {});
+    const w = await obterWorker();
+    const r = await w.recognize(canvas);
+    return { texto: r.data.text, mini: miniatura };
+  };
   trocar();
 })();

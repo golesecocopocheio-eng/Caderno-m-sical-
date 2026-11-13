@@ -888,7 +888,7 @@ const lvNz=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').re
 const lvText=()=>{const b=(LV.base||'').replace(/\s+$/,'');return b+(b&&LV.lines.length?'\n':'')+LV.lines.join('\n')};
 /* Cada trecho final vira uma linha só. Trata o Chrome do Android, que reenvia o mesmo trecho e trechos cada vez maiores. */
 function lvCommit(i,t){let x=(t||'').trim().replace(/\s+/g,' ');if(!x)return false;x=x[0].toUpperCase()+x.slice(1);const n=lvNz(x);if(!n)return false;const L=LV.lines;
- if(LV.map[i]!==undefined){const k=LV.map[i];if(lvNz(L[k])===n)return false;L[k]=x;LV.t=Date.now();return true}
+ if(LV.map[i]!==undefined){const k=LV.map[i],o=lvNz(L[k]);if(o===n)return false;if(o.split(' ')[0]===n.split(' ')[0]){L[k]=x;LV.t=Date.now();return true}}
  const last=L.length-1,now=Date.now();
  if(last>=0&&now-LV.t<6000){const p=lvNz(L[last]);if(p===n||p.startsWith(n+' '))return false;if(n.startsWith(p+' ')){L[last]=x;LV.map[i]=last;LV.t=now;return true}}
  L.push(x);LV.map[i]=L.length-1;LV.t=now;return true}

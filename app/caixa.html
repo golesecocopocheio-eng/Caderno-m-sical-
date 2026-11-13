@@ -98,8 +98,7 @@ function home(){const ks=Object.keys(days).sort().reverse(),ym=today().slice(0,7
  <button class="pri" id="hoje" style="width:100%;padding:14px;font-size:17px;margin-bottom:10px">${days[today()]?'Continuar fechamento de hoje':'Fechar o caixa de hoje'}</button>
  <div class="row" style="margin-bottom:14px"><input type="date" id="dt" value="${today()}" aria-label="Outra data"><button id="go">Abrir esta data</button></div>
  <div class="card"><h2>Mês atual</h2><div class="r"><span>Bar vendeu (sem portaria)</span><b>${R(mb)}</b></div><div class="r"><span>Vendas (bar + portaria)</span><b>${R(mv)}</b></div><div class="r"><span>Gasto com DJ</span><b>${R(mdj)}</b></div><div class="r"><span>Gasto com Extra bar</span><b>${R(mex)}</b></div><div class="r"><span>Pago a fornecedores</span><b>${R(FO(ym))}</b></div><div class="r"><span>Saídas (total)</span><b>${R(ms+FO(ym))}</b></div><div class="r"><span>Resultado</span><b class="${sign(mr)}">${R(mr)}</b></div>${mf?`<div class="r"><span>Dinheiro a menos no mês</span><b class="neg">${R(mf)}</b></div>`:''}</div>
- <h2>${meta.verArq?'Arquivados':'Fechamentos'}</h2>${ks.filter(k=>!!days[k].arq===!!meta.verArq).map(k=>{const c=calc(days[k]);return `<button class="item" data-k="${k}"><span><b>${short(k)}</b><small>Bar ${R(c.bar)} · Portaria ${R(c.por)}${c.dif<0?' · <span class="neg">A menos '+R(-c.dif)+'</span>':''}</small></span><b class="${sign(c.res)}">${R(c.res)}</b></button>`}).join('')||'<p class="hint">Nenhum fechamento ainda.</p>'}
- ${(()=>{const I=cxPainel();const T=(id,ic,cor,t,sub)=>`<button class="tile" id="${id}" style="--tc:${cor}"><span class="tic">${ic}</span><b>${t}</b><small>${sub}</small></button>`;
+  ${(()=>{const I=cxPainel();const T=(id,ic,cor,t,sub)=>`<button class="tile" id="${id}" style="--tc:${cor}"><span class="tic">${ic}</span><b>${t}</b><small>${sub}</small></button>`;
  return `<h2 style="margin-top:22px">Equipe e pagamentos</h2><div class="menu">`
  +T('sw','💰','#f59e0b','Comissão da semana','Semana de '+I.semana)
  +T('eq','👥','#3b82f6','Equipe',I.pessoas+' pessoas · vales '+R(I.vales))
@@ -114,6 +113,8 @@ function home(){const ks=Object.keys(days).sort().reverse(),ym=today().slice(0,7
  +T('va','📁','#64748b',meta.verArq?'← Voltar':'Arquivados',meta.verArq?'Voltar aos fechamentos':I.arquivados+' fechamentos')
  +T('ar','📊','#14b8a6','Resumo geral','Todos os meses')
  +`</div>`})()}
+ <div style="margin-top:22px"></div><h2>${meta.verArq?'Arquivados':'Fechamentos'}</h2>${ks.filter(k=>!!days[k].arq===!!meta.verArq).map(k=>{const c=calc(days[k]);return `<button class="item" data-k="${k}"><span><b>${short(k)}</b><small>Bar ${R(c.bar)} · Portaria ${R(c.por)}${c.dif<0?' · <span class="neg">A menos '+R(-c.dif)+'</span>':''}</small></span><b class="${sign(c.res)}">${R(c.res)}</b></button>`}).join('')||'<p class="hint">Nenhum fechamento ainda.</p>'}
+
  <p class="hint" id="cst" style="margin:8px 0 0">${CL.st}</p><button id="cls" style="width:100%;margin-top:4px">☁️ Sincronizar agora</button>
  <button class="pri" id="bm" style="width:100%;margin-top:8px">✉️ Enviar backup por e-mail</button><p class="hint" style="margin:4px 0 0">${meta.bkAt?'Último backup enviado: '+new Date(meta.bkAt).toLocaleDateString('pt-BR')+' '+new Date(meta.bkAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'Você ainda não enviou nenhum backup.'}</p>
  <div class="row" style="margin-top:8px"><button id="bk">Copiar backup</button><button id="rs">Restaurar backup</button></div><div id="rsbox" style="margin-top:8px"></div><p class="hint" style="margin-top:16px">Atalho: no Chrome, toque em ⋮ e depois em <b>Adicionar à tela inicial</b>. O atalho vai se chamar <b>Caixa bar</b>.</p>`;

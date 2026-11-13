@@ -29,10 +29,10 @@ iframe.on,.painel.on{display:block}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:8px 8px calc(8px + var(--sab));background:#161826;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
+nav{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:#161826;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
-nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 12px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
-nav button span{font-size:24px;line-height:1;transition:transform .2s}
+nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 11px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
+nav button span{font-size:23px;line-height:1;transition:transform .2s}
 nav button.on{color:#fff;background:rgba(167,139,250,.22)}
 nav button.on span{transform:translateY(-1px) scale(1.08)}
 nav button:active{background:rgba(255,255,255,.08)}
@@ -57,6 +57,12 @@ nav button:active{background:rgba(255,255,255,.08)}
 .ft-big{border-top:1px dashed #dcdfe8;margin-top:6px;padding-top:8px;font-size:19px}
 .painel textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #dcdfe8;border-radius:12px;font:16px system-ui}
 @media (prefers-color-scheme:dark){.ft-card{background:#1a1b27;border-color:#2c2e40}.ft-cab small,.ft-ok,.ft-r small{color:#9aa0b5}.painel .ft-chips button{background:#2c2e40;color:#ecedf6}.painel .ft-chips button.on{background:#a78bfa;color:#17102e}}
+.pc-nome{font-weight:700}
+.pc-g3{grid-template-columns:1fr 1fr 1.2fr!important}
+.painel select{width:100%;box-sizing:border-box;padding:11px;font-size:16px;border:1px solid #dcdfe8;border-radius:12px;background:#fff;color:#161826}
+.painel .pc-check{display:flex!important;gap:8px;align-items:center;color:#161826;font-size:14px}
+.painel .pc-check input{width:auto}
+@media (prefers-color-scheme:dark){.painel select{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel .pc-check{color:#ecedf6}}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
@@ -78,6 +84,7 @@ nav button:active{background:rgba(255,255,255,.08)}
     <p style="margin-top:14px">Escolha um código difícil de adivinhar: quem souber o código consegue ver e mudar os dados.</p>
   </form>
 
+  <div class="painel" id="f-precos"></div>
   <div class="painel" id="f-foto"></div>
 
   <div class="painel" id="f-backup">
@@ -127,6 +134,7 @@ nav button:active{background:rgba(255,255,255,.08)}
   <button data-tab="caixa"><span>🍸</span>Caixa</button>
   <button data-tab="portaria"><span>🚪</span>Portaria</button>
   <button data-tab="estoque"><span>📦</span>Estoque</button>
+  <button data-tab="precos"><span>💲</span>Preços</button>
   <button data-tab="foto"><span>📸</span>Foto</button>
   <button data-tab="backup"><span>💾</span>Backup</button>
   <button data-tab="ajustes"><span>⚙️</span>Ajustes</button>
@@ -138,6 +146,7 @@ const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
+  if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   document.querySelectorAll('iframe,.painel').forEach(f=>f.classList.toggle('on',f.id==='f-'+t));
@@ -334,5 +343,6 @@ if('serviceWorker' in navigator&&window.Capacitor){navigator.serviceWorker.getRe
 else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 <script src="foto.js"></script>
+<script src="precos.js"></script>
 </body>
 </html>

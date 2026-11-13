@@ -49,6 +49,20 @@ dados ficam salvos só no aparelho.
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
 
+### Tabela de preços (aba 💲 Preços) e foto da nota de compra
+
+Tire foto da nota de compra (ou use o botão **📷 Foto da nota** na Ficha técnica). O app lê cada produto
+(quantidade, unidade UN/KG/CX..., preço unitário, total e tamanho: 750 ml, 1 kg, 12×350 ml) e sugere a
+ligação com o **ingrediente da Ficha técnica** e com o **item do Estoque**, lembrando a escolha para as
+próximas notas. Ao aplicar:
+
+- atualiza o custo das receitas (`meta.custo` do Caixa): bebidas pelo preço da garrafa e ml; itens
+  comprados por kg e usados por unidade (limão) pelo rendimento (unidades por kg e ml de suco por kg);
+  itens usados em dash/gota pelo número de doses da garrafa (≈1 ml cada);
+- soma a compra no Estoque (movimento de compra, preço e registro da compra);
+- guarda o produto na tabela de preços (`meta.tabPrecos`), com preço por litro/kg, data, nota,
+  quantidade e valor em estoque.
+
 ### Fechamento por foto (aba 📸 Foto)
 
 Tire foto dos comprovantes de fechamento das maquininhas (ou escolha da galeria). O app lê os valores

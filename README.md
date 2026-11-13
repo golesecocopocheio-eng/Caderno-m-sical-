@@ -79,6 +79,9 @@ próximas notas. Ao aplicar:
 - atualiza o custo das receitas (`meta.custo` do Caixa): bebidas pelo preço da garrafa e ml; itens
   comprados por kg e usados por unidade (limão) pelo rendimento (unidades por kg e ml de suco por kg);
   itens usados em dash/gota pelo número de doses da garrafa (≈1 ml cada);
+- calcula o **valor da garrafa** (total pago ÷ quantidade) e o **valor da dose** pelos ml da garrafa
+  (dose padrão de 50 ml, ajustável em Ficha técnica → Preços dos ingredientes); ingredientes sem
+  quantidade nas receitas (ex.: "Jack Daniels") contam como 1 dose;
 - soma a compra no Estoque (movimento de compra, preço e registro da compra);
 - guarda o produto na tabela de preços (`meta.tabPrecos`), com preço por litro/kg, data, nota,
   quantidade e valor em estoque.

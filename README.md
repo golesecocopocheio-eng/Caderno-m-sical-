@@ -49,6 +49,16 @@ dados ficam salvos só no aparelho.
    objeto `firebaseConfig`.
 6. Cole esse objeto em `app/firebase-config.js`, no lugar do `null`.
 
+### Fechamento por foto (aba 📸 Foto)
+
+Tire foto dos comprovantes de fechamento das maquininhas (ou escolha da galeria). O app lê os valores
+**sem internet** (Tesseract, em `app/vendor/ocr`) e separa **Crédito + Débito = Cartão** e
+**Pix + QR Code = Pix**; quando o comprovante tem linhas por bandeira e um resumo, usa o resumo para não
+contar duas vezes, e compara com o total lido na foto. O dinheiro é digitado à mão (calculadora: valores
+separados por + ou um por linha). O app soma todas as fotos da operação, monta o relatório e, com
+confirmação, preenche o fechamento do dia no Caixa (Bar: dinheiro, cartão, pix; ou Portaria), sem mexer
+nos outros campos do dia. Todos os valores lidos podem ser corrigidos antes de aplicar.
+
 ### Histórico de alterações
 
 Toda gravação no Caixa, na Portaria e no Estoque (criar, mudar ou apagar) fica registrada com data,

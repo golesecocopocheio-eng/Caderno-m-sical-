@@ -256,6 +256,8 @@
     msg.textContent = '✅ Aplicado no fechamento de ' + data.split('-').reverse().join('/') + '. Abra a aba Caixa para conferir.';
   };
 
+  // Ao tocar na aba 📸 Foto: abre a câmera direto se o fechamento do dia ainda não tem foto.
+  window.__barFotoAbrir = () => { if (!estado.fotos.length) $('#ftCam', painel).click(); };
   window.__barFotoLer = lerComprovante; // usado nos testes
   trocar();
 })();

@@ -80,7 +80,8 @@ próximas notas. Ao aplicar:
   comprados por kg e usados por unidade (limão) pelo rendimento (unidades por kg e ml de suco por kg);
   itens usados em dash/gota pelo número de doses da garrafa (≈1 ml cada);
 - calcula o **valor da garrafa** (total pago ÷ quantidade) e o **valor da dose** pelos ml da garrafa
-  (dose padrão de 50 ml, ajustável em Ficha técnica → Preços dos ingredientes); ingredientes sem
+  (dose padrão de 50 ml e garrafa padrão de 750 ml quando os ml não aparecem, ambos ajustáveis em
+  Ficha técnica → Preços dos ingredientes); ingredientes sem
   quantidade nas receitas (ex.: "Jack Daniels") contam como 1 dose;
 - soma a compra no Estoque (movimento de compra, preço e registro da compra);
 - guarda o produto na tabela de preços (`meta.tabPrecos`), com preço por litro/kg, data, nota,

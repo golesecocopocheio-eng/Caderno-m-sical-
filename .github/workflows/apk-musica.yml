@@ -1,4 +1,4 @@
-name: Gerar APK do Caderno Musical
+name: Gerar APK do Clan music
 
 on:
   push:
@@ -51,7 +51,7 @@ jobs:
           grep -n "RECORD_AUDIO\|MODIFY_AUDIO" "$M"
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#0f5c4f' --splashBackgroundColor '#0f5c4f'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#1E2A6B' --splashBackgroundColor '#1E2A6B'
 
       - name: Definir a versão do app
         run: |
@@ -94,18 +94,18 @@ jobs:
           if [ "$QUERO" != "$TEM" ]; then echo "ERRO: o APK não foi assinado com a chave fixa. O Android recusaria a atualização."; exit 1; fi
 
       - name: Renomear
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk ../CadernoMusical.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ../ClanMusic.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: CadernoMusical-apk
-          path: CadernoMusical.apk
+          name: ClanMusic-apk
+          path: ClanMusic.apk
 
       - name: Publicar para download
         uses: softprops/action-gh-release@v2
         with:
           tag_name: musica-apk-${{ github.run_number }}
-          name: Caderno Musical (Android) · versão 1.${{ github.run_number }}
+          name: Clan music (Android) · versão 1.${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           make_latest: false
-          files: CadernoMusical.apk
+          files: ClanMusic.apk

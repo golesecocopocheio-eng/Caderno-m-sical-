@@ -97,6 +97,22 @@ button.rec{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:
 #toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .upd{background:var(--hl);color:var(--hlT);padding:10px 16px;font-size:14px;text-align:center}.upd a{color:inherit;font-weight:700}
+
+.seg{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin:4px 0 14px}
+.seg button{flex:1;border:0;background:transparent;border-radius:10px;padding:10px;font-weight:700;color:var(--mute)}
+.seg button.on{background:var(--acc);color:var(--accT)}
+.song.now b{color:var(--chord)}
+.song[data-pid] .key{flex:0 0 46px;width:46px;height:46px;min-width:0;display:grid;place-items:center;border-radius:50%;background:var(--hl);color:var(--hlT);padding:0}
+.song[data-pid] .key .i{width:20px;height:20px}
+.eq{display:flex;gap:3px;align-items:flex-end;height:18px}.eq i{width:4px;background:currentColor;border-radius:2px;animation:eq .9s ease-in-out infinite}.eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.4s}
+@keyframes eq{0%,100%{height:5px}50%{height:18px}}@media(prefers-reduced-motion:reduce){.eq i{animation:none;height:12px}}
+.pbar{position:fixed;left:0;right:0;bottom:0;max-width:620px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 30px rgba(20,30,80,.12);z-index:5}
+.pbar .pi{display:flex;flex-direction:column;min-width:0}.pbar .pi b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pbar .pi small{color:var(--mute)}
+.pbar .ps{display:flex;align-items:center;gap:10px;margin:6px 0}.pbar .ps input{flex:1;padding:0;border:0;background:none}.tm{font:12px var(--mono);color:var(--mute);min-width:34px}
+.pbar .pc{display:flex;justify-content:space-between;align-items:center}
+.pbar .pc .ic{color:var(--mute)}.pbar .pc .ic.on{color:var(--acc)}.pbar .pc .ic .i{width:24px;height:24px}
+.pb{width:58px;height:58px;border-radius:50%;background:var(--acc);color:var(--accT);border:0;display:grid;place-items:center;padding:0}.pb .i{width:28px;height:28px}
+#app:has(#pbar){padding-bottom:240px}
 </style>
 </head>
 <body>
@@ -172,13 +188,18 @@ function rows(){const f=songs.filter(s=>((s.title||'')+' '+(s.artist||'')).toLow
  document.querySelectorAll('.song').forEach(b=>b.onclick=()=>{cur=songs.find(s=>s.id===b.dataset.id);tab='cifra';shift=0;edit=!(cur.cifra||'').trim();song()})}
 function list(){cur=null;mixStop();
  const nt=songs.reduce((n,s)=>n+s.audios.length,0);
- app.innerHTML=`<header class="top"><div class="row"><h1 class="brand">Clan music</h1>${inst?'<button id="in">Instalar</button>':''}<button class="ic" id="bk" aria-label="Backup e restauração">${IC.bk}</button></div>
+ app.innerHTML=`<header class="top"><div class="row"><h1 class="brand">Clan music</h1>${inst?'<button id="in">Instalar</button>':''}<button class="ic" id="im0" aria-label="Trazer minhas músicas">${IC.imp}</button><button class="ic" id="bk" aria-label="Backup e restauração">${IC.bk}</button></div>
  <p class="stat">${songs.length?songs.length+(songs.length===1?' música':' músicas')+(nt?' · '+nt+(nt===1?' faixa gravada':' faixas gravadas'):''):'Sua biblioteca começa aqui'}</p><div class="staff" aria-hidden="true"></div></header>
- ${late()?'<div class="alert"><span><b>Faça uma cópia de segurança.</b> A última tem mais de uma semana.</span><button id="bk2">Fazer agora</button></div>':''}
- ${songs.length?`<input id="q" type="search" placeholder="Buscar música ou artista" value="${esc(q)}" aria-label="Buscar">`:''}
+ <div class="seg" role="tablist"><button data-v="lib" class="${hv==='lib'?'on':''}">Músicas</button><button data-v="play" class="${hv==='play'?'on':''}">Tocar</button></div>
+ ${hv==='play'?playHome():''}
+ ${hv==='play'?'':late()?'<div class="alert"><span><b>Faça uma cópia de segurança.</b> A última tem mais de uma semana.</span><button id="bk2">Fazer agora</button></div>':''}
+ ${hv==='play'?'':`
+${songs.length?`<input id="q" type="search" placeholder="Buscar música ou artista" value="${esc(q)}" aria-label="Buscar">`:''}
  <div class="songs" id="rows"></div>
  ${songs.length?'':'<div class="empty"><div class="staff big" aria-hidden="true"></div><h2>Nenhuma música ainda</h2><p>Escreva a cifra, guarde a letra e grave voz e violão em faixas separadas.</p></div>'}
- <button class="cta" id="new">+ Nova música</button>`;
+ <button class="cta" id="new">+ Nova música</button>`}`;
+ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{hv=b.dataset.v;list()});$('#im0').onclick=imp;
+ if(hv==='play'){$('#bk').onclick=backup;if($('#bk2'))$('#bk2').onclick=backup;playBind();return}
  if($('#q'))$('#q').oninput=e=>{q=e.target.value;rows()};
  $('#new').onclick=()=>{cur={id:'s'+Date.now(),title:'',artist:'',key:'C',mode:'M',cifra:'',letra:'',audios:[],upd:Date.now()};songs.push(cur);put(cur);tab='cifra';shift=0;edit=true;song()};
  $('#bk').onclick=backup;if($('#bk2'))$('#bk2').onclick=backup;if(inst)$('#in').onclick=()=>{inst.prompt();inst=null;list()};
@@ -211,7 +232,7 @@ function pane(){const p=$('#pane'),s=cur;
    $('#ed').onclick=()=>{edit=true;pane()};
    $('#mn').onclick=()=>{shift--;pane()};$('#pl').onclick=()=>{shift++;pane()};
    if(shift){$('#ap').onclick=()=>{s.cifra=tx;s.key=nm[r];shift=0;save();$('#ky').value=s.key;toast('Cifra salva no novo tom');pane()};$('#rs').onclick=()=>{shift=0;pane()}}}}
- else if(tab==='letra'){p.innerHTML=`<textarea class="code" id="lt" style="white-space:pre-wrap" placeholder="Escreva a letra aqui">${esc(s.letra)}</textarea>`;$('#lt').oninput=e=>{s.letra=e.target.value;save()}}
+ else if(tab==='letra'){p.innerHTML=`<textarea class="code" id="lt" style="white-space:pre-wrap" placeholder="Escreva a letra aqui">${esc(s.letra)}</textarea><label class="fb2">Trazer letra de um arquivo .txt<input id="lf" type="file" accept=".txt,text/plain" hidden></label>`;$('#lt').oninput=e=>{s.letra=e.target.value;save()};$('#lf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const t=(await f.text()).replace(/\r\n?/g,'\n').trim();if(!t)return toast('Arquivo vazio.');s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+t:t;save();pane();toast('Letra trazida')}}
  else if(tab==='ouvir')ouvir(p);
  else if(tab==='campo'){
   const r=idx(s.key||'C'),mj=s.mode==='M',nm=flatKey(r,mj)?F:N,iv=mj?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10];
@@ -487,6 +508,81 @@ const rem=parseInt(await (await fetch('https://golesecocopocheio-eng.github.io/C
 if(mine&&rem&&rem>mine){const d=document.createElement('div');d.className='upd';d.innerHTML='<b>Nova versão do Clan music.</b> <a href="https://github.com/golesecocopocheio-eng/Caderno-m-sical-/releases/latest" target="_blank" rel="noopener">Baixar e instalar por cima</a>';document.body.prepend(d)}}catch(e){}})();
 try{if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+/* ---------- importar e ouvir ---------- */
+IC.imp='<svg class="i" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg>';
+IC.play='<svg class="i" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+IC.pause='<svg class="i" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>';
+IC.next='<svg class="i" viewBox="0 0 24 24"><path d="M6 5v14l9-7zM17 5v14" fill="currentColor"/><path d="M17.5 5v14"/></svg>';
+IC.prev='<svg class="i" viewBox="0 0 24 24"><path d="M18 5v14L9 12zM7 5v14" fill="currentColor"/><path d="M6.5 5v14"/></svg>';
+IC.shuf='<svg class="i" viewBox="0 0 24 24"><path d="M3 7h3c5 0 6 10 11 10h4M3 17h3c1.5 0 2.6-.8 3.5-2M14.5 9c.9-1.2 1.9-2 3.5-2h3M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>';
+IC.rep='<svg class="i" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13M17 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H4M7 21l-3-3 3-3"/></svg>';
+let hv='lib';
+const norm=t=>(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function nameOf(fn){let b=fn.replace(/\.[a-z0-9]{2,5}$/i,'').replace(/_/g,' ').replace(/^\d{1,3}\s*[-.)]\s*/,'').trim();let ar='',ti=b;const m=b.split(/\s+-\s+/);if(m.length>=2){ar=m[0].trim();ti=m.slice(1).join(' - ').trim()}return{title:ti||'Sem título',artist:ar}}
+const newSong=(t,a)=>({id:'s'+Date.now()+Math.random().toString(36).slice(2,6),title:t||'',artist:a||'',key:'C',mode:'M',cifra:'',letra:'',audios:[],upd:Date.now()});
+function findSong(t){const k=norm(t);return k&&songs.find(s=>norm(s.title)===k)}
+async function addAudios(fs){let nn=0,na=0;
+ for(const f of fs){if(!(f.type||'').startsWith('audio')&&!/\.(mp3|m4a|aac|wav|ogg|opus|flac|wma|amr|3gp|webm)$/i.test(f.name))continue;
+  const n=nameOf(f.name);let s=findSong(n.title);if(!s){s=newSong(n.title,n.artist);songs.push(s);nn++}
+  if(s.audios.some(a=>a.name===f.name&&a.blob&&a.blob.size===f.size)){continue}
+  s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1});s.upd=Date.now();put(s);na++;
+  await new Promise(r=>setTimeout(r,20))}
+ return{nn,na}}
+async function addLetras(fs){let nn=0,nu=0;
+ for(const f of fs){let tx='';try{tx=(await f.text()).replace(/\r\n?/g,'\n').trim()}catch(e){}if(!tx)continue;
+  const n=nameOf(f.name);let s=findSong(n.title);
+  if(!s){s=newSong(n.title,n.artist);songs.push(s);nn++}
+  if(!(s.letra||'').trim())s.letra=tx;else if(!s.letra.includes(tx.slice(0,60)))s.letra=s.letra.replace(/\s+$/,'')+'\n\n'+tx;
+  s.upd=Date.now();put(s);nu++}
+ return{nn,nu}}
+function imp(){cur=null;mixStop();
+ app.innerHTML=`<header class="sh"><button class="ic" id="back" aria-label="Voltar">${IC.back}</button><div class="tt"><h1 class="ti" style="margin:0;font-size:24px">Trazer minhas músicas</h1></div></header>
+ <div class="card2"><b>1. Áudios</b><p class="hint" style="margin:4px 0 10px">Escolha vários de uma vez. O nome do arquivo vira o título ("Artista - Título" separa o artista). Se a música já existe, o áudio entra nela como nova faixa.</p><label class="fb2" style="margin:0">Escolher áudios<input id="ia" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac,.opus" multiple hidden></label></div>
+ <div class="card2"><b>2. Letras em arquivo (.txt)</b><p class="hint" style="margin:4px 0 10px">Se o nome do arquivo for igual ao da música, a letra vai para ela. Nunca apaga uma letra que já existe: junta embaixo.</p><label class="fb2" style="margin:0">Escolher letras<input id="il" type="file" accept=".txt,text/plain" multiple hidden></label></div>
+ <div class="card2"><b>3. Colar uma letra</b><input id="pt" placeholder="Título da música" style="margin:8px 0"><input id="pa" placeholder="Artista (opcional)" style="margin-bottom:8px"><textarea class="code" id="px" style="min-height:140px;white-space:pre-wrap" placeholder="Cole a letra aqui"></textarea><button class="pri" id="ps" style="width:100%;padding:13px;margin-top:8px">Guardar letra</button></div>
+ <p class="hint" id="ir"></p>`;
+ $('#back').onclick=list;
+ $('#ia').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;$('#ir').textContent='Guardando '+fs.length+' arquivo(s)…';const r=await addAudios(fs);$('#ir').textContent=r.na+' áudio(s) guardado(s), '+r.nn+' música(s) nova(s). Já pode ouvir na aba Tocar.';toast('Músicas importadas')};
+ $('#il').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;const r=await addLetras(fs);$('#ir').textContent=r.nu+' letra(s) guardada(s), '+r.nn+' música(s) nova(s).';toast('Letras importadas')};
+ $('#ps').onclick=()=>{const t=$('#pt').value.trim(),x=$('#px').value.trim();if(!t||!x)return toast('Preencha o título e a letra.');
+  let s=findSong(t);if(!s){s=newSong(t,$('#pa').value.trim());songs.push(s)}
+  s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+x:x;s.upd=Date.now();put(s);$('#pt').value=$('#pa').value=$('#px').value='';$('#ir').textContent='Letra de "'+s.title+'" guardada.';toast('Letra guardada')}}
+/* player */
+const pl={q:[],i:-1,el:new Audio(),shuf:false,rep:0,url:null,id:null};pl.el.preload='metadata';
+const pickA=s=>{const a=(s.audios||[]).filter(x=>x.blob);return a.find(x=>/mix|original|completa|final/i.test(x.name||''))||a[0]};
+const playable=()=>songs.filter(s=>pickA(s)).sort((a,b)=>(a.title||'').localeCompare(b.title||'','pt-BR'));
+function plLoad(i,go){const s=pl.q[i];if(!s)return;const a=pickA(s);if(!a)return;pl.i=i;pl.id=s.id;
+ if(pl.url)URL.revokeObjectURL(pl.url);pl.url=URL.createObjectURL(a.blob);pl.el.src=pl.url;
+ try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:s.title||'Sem título',artist:s.artist||'Clan music'});navigator.mediaSession.setActionHandler('play',()=>pl.el.play());navigator.mediaSession.setActionHandler('pause',()=>pl.el.pause());navigator.mediaSession.setActionHandler('nexttrack',()=>plNext(1));navigator.mediaSession.setActionHandler('previoustrack',()=>plNext(-1))}}catch(e){}
+ if(go)pl.el.play().catch(()=>toast('Não consegui tocar este arquivo.'));plUI()}
+function plNext(d){if(!pl.q.length)return;let i;if(pl.shuf&&d>0)i=Math.floor(Math.random()*pl.q.length);else i=(pl.i+d+pl.q.length)%pl.q.length;
+ if(d<0&&pl.el.currentTime>3){pl.el.currentTime=0;return}plLoad(i,true)}
+pl.el.onended=()=>{if(pl.rep===2){pl.el.currentTime=0;pl.el.play()}else if(pl.rep===1||pl.shuf||pl.i<pl.q.length-1)plNext(1);else plUI()};
+pl.el.onerror=()=>{if(pl.id)toast('Este arquivo não abre no aparelho.')};
+pl.el.ontimeupdate=()=>plTime();pl.el.onplay=pl.el.onpause=()=>plUI();pl.el.onloadedmetadata=()=>plTime();
+function plTime(){const r=$('#psk'),a=$('#pta'),b=$('#ptb');if(!r)return;const d=pl.el.duration||0;if(!r._d){r.max=d||1;r.value=pl.el.currentTime}if(a)a.textContent=fmt(pl.el.currentTime);if(b)b.textContent=fmt(d)}
+function plUI(){const bar=$('#pbar');if(!bar)return;const s=pl.q[pl.i],pp=!pl.el.paused;
+ $('#pn').textContent=s?(s.title||'Sem título'):'Escolha uma música';$('#pw').textContent=s?(s.artist||''):'';
+ $('#pp').innerHTML=pp?IC.pause:IC.play;$('#psh').classList.toggle('on',pl.shuf);$('#prp').classList.toggle('on',pl.rep>0);$('#prp').dataset.m=pl.rep===2?'1':'';
+ document.querySelectorAll('.song[data-pid]').forEach(b=>{const on=b.dataset.pid===pl.id;b.classList.toggle('now',on);const k=b.querySelector('.key');if(k)k.innerHTML=on&&pp?'<span class="eq"><i></i><i></i><i></i></span>':IC.play});
+ const ly=$('#ply');if(ly)ly.textContent=s&&(s.letra||'').trim()?s.letra:(s?'Esta música ainda não tem letra. Guarde uma em Trazer minhas músicas ou na aba Letra.':'');plTime()}
+function playHome(){const L=playable();
+ const nt=L.length;
+ return `<p class="hint" style="margin-top:0">${nt?nt+(nt===1?' música com áudio':' músicas com áudio')+'. Toque numa para ouvir.':'Ainda não há áudio guardado. Toque em '+IC.imp+' para trazer suas músicas.'}</p>
+ <div class="songs" id="prows">${L.map(s=>`<button class="song" data-pid="${s.id}"><span class="key">${IC.play}</span><span class="info"><b>${esc(s.title)||'Sem título'}</b><small>${esc(s.artist)||'Sem artista'}</small></span></button>`).join('')}</div>
+ ${nt?`<details class="card2" id="pld" style="margin-top:14px"><summary><b>Letra</b></summary><pre class="view" id="ply" style="white-space:pre-wrap;margin:10px 0 0"></pre></details>`:''}
+ <div id="pbar" class="pbar" role="region" aria-label="Player"><div class="pm"><div class="pi"><b id="pn"></b><small id="pw"></small></div></div>
+ <div class="ps"><span id="pta" class="tm">0:00</span><input id="psk" type="range" min="0" max="1" step="0.1" value="0" aria-label="Posição"><span id="ptb" class="tm">0:00</span></div>
+ <div class="pc"><button class="ic" id="psh" aria-label="Aleatório">${IC.shuf}</button><button class="ic" id="ppv" aria-label="Anterior">${IC.prev}</button><button class="pb" id="pp" aria-label="Tocar ou pausar">${IC.play}</button><button class="ic" id="pnx" aria-label="Próxima">${IC.next}</button><button class="ic" id="prp" aria-label="Repetir">${IC.rep}</button></div></div>`}
+function playBind(){const L=playable();
+ document.querySelectorAll('.song[data-pid]').forEach(b=>b.onclick=()=>{pl.q=L;const i=L.findIndex(s=>s.id===b.dataset.pid);if(b.dataset.pid===pl.id){pl.el.paused?pl.el.play():pl.el.pause()}else plLoad(i,true)});
+ if(!$('#pbar'))return;
+ const sk=$('#psk');sk.oninput=()=>{sk._d=1;$('#pta').textContent=fmt(+sk.value)};sk.onchange=()=>{pl.el.currentTime=+sk.value;sk._d=0};
+ $('#pp').onclick=()=>{if(pl.i<0){if(!L.length)return;pl.q=L;plLoad(0,true)}else pl.el.paused?pl.el.play():pl.el.pause()};
+ $('#pnx').onclick=()=>{if(pl.i<0){if(!L.length)return;pl.q=L;plLoad(0,true)}else plNext(1)};$('#ppv').onclick=()=>{if(pl.i>=0)plNext(-1)};
+ $('#psh').onclick=()=>{pl.shuf=!pl.shuf;plUI()};$('#prp').onclick=()=>{pl.rep=(pl.rep+1)%3;plUI();toast(['Sem repetir','Repetir a lista','Repetir esta música'][pl.rep])};
+ if(pl.i>=0&&!pl.q.length)pl.q=L;plUI()}
+
 (async()=>{await openDB();songs=await getAll();const rn=await recoverRecs();list();if(rn)toast(rn+' gravação(ões) interrompida(s) recuperada(s)')})();
 </script>
 </body>

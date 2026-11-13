@@ -3,8 +3,8 @@ Cardeno músical
 
 ## Bar Conect · Caixa, Portaria e Estoque (aplicativo)
 
-Logo: taça de coquetel dourada com uma nota musical no palito, ondas de som (a "conexão") e o nome
-BAR CONECT · 𝄞 CLAN MUSIC, em roxo-escuro e dourado (`app/icons/`, `android-build/assets/`).
+Logo: taça de coquetel dourada com palito e azeitona, ondas de conexão e o nome BAR CONECT ·
+CAIXA · PORTARIA · ESTOQUE, em roxo-escuro e dourado (`app/icons/`, `android-build/assets/`).
 
 Aplicativo que junta os projetos **Caixa bar**, **Portaria do Bar** e **Estoque do Bar** em um só, com uma aba
 para cada. Fica na pasta [`app/`](app/). É um PWA: pode ser instalado na tela inicial do

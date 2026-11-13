@@ -225,7 +225,7 @@ $('#arquivo').onchange=async e=>{
     setTimeout(()=>location.reload(),1800);
   }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
 };
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{abrir(b.dataset.tab);if(b.dataset.tab==='foto'&&window.__barFotoAbrir)window.__barFotoAbrir()});
 document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStorage.setItem('bar-zoom',b.dataset.z);aplicarZoomTudo()});
 
 /* ---- Histórico ---- */

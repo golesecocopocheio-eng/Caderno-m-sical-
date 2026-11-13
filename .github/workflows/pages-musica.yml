@@ -1,28 +1,34 @@
-name: Clan music (site que atualiza sozinho no Chrome)
+name: Clan music no Chrome (pasta musica do site)
+# Só ADICIONA/ATUALIZA a pasta musica/ no ramo gh-pages. Não mexe nos outros apps do site.
 on:
   push:
     branches: [main, claude/caderno-musical-apk]
     paths: ['musica/**', '.github/workflows/pages-musica.yml']
   workflow_dispatch:
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
-  group: pages-${{ github.sha }}
+  group: pages-musica
+  cancel-in-progress: false
 jobs:
-  deploy:
+  publicar:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: |
-          mkdir site && cp -r musica/. site/
-          git rev-list --count HEAD > site/versao.txt
-      - uses: actions/upload-pages-artifact@v3
+      - run: git rev-list --count HEAD > /tmp/versao.txt
+      - uses: actions/checkout@v4
         with:
+          ref: gh-pages
           path: site
-      - uses: actions/deploy-pages@v4
+          fetch-depth: 1
+      - run: |
+          rm -rf site/musica && mkdir site/musica
+          cp -r musica/. site/musica/
+          cp /tmp/versao.txt site/musica/versao.txt
+          cd site
+          git config user.name "Clan music bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A musica
+          if git diff --cached --quiet; then echo "nada novo"; else git commit -m "Clan music: publica versão $(cat musica/versao.txt)" && git push; fi

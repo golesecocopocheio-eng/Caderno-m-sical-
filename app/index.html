@@ -100,6 +100,10 @@ nav button:active{background:rgba(255,255,255,.08)}
 .painel .fr-tema{margin:0!important;color:#fff!important;padding:16px 8px!important}
 .painel .fr-tema.on{outline:3px solid #f59e0b;outline-offset:2px}
 @media (prefers-color-scheme:dark){.fr-aba{border-color:#2c2e40}}
+.in-assina{position:absolute;left:0;right:0;bottom:calc(22px + var(--sab));text-align:center;font:500 11px/1 system-ui,-apple-system,'Segoe UI',sans-serif;color:rgba(255,255,255,.62);letter-spacing:.08em;opacity:0;animation:inTexto .9s ease-out 4.2s forwards}
+.in-assina b{font-weight:700;color:rgba(252,211,77,.85)}
+.assinatura{text-align:center;color:#98a2b3;font-size:12px;margin:24px 0 6px;letter-spacing:.05em}
+.assinatura b{color:#7c3aed}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
@@ -125,6 +129,7 @@ nav button:active{background:rgba(255,255,255,.08)}
   </svg>
   <div class="in-nome">BAR <span>CONECT</span></div>
   <div class="in-sub">CAIXA · PORTARIA · ESTOQUE</div>
+  <div class="in-assina">desenvolvedor · <b>Sanka Brunelli</b></div>
 </div>
 <script>
 /* apresentação: some sozinha em ~5,6 s ou com um toque */
@@ -416,5 +421,6 @@ else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serv
 <script src="foto.js"></script>
 <script src="precos.js"></script>
 <script src="ferramentas.js"></script>
+<script>(function(){const a=document.getElementById('f-ajustes');if(!a)return;const d=document.createElement('p');d.className='assinatura';d.innerHTML='Bar Conect · desenvolvedor <b>Sanka Brunelli</b>';a.appendChild(d)})();</script>
 </body>
 </html>

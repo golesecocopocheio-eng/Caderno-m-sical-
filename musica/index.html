@@ -215,6 +215,10 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .dhd .dn{font-size:14px}.dhd button{padding:8px 0;font-size:14px;border-radius:10px;min-height:34px}
 .dcn{position:absolute;left:8px;top:4px;font-size:11px;font-weight:700;color:var(--ink);opacity:.8;pointer-events:none;text-shadow:0 0 4px var(--card)}
 .dsel .row{gap:6px}.dsel button{padding:8px 10px;font-size:14px;border-radius:10px}.dsel .row>button{flex:1}.dsel select{padding:8px 10px;font-size:14px}
+.daw svg.i{width:24px;height:24px;flex:0 0 auto}.daw .rb svg.i{width:24px;height:24px}.daw .rb.pl svg.i{width:30px;height:30px}
+.dchips>button{display:inline-flex;align-items:center;gap:8px;min-height:46px;font-size:15px}.dsel button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;font-size:15px}
+.dhd .da svg.i{width:20px;height:20px}.dhd button{min-height:42px}.rcb{display:flex;align-items:center;justify-content:center;gap:8px}.rcb svg.i{width:22px;height:22px}
+.dhd .da.on svg.i{color:#fff}.daw .dh .rb svg.i{width:22px;height:22px}
 </style>
 </head>
 <body>
@@ -294,7 +298,7 @@ const FASES=[['ideia','Ideia'],['compondo','Compondo'],['pronta','Pronta']];let 
 const faseNome=f=>(FASES.find(x=>x[0]===f)||[,''])[1];
 const hello=()=>{const h=new Date().getHours();return h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'};
 const ago=t=>{const m=Math.round((Date.now()-t)/60000);return m<2?'agora há pouco':m<60?'há '+m+' min':m<1440?'há '+Math.round(m/60)+' h':m<2880?'ontem':'há '+Math.round(m/1440)+' dias'};
-function quickIdea(){const d=new Date(),s=newSong('Ideia '+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toTimeString().slice(0,5),'');s.fase='ideia';s.auto=true;songs.push(s);put(s);cur=s;tab='estudio';shift=0;edit=false;song();setTimeout(()=>{try{studioRec()}catch(e){}},60)}
+function quickIdea(){const d=new Date(),s=newSong('Ideia '+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toTimeString().slice(0,5),'');s.fase='ideia';s.auto=true;songs.push(s);put(s);cur=s;tab='estudio';shift=0;edit=false;song();toast('Pronto. Toque em Gravar quando quiser começar.')}
 function goMixer(){let s=songs.slice().sort((a,b)=>(b.upd||0)-(a.upd||0))[0];
  if(!s){s=newSong('Nova música','');s.fase='compondo';songs.push(s);put(s)}
  cur=s;tab='audio';shift=0;edit=false;song();openDaw(s)}
@@ -309,7 +313,7 @@ function iniHome(my){const S=setList(),L=[...my].sort((a,b)=>b.upd-a.upd),c=L[0]
  const part=c?[['Cifra',(c.cifra||'').trim()],['Letra',(c.letra||'').trim()],['Gravação',c.audios.length]]:[];
  const andamento=L.filter(s=>s.fase==='compondo'&&s!==c).slice(0,4),ideias=L.filter(s=>s.fase==='ideia'&&s!==c).slice(0,4);
  return `${c?`<section class="card2 cont"><small class="ov">Continuar de onde parou</small><button class="big" data-id="${c.id}"><b>${esc(c.title)||'Sem título'}</b><span>${esc(c.artist)||'Sem artista'} · ${esc(c.key||'C')}${c.mode==='m'?'m':''} · ${ago(c.upd)}</span></button><div class="chips2">${part.map(x=>`<span class="${x[1]?'ok':''}">${x[1]?'✓':'○'} ${x[0]}${x[0]==='Gravação'&&x[1]>1?'s':''}</span>`).join('')}${c.fase?`<span class="fase"><i class="fz fz-${c.fase}"></i>${faseNome(c.fase)}</span>`:''}</div><div class="row" style="margin-top:12px"><button class="pri" data-id="${c.id}" style="flex:1">Abrir</button><button id="cE" style="flex:1">Gravar</button><button id="cL" style="flex:1">Letra</button></div></section>`:''}
- <div class="qa"><button id="qn"><span>${IC.add}</span><b>Nova música</b><small>Cifra e letra</small></button><button id="qi" class="gold"><span>${IC.mic2}</span><b>Gravar ideia</b><small>Já começa a gravar</small></button><button id="qm"><span>${IC.imp}</span><b>Trazer músicas</b><small>Áudios e letras</small></button><button id="qc"><span>${IC.ext}</span><b>Cifra de outro artista</b><small>Cifra Club</small></button></div>
+ <div class="qa"><button id="qn"><span>${IC.add}</span><b>Nova música</b><small>Cifra e letra</small></button><button id="qi" class="gold"><span>${IC.mic2}</span><b>Gravar ideia</b><small>Abre pronto para gravar</small></button><button id="qm"><span>${IC.imp}</span><b>Trazer músicas</b><small>Áudios e letras</small></button><button id="qc"><span>${IC.ext}</span><b>Cifra de outro artista</b><small>Cifra Club</small></button></div>
  ${S.length?`<section class="card2"><div class="row" style="align-items:center"><b style="flex:1;font-size:17px">Set do show</b><span class="tag">${S.length} ${S.length===1?'música':'músicas'}</span></div><p class="hint" style="margin:6px 0 10px">${S.slice(0,3).map(s=>esc(s.title)||'Sem título').join(' · ')}${S.length>3?' …':''}</p><div class="row"><button class="pri" id="qp" style="flex:1">▶ Abrir no palco</button><button id="qr" style="flex:1">Editar set</button></div></section>`:''}
  ${andamento.length?`<h2 class="sec">Em andamento</h2><div class="songs">${andamento.map(songRow).join('')}</div>`:''}
  ${ideias.length?`<h2 class="sec">Ideias para desenvolver</h2><div class="songs">${ideias.map(songRow).join('')}</div>`:''}
@@ -328,7 +332,7 @@ function list(){cur=null;mixStop();if(typeof edClose==='function')edClose();if(t
  document.querySelectorAll('.hn button').forEach(b=>b.onclick=()=>{if(b.dataset.h==='mix'){goMixer();return}hv=b.dataset.h;q='';list();window.scrollTo(0,0)});$('#im0').onclick=imp;$('#cl0').onclick=nuvem;$('#bk').onclick=backup;if($('#bk2'))$('#bk2').onclick=backup;if(inst)$('#in').onclick=()=>{inst.prompt();inst=null;list()};
  if(hv==='play'){playBind();return}
  if(hv==='rep'){repBind();return}
- if(hv==='ini'){bindRows();document.querySelectorAll('.cont .big,.cont .pri').forEach(b=>b.onclick=()=>openSong(b.dataset.id));const c=[...my].sort((a,b)=>b.upd-a.upd)[0];if($('#cE'))$('#cE').onclick=()=>{openSong(c.id,'estudio');setTimeout(()=>{try{studioRec()}catch(e){}},60)};if($('#cL'))$('#cL').onclick=()=>openSong(c.id,'letra');
+ if(hv==='ini'){bindRows();document.querySelectorAll('.cont .big,.cont .pri').forEach(b=>b.onclick=()=>openSong(b.dataset.id));const c=[...my].sort((a,b)=>b.upd-a.upd)[0];if($('#cE'))$('#cE').onclick=()=>openSong(c.id,'estudio');if($('#cL'))$('#cL').onclick=()=>openSong(c.id,'letra');
   $('#qn').onclick=newBlank;$('#qi').onclick=quickIdea;$('#qm').onclick=imp;$('#qc').onclick=()=>{hv='rep';cifraImp()};if($('#qp'))$('#qp').onclick=()=>palco(0,setList());if($('#qr'))$('#qr').onclick=()=>{hv='rep';list()};return}
  document.querySelectorAll('.fch button').forEach(b=>b.onclick=()=>{fq=b.dataset.f;list()});
  if($('#q'))$('#q').oninput=e=>{q=e.target.value;rows()};
@@ -586,8 +590,8 @@ function dawLoop(){const d=daw;if(!d)return;cancelAnimationFrame(d.raf);const f=
  if(sc&&(mx.playing||d.recording)){const x=p*d.pps;if(x>sc.scrollLeft+sc.clientWidth-40||x<sc.scrollLeft)sc.scrollLeft=Math.max(0,x-60)}
  if(d.recording){const r=$('#drec');if(r)r.style.width=Math.max(2,(p-d.from)*d.pps)+'px'}
  d.raf=requestAnimationFrame(f)};f()}
-function dawUI(){if(!daw)return;const pl=$('#dplay'),rb=$('#drecb'),nm=instI(daw.arm)[1];if(pl)pl.textContent=mx.playing&&!daw.recording?'⏸':'▶';
- if(rb){rb.textContent=daw.counting?'Contagem…':daw.recording?'■ Parar de gravar':'● Gravar '+nm.replace(' juntos','').toLowerCase();rb.classList.toggle('rec',!!daw.recording)}
+function dawUI(){if(!daw)return;const pl=$('#dplay'),rb=$('#drecb'),nm=instI(daw.arm)[1];if(pl)pl.innerHTML=mx.playing&&!daw.recording?IC.pause:IC.play;
+ if(rb){rb.innerHTML=daw.counting?'Contagem…':daw.recording?IC.stop+' Parar de gravar':IC.rec+' Gravar '+nm.replace(' juntos','').toLowerCase();rb.classList.toggle('rec',!!daw.recording)}
  const e=$('#daw');if(e){e.querySelectorAll('[data-armk]').forEach(b=>b.classList.toggle('on',b.dataset.armk===daw.arm));const m=$('#dmet'),c=$('#dcnt');if(m)m.classList.toggle('on',daw.met);if(c)c.classList.toggle('on',daw.count)}}
 function dawGains(){const s=daw.s;s.audios.forEach(x=>{if(mx.gn[x.id]&&!mx.only)mx.gn[x.id].gain.value=eff(s,x)})}
 
@@ -618,7 +622,7 @@ async function dawRemix(){const d=daw,s=d.s;if(d.recording)return;if(s.audios.fi
 async function dawNoise(){const d=daw,s=d.s,a=s.audios.find(x=>x.id===d.sel),b=a&&mx.buf[a.id];if(!b)return;const bt=$('#dsn');if(bt){bt.disabled=true;bt.textContent='Limpando…'}mixStop();
  try{const ac=AC(),nb=ac.createBuffer(b.numberOfChannels,b.length,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++){const out=await denoise(b.getChannelData(c),.6,v=>{if(bt&&daw===d)bt.textContent='Limpando '+Math.round((c+v)/b.numberOfChannels*100)+'%'});nb.copyToChannel(out,c)}
   dawSnap();const n={...a,id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'limpo',name:a.name+' (sem ruído)',blob:wav(nb)};delete n._p;s.audios.splice(s.audios.indexOf(a)+1,0,n);d.sel=n.id;save(s);put(s);await loadBufs(s);dawRender();toast('Faixa sem ruído criada. A original foi mantida.')}
- catch(e){toast('Não consegui limpar o ruído desta faixa.');if(bt){bt.disabled=false;bt.textContent='Tirar ruído'}}}
+ catch(e){toast('Não consegui limpar o ruído desta faixa.');if(bt){bt.disabled=false;bt.innerHTML=IC.wave+' Tirar ruído'}}}
 function dawSnap(){const d=daw;d.undo=d.undo||[];d.undo.push(d.s.audios.map(a=>({...a})));if(d.undo.length>20)d.undo.shift()}
 function dawUndo(){const d=daw;if(!d||d.recording||!d.undo||!d.undo.length)return toast('Nada para desfazer.');mixStop();d.s.audios=d.undo.pop();d.sel=null;save(d.s);put(d.s);loadBufs(d.s).then(()=>{dawRender();toast('Desfeito')})}
 const dawSlice=(b,t0,t1)=>{const ac=AC(),sr=b.sampleRate,a=Math.max(0,Math.round(t0*sr)),z=Math.min(b.length,Math.round(t1*sr)),o=ac.createBuffer(b.numberOfChannels,Math.max(1,z-a),sr);for(let c=0;c<b.numberOfChannels;c++)o.copyToChannel(b.getChannelData(c).subarray(a,z),c);return o};
@@ -632,10 +636,10 @@ function d_snapOnce(a,so){const d=daw,cur2=a.off;a.off=so;dawSnap();a.off=cur2}
 function dawSelUI(){const e=$('#dsel');if(!e||!daw)return;const s=daw.s,a=s.audios.find(x=>x.id===daw.sel);document.querySelectorAll('#daw .dcl').forEach(c=>c.classList.toggle('sel',!!a&&c.dataset.id===a.id));
  if(!a){e.innerHTML='<p class="hint" style="margin:0">Toque numa faixa para editar. Arraste a faixa para mover no tempo. Toque na régua ou numa pista vazia para posicionar o cursor.</p>';return}
  const em=instI(instOf(a))[2],vv=Math.round((a.vol==null?1:a.vol)*100);
- e.innerHTML=`<div class="row"><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${em} ${esc(a.name)}</b><button id="dse" class="pri" style="flex:0 0 auto">🎚 Estúdio da faixa</button><button id="dsx" style="flex:0 0 auto" aria-label="Remover faixa">✕</button></div>
- <div class="row"><button id="dsp">✂ Dividir no cursor</button><button id="ddp">⧉ Duplicar</button></div>
+ e.innerHTML=`<div class="row"><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${em} ${esc(a.name)}</b><button id="dse" class="pri" style="flex:0 0 auto">${IC.mixr} Estúdio da faixa</button><button id="dsx" style="flex:0 0 auto" aria-label="Remover faixa">${IC.trash}</button></div>
+ <div class="row"><button id="dsp">${IC.cut} Dividir no cursor</button><button id="ddp">${IC.copy} Duplicar</button></div>
  <div class="row"><small class="hint" style="flex:0 0 74px;margin:0">Compressor</small><select id="dsc" aria-label="Compressor"><option value="0">Desligado</option><option value="1">Leve</option><option value="2">Médio</option><option value="3">Forte</option></select></div>
- <div class="row"><button id="dsn">Tirar ruído</button><button id="dsa">⏱ Alinhar no tempo</button></div>
+ <div class="row"><button id="dsn">${IC.wave} Tirar ruído</button><button id="dsa">${IC.align} Alinhar no tempo</button></div>
  <div class="row"><small class="hint" style="flex:0 0 50px;margin:0">Volume</small><input type="range" min="0" max="150" value="${vv}" id="dsv"><b class="pc" id="dsvl">${vv}%</b></div>
  <div class="row"><small class="hint" style="flex:0 0 50px;margin:0">Início</small><button data-nd="-10" style="flex:0 0 auto">−10 ms</button><b class="pc" id="dso" style="min-width:90px;text-align:center">${a.off||0} ms</b><button data-nd="10" style="flex:0 0 auto">+10 ms</button></div>`;
  $('#dse').onclick=()=>openEd(s,a);$('#dsp').onclick=dawSplit;$('#ddp').onclick=dawDup;$('#dsn').onclick=dawNoise;$('#dsa').onclick=()=>dawAlign('one');const cs=$('#dsc');cs.value=a.fx&&a.fx.comp?(a.fx.comp===true?2:a.fx.comp):0;cs.onchange=()=>{a.fx=a.fx||{};a.fx.comp=+cs.value||false;save(s);put(s);if(mx.playing)mixStart(s,mixPos(),null);toast(cs.value==='0'?'Compressor desligado':'Compressor ligado')};
@@ -646,7 +650,7 @@ function dawRender(){const e=$('#daw');if(!e||!daw)return;const s=daw.s,sc=$('#d
  const steps=[1,2,5,10,15,30,60,120],step=steps.find(x=>x*pps>=64)||120;let rl='';for(let t=0;t<=dur;t+=step)rl+=`<i style="left:${t*pps}px">${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}</i>`;
  let hd='',rw='';
  dawLanes(s).forEach(k=>{const [,nm,em,col]=instI(k),L=s.audios.filter(a=>instOf(a)===k);(L.length?L:[null]).forEach(a=>{
-  hd+=`<div class="dhd" style="--lc:${col}"><div class="dn">${em} ${a?esc(a.name):nm}</div><div class="db"><button class="da ${daw.arm===k?'on':''}" data-armk="${k}" aria-label="Gravar em ${nm}">●${a?'':' Escolher'}</button>${a?`<button class="tg ${a.mute?'on':''}" data-dm="${a.id}">M</button><button class="tg ${a.solo?'on':''}" data-ds="${a.id}">S</button>`:''}</div></div>`;
+  hd+=`<div class="dhd" style="--lc:${col}"><div class="dn">${em} ${a?esc(a.name):nm}</div><div class="db"><button class="da ${daw.arm===k?'on':''}" data-armk="${k}" aria-label="Gravar em ${nm}">${IC.rec}${a?'':' Escolher'}</button>${a?`<button class="tg ${a.mute?'on':''}" data-dm="${a.id}">M</button><button class="tg ${a.solo?'on':''}" data-ds="${a.id}">S</button>`:''}</div></div>`;
   rw+=`<div class="drw" data-lane="${k}" style="--lc:${col};width:${W}px">${a&&mx.buf[a.id]?`<div class="dcl" data-id="${a.id}" style="left:${(a.off||0)/1000*pps}px;width:${Math.max(2,Math.round(mx.buf[a.id].duration*pps))}px"></div>`:''}</div>`})});
  $('#dleft').innerHTML='<div class="drul"></div>'+hd;
  $('#dinner').style.width=W+'px';$('#dinner').innerHTML=`<div class="drul" id="drul">${rl}</div>${rw}<div class="dph" id="dph"></div>`;
@@ -685,9 +689,9 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  if(!s.bpm)s.bpm=90;
  daw={s,pps:40,pos:0,arm:'voz',met:false,count:true,sel:null,recording:false,counting:false,was:false};
  const e=document.createElement('div');e.id='daw';e.className='sheet daw';
- e.innerHTML=`<div class="dh"><button id="dx" class="rb sm" aria-label="Fechar o estúdio">✕</button><div class="dti"><b>${esc(s.title||'Sem título')}</b><small id="dtm">0:00.0 / 0:00.0</small></div><div class="lvl" id="dvu" aria-label="Nível do microfone"><i></i></div></div>
- <div class="dt"><div class="tr"><button id="dhome" class="rb" aria-label="Voltar ao início">⏮</button><button id="dplay" class="rb pl" aria-label="Tocar">▶</button><button id="drecb" class="rcb">● Gravar</button></div>
- <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">Metrônomo</button><button class="tg on" id="dcnt">Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">🔁 Repetir</button><button id="dun">↶ Desfazer</button><button class="pri" id="drx">✨ Remix auto</button><button id="dzo" aria-label="Menos zoom">−</button><button id="dzi" aria-label="Mais zoom">+</button></div></div>
+ e.innerHTML=`<div class="dh"><button id="dx" class="rb sm" aria-label="Fechar o estúdio">${IC.x}</button><div class="dti"><b>${esc(s.title||'Sem título')}</b><small id="dtm">0:00.0 / 0:00.0</small></div><div class="lvl" id="dvu" aria-label="Nível do microfone"><i></i></div></div>
+ <div class="dt"><div class="tr"><button id="dhome" class="rb" aria-label="Voltar ao início">${IC.rew}</button><button id="dplay" class="rb pl" aria-label="Tocar">${IC.play}</button><button id="drecb" class="rcb">${IC.rec} Gravar</button></div>
+ <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
  <div class="dbody" id="dbody"><div class="dleft" id="dleft"></div><div class="dright" id="dscr"><div class="dinner" id="dinner"></div></div></div>
  <div class="dsel" id="dsel"></div>`;
  document.body.appendChild(e);
@@ -696,6 +700,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  $('#dmet').onclick=()=>{daw.met=!daw.met;dawMet(daw.met);dawUI()};$('#dcnt').onclick=()=>{daw.count=!daw.count;dawUI()};
  $('#dbpm').onchange=ev=>{s.bpm=Math.max(40,Math.min(220,+ev.target.value||90));ev.target.value=s.bpm;save(s);put(s);if(mx.playing&&daw.met)dawMet(true)};
  const zoom=f=>{const sc=$('#dscr'),old=daw.pps;daw.pps=Math.max(15,Math.min(120,Math.round(old*f)));const r=daw.pps/old;dawRender();sc.scrollLeft=sc.scrollLeft*r};
+ $('#dimp').onclick=()=>$('#dimpf').click();$('#dimpf').onchange=async ev=>{const fs=[...ev.target.files];ev.target.value='';if(!fs.length||daw.recording)return;dawSnap();const k=daw.arm;fs.forEach((f,i)=>s.audios.push({id:'a'+Date.now()+i+Math.random().toString(36).slice(2,5),tipo:'arquivo',inst:k,name:f.name.replace(/\.[^.]+$/,''),blob:f,vol:1,off:Math.round(daw.pos*1000)}));save(s);put(s);toast('Importando '+fs.length+(fs.length===1?' áudio…':' áudios…'));await loadBufs(s);daw.sel=s.audios[s.audios.length-1].id;dawRender();toast('Importado na pista '+instI(k)[1].toLowerCase())};
  $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
  $('#dzo').onclick=()=>zoom(.7);$('#dzi').onclick=()=>zoom(1.4);
  dawRender();dawLoop()}
@@ -913,6 +918,22 @@ function playBind(){const L=playable();
  if(pl.i>=0&&!pl.q.length)pl.q=L;plUI()}
 
 /* ---------- estúdio ---------- */
+
+IC.rew='<svg class="i" viewBox="0 0 24 24"><path d="M6 5v14" /><path d="M19 5v14L9 12z" fill="currentColor"/></svg>';
+IC.rec='<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" fill="currentColor" stroke="none"/></svg>';
+IC.stop='<svg class="i" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"/></svg>';
+IC.undo='<svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+IC.loop='<svg class="i" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13M17 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H4M7 21l-3-3 3-3"/></svg>';
+IC.wand='<svg class="i" viewBox="0 0 24 24"><path d="M10 3l1.8 4.7L16.5 9.5l-4.7 1.8L10 16l-1.8-4.7L3.5 9.5l4.7-1.8zM19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/></svg>';
+IC.zin='<svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5M8 11h6M11 8v6"/></svg>';
+IC.zout='<svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5M8 11h6"/></svg>';
+IC.metro='<svg class="i" viewBox="0 0 24 24"><path d="M8.5 21h7L14 4h-4zM12 15l5-8M9.5 18h5"/></svg>';
+IC.cut='<svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8 8l12 11M8 16 20 5"/></svg>';
+IC.copy='<svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+IC.trash='<svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+IC.align='<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+IC.wave='<svg class="i" viewBox="0 0 24 24"><path d="M3 12h1.5M7.5 8v8M12 4v16M16.5 8v8M20.5 12H22"/></svg>';
+IC.plus='<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
 IC.estudio=IC.ouvir;
 IC.mixr='<svg class="i" viewBox="0 0 24 24"><path d="M6 4v16M12 4v16M18 4v16"/><circle cx="6" cy="9" r="2.3" fill="currentColor"/><circle cx="12" cy="15" r="2.3" fill="currentColor"/><circle cx="18" cy="8" r="2.3" fill="currentColor"/></svg>';
 const stu={met:false,id:0,next:0,beat:0,cnt:false,keep:false,lang:'pt-BR',tun:null,m:null,sw:null};
@@ -1159,21 +1180,26 @@ function fromUrl(u){const m=String(u).match(/cifraclub\.com(?:\.br)?\/([^\/?#\s]
 function cifraImp(pre){cur=null;mixStop();pre=pre||{};const lk=fromUrl((pre.raw||'')+' '+(pre.url||''));
  const raw0=/^\s*https?:\/\/\S+\s*$/.test(pre.raw||'')?'':(pre.raw||'');
  app.innerHTML=`<header class="sh"><button class="ic" id="back" aria-label="Voltar">${IC.back}</button><div class="tt"><h1 class="ti" style="margin:0;font-size:24px">Cifra de outro artista</h1></div></header>
- <div class="card2"><b>1. Procurar</b><div class="row" style="margin:10px 0 8px"><input id="ia" placeholder="Artista" value="${esc((lk&&lk.artist)||'')}"><input id="it" placeholder="Música" value="${esc((lk&&lk.title)||pre.title||'')}"></div><button class="pri" id="go" style="width:100%;padding:13px">${IC.ext} Abrir no Cifra Club</button><p class="hint" style="margin:8px 0 0">Abre o site do Cifra Club no navegador. Escolha a cifra, selecione o texto dela e copie.</p></div>
+ <div class="card2"><b>1. Procurar</b><div class="row" style="margin:10px 0 8px"><input id="ia" placeholder="Artista" value="${esc((lk&&lk.artist)||pre.artist||'')}"><input id="it" placeholder="Música" value="${esc((lk&&lk.title)||pre.title||'')}"></div><button class="pri" id="go" style="width:100%;padding:13px">${IC.ext} Abrir no Cifra Club</button><p class="hint" style="margin:8px 0 0">Abre o Cifra Club já na busca. Escolha a música, copie o texto da cifra e volte para cá: o Clan music cola sozinho e guarda o artista e a letra com as cifras.<br><small>O Cifra Club não deixa apps puxarem as cifras sozinhos, por isso o texto vem do que você copia.</small></p></div>
  <div class="card2"><b>2. Colar a cifra</b><textarea class="code" id="tx" wrap="off" spellcheck="false" style="min-height:220px;margin-top:10px" placeholder="Cole aqui a cifra copiada">${esc(raw0)}</textarea><div class="row" style="margin-top:8px"><button id="pc" style="flex:1">Colar do celular</button><button id="ck">Conferir</button></div><p class="hint" id="pv" style="margin:8px 0 0"></p></div>
  <label class="chk"><input type="checkbox" id="st" checked> Colocar no set do show</label>
- <button class="pri" id="sv2" style="width:100%;padding:15px;margin-top:8px">Guardar no repertório</button>`;
+ <button class="pri" id="sv2" style="width:100%;padding:15px;margin-top:8px">Guardar no repertório</button><button id="sv3" style="width:100%;padding:15px;margin-top:8px">Guardar e importar outra do mesmo artista</button>`;
  $('#back').onclick=()=>{hv='rep';list()};
  const read=()=>{const p=parseCifra($('#tx').value);const e=$('#pv');e.textContent=p.cifra?p.acordes+' linhas de acordes · '+p.letra.split('\n').filter(x=>x.trim()).length+' linhas de letra · tom '+p.key+(p.mode==='m'?'m':''):'Nada colado ainda.';return p};
  $('#go').onclick=()=>{const t=($('#ia').value+' '+$('#it').value).trim();openExt('https://www.cifraclub.com.br/'+(t?'?q='+encodeURIComponent(t):''))};
  $('#pc').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t.trim())return toast('A área de cópia está vazia.');const u=fromUrl(t);if(u&&!/\n/.test(t.trim())){$('#ia').value=u.artist;$('#it').value=u.title;toast('Reconheci o link. Agora copie o texto da cifra, não o link.');return}$('#tx').value=t;read()}catch(e){toast('Toque e segure no campo e escolha Colar.')}};
  $('#ck').onclick=read;$('#tx').oninput=()=>{const t=$('#tx').value;if(t.length<400&&/^\s*https?:\/\/\S+\s*$/.test(t)){const u=fromUrl(t);if(u){$('#ia').value=u.artist;$('#it').value=u.title;$('#tx').value='';toast('Reconheci o link. Agora cole o texto da cifra.')}}};
  if(raw0)read();
- $('#sv2').onclick=()=>{const p=read();if(!p.cifra)return toast('Cole o texto da cifra primeiro.');const ti=$('#it').value.trim(),ar=$('#ia').value.trim();if(!ti)return toast('Escreva o nome da música.');
+ const auto=async()=>{if(!$('#tx')||$('#tx').value.trim())return;try{const t=await navigator.clipboard.readText();if(!t||t.length<80)return;const p=parseCifra(t);if(p.cifra&&p.acordes>=3){$('#tx').value=t;read();toast('Achei a cifra que você copiou e colei aqui.')}}catch(e){}};
+ const vis=()=>{if(!$('#tx')){document.removeEventListener('visibilitychange',vis);window.removeEventListener('focus',vis);return}if(!document.hidden)auto()};
+ document.addEventListener('visibilitychange',vis);window.addEventListener('focus',vis);
+ const sv=next=>{const p=read();if(!p.cifra)return toast('Cole o texto da cifra primeiro.');const ti=$('#it').value.trim(),ar=$('#ia').value.trim();if(!ti)return toast('Escreva o nome da música.');
   const k=norm(ti)+'|'+norm(ar);let s=songs.find(x=>norm(x.title)+'|'+norm(x.artist)===k);
   if(s){if(!(s.cifra||'').trim()){s.cifra=p.cifra}else if(!s.cifra.includes(p.cifra.slice(0,60))){toast('Já existe: abri a que você tinha.')}}
   else{s=newSong(ti,ar);s.outro=true;s.cifra=p.cifra;s.letra=p.letra;s.key=p.key;s.mode=p.mode;songs.push(s)}
-  if(!(s.letra||'').trim())s.letra=p.letra;s.upd=Date.now();if($('#st').checked&&!(s.rep>0))setAdd(s);put(s);toast('Guardada no repertório');hv='rep';list()}}
+  if(!(s.letra||'').trim())s.letra=p.letra;s.upd=Date.now();if($('#st').checked&&!(s.rep>0))setAdd(s);put(s);toast('Guardada no repertório');if(next){cifraImp({artist:ar})}else{hv='rep';list()}}
+ $('#sv2').onclick=()=>sv(false);$('#sv3').onclick=()=>sv(true);
+}
 /* palco */
 const pal={i:0,L:[],fs:20,spd:0,sh:0,mode:'cifra',raf:0,t:0,fr:0,wl:null,follow:true};
 function palco(i,L){pal.L=(L||setList()).filter(Boolean);if(!pal.L.length)return toast('O set está vazio.');pal.i=Math.max(0,Math.min(i||0,pal.L.length-1));pal.sh=0;pal.spd=0;pal.mode='cifra';pal.fr=0;try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>pal.wl=w).catch(()=>{})}catch(e){}palDraw()}

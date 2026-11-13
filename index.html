@@ -90,6 +90,16 @@ nav button:active{background:rgba(255,255,255,.08)}
 @keyframes inBrilhoTaca{from{filter:drop-shadow(0 10px 30px rgba(245,158,11,.25))}to{filter:drop-shadow(0 10px 44px rgba(245,158,11,.55))}}
 @keyframes inBrilho{from{background-position:100% 0}to{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){#intro{display:none}}
+.fr-g summary{font-weight:700;cursor:pointer;padding:4px 0;font-size:16px}
+.fr-g[open] summary{margin-bottom:6px}
+.fr-aba{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #dcdfe8}
+.fr-aba:first-child{border-top:0}
+.painel .fr-s{width:auto!important;margin:0 0 0 6px!important;padding:8px 14px!important}
+.painel .fr-s:disabled{opacity:.35}
+.fr-temas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.painel .fr-tema{margin:0!important;color:#fff!important;padding:16px 8px!important}
+.painel .fr-tema.on{outline:3px solid #f59e0b;outline-offset:2px}
+@media (prefers-color-scheme:dark){.fr-aba{border-color:#2c2e40}}
 </style>
 <script src="firebase-config.js"></script>
 <script src="claude-local.js"></script>
@@ -119,8 +129,12 @@ nav button:active{background:rgba(255,255,255,.08)}
 <script>
 /* apresentação: some sozinha em ~5,6 s ou com um toque */
 (function(){const el=document.getElementById('intro');if(!el)return;
+  let cfg={on:1,v:1};try{cfg=Object.assign(cfg,JSON.parse(localStorage.getItem('bar-intro')||'{}'))}catch(e){}
+  const forcar=sessionStorage.getItem('bar-intro-forcar');sessionStorage.removeItem('bar-intro-forcar');
+  if(!+cfg.on&&!forcar){el.hidden=true;return}
+  const v=+cfg.v||1;if(v!==1)requestAnimationFrame(()=>el.getAnimations({subtree:true}).forEach(a=>a.playbackRate=1/v));
   const sair=()=>{if(el.classList.contains('sai'))return;el.classList.add('sai');setTimeout(()=>el.hidden=true,950)};
-  el.addEventListener('click',sair);setTimeout(sair,5600)})();
+  el.addEventListener('click',sair);setTimeout(sair,5600*v)})();
 </script>
 <header class="marca" id="marca"><img src="icons/logo-horizontal.png" alt="Bar Conect"><span id="marcaAba"></span></header>
 <div class="frames">
@@ -201,6 +215,7 @@ const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
+  if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
   const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
   if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
@@ -295,7 +310,7 @@ document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStora
 
 /* ---- Histórico ---- */
 const NOMEAPP={caixa:'🍸 Caixa',portaria:'🚪 Portaria',estoque:'📦 Estoque'};
-const META={sup:'fornecedores',fin:'pagamentos a fornecedores',adv:'vales',reg:'faltas e feriados',pg:'comissões e salários pagos',nomes:'equipe',sal:'salários',piso:'piso salarial',est:'estoque do caixa',semCom:'quem não tem comissão',fer:'feriados',base:'saldo inicial'};
+const META={fichas:'fichas técnicas',custo:'preços dos ingredientes',tabPrecos:'tabela de preços',sup:'fornecedores',fin:'pagamentos a fornecedores',adv:'vales',reg:'faltas e feriados',pg:'comissões e salários pagos',nomes:'equipe',sal:'salários',piso:'piso salarial',est:'estoque do caixa',semCom:'quem não tem comissão',fer:'feriados',base:'saldo inicial'};
 const PGN={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',cortesia:'Cortesia'},CATN={turista:'Turista',morador:'Morador',clan:'Clã'};
 const brl=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dm=k=>k.slice(8,10)+'/'+k.slice(5,7);
@@ -400,5 +415,6 @@ else if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serv
 </script>
 <script src="foto.js"></script>
 <script src="precos.js"></script>
+<script src="ferramentas.js"></script>
 </body>
 </html>

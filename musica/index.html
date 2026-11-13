@@ -883,14 +883,24 @@ function tunUI(hz){const n=$('#tnn'),h=$('#tnh'),nd=$('#tnd'),st=$('#tns');if(!n
 /* letra ao vivo */
 const wc=t=>(t.trim().match(/\S+/g)||[]).length;
 function cnts(){const s=cur,e=$('#cn');if(!s||!e)return;const t=s.ouvido||'';e.textContent=wc(t)+' palavras · '+(t.trim()?t.trim().split('\n').length:0)+' linhas';}
+let LV=null;
+const lvNz=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const lvText=()=>{const b=(LV.base||'').replace(/\s+$/,'');return b+(b&&LV.lines.length?'\n':'')+LV.lines.join('\n')};
+/* Cada trecho final vira uma linha só. Trata o Chrome do Android, que reenvia o mesmo trecho e trechos cada vez maiores. */
+function lvCommit(i,t){let x=(t||'').trim().replace(/\s+/g,' ');if(!x)return false;x=x[0].toUpperCase()+x.slice(1);const n=lvNz(x);if(!n)return false;const L=LV.lines;
+ if(LV.map[i]!==undefined){const k=LV.map[i];if(lvNz(L[k])===n)return false;L[k]=x;LV.t=Date.now();return true}
+ const last=L.length-1,now=Date.now();
+ if(last>=0&&now-LV.t<6000){const p=lvNz(L[last]);if(p===n||p.startsWith(n+' '))return false;if(n.startsWith(p+' ')){L[last]=x;LV.map[i]=last;LV.t=now;return true}}
+ L.push(x);LV.map[i]=L.length-1;LV.t=now;return true}
 function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
  try{stopSR();sr=new SR();sr.lang=stu.lang;sr.continuous=true;sr.interimResults=true;srOn=true;
-  sr.onresult=e=>{let fin='',itm='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=t.trim()+'\n';else itm+=t}
-   if(fin.trim()){s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n':'')+fin.replace(/\s+$/,'');save(s);if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}
+  LV={base:s.ouvido||'',lines:[],map:{},t:0};
+  sr.onresult=e=>{let itm='',ch=false;for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal){if(lvCommit(i,t))ch=true}else if(i>=e.resultIndex)itm+=t}
+   if(ch){s.ouvido=lvText();save(s);if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}
    const v=$('#lvi');if(v&&cur===s)v.textContent=itm||'Ouvindo…'};
   sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;const msg=e.error==='network'?'Para escrever a letra o Chrome precisa de internet.':e.error==='audio-capture'?'O microfone está ocupado e não deu para escrever a letra junto com a gravação. A gravação continua.':'Sem permissão do microfone para escrever a letra.';
    srOn=false;const g=$('#gst');if(g&&cur===s)g.textContent=msg;const v=$('#lvi');if(v)v.textContent='';const so=$('#so');if(so)so.textContent='✎ Só escrever'};
-  sr.onend=()=>{if(srOn){try{sr.start()}catch(e){}}};
+  sr.onend=()=>{if(srOn){if(LV)LV.map={};try{sr.start()}catch(e){}}};
   sr.start();return true}catch(e){srOn=false;return false}}
 async function studioRec(){const s=cur;if(rec&&rec.state==='recording'){toggleRec();return}
  if(stu.tun)tunerStop();
@@ -931,7 +941,7 @@ function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechR
  $('#rc').onclick=studioRec;$('#dawb2').onclick=()=>openDaw(s);
  $('#cap').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1}));save(s);put(s);studio(p)};
  $('#so').onclick=()=>{if(rc)return toast('Já está escrevendo junto com a gravação.');if(srOn){stopSR();studio(p);return}if(!SR)return toast('Este app não escreve a letra sozinho. Abra pelo Chrome.');if(!startLetra(s))toast('Não consegui iniciar o microfone.');else studio(p)};
- const dr=$('#dr');dr.oninput=e=>{s.ouvido=e.target.value;save();cnts()};cnts();
+ const dr=$('#dr');dr.oninput=e=>{s.ouvido=e.target.value;if(LV){LV.base=s.ouvido;LV.lines=[];LV.map={}}save();cnts()};cnts();
  document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n\n':'')+'['+b.dataset.sec+']\n';dr.value=s.ouvido;dr.scrollTop=dr.scrollHeight;save();cnts()});
  $('#tl').onclick=()=>{const d=(s.ouvido||'').trim();if(!d)return toast('Ainda não há texto para passar.');if((s.letra||'').includes(d.slice(0,60)))return toast('Esse texto já está na Letra.');s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+d:d;save();toast('Passada para a aba Letra')};
  $('#lp').onclick=()=>twice($('#lp'),()=>{if((s.ouvido||'').trim()&&!(s.letra||'').includes((s.ouvido||'').trim().slice(0,60))){s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+s.ouvido.trim():s.ouvido.trim()}s.ouvido='';save();studio(p);toast('Rascunho limpo (o texto foi mantido na Letra)')},'Confirmar?');

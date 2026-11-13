@@ -9,9 +9,11 @@ on:
 permissions:
   contents: write
 
+# Cada versão (commit) tem o seu próprio grupo: rodar de novo uma execução antiga
+# não cancela mais o build de uma versão nova.
 concurrency:
-  group: apk-musica-${{ github.ref }}
-  cancel-in-progress: true
+  group: apk-musica-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   apk:

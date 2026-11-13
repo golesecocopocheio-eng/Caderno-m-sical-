@@ -1,0 +1,28 @@
+name: Clan music (site que atualiza sozinho no Chrome)
+on:
+  push:
+    branches: [main, claude/caderno-musical-apk]
+    paths: ['musica/**', '.github/workflows/pages-musica.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages-${{ github.sha }}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          mkdir site && cp -r musica/. site/
+          git rev-list --count HEAD > site/versao.txt
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4

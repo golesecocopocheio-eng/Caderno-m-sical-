@@ -9,5 +9,6 @@
     "SystemBars": {
       "style": "DARK"
     }
-  }
+  },
+  "backgroundColor": "#12051f"
 }

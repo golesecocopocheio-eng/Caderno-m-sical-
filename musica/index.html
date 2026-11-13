@@ -195,6 +195,11 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 #drec{position:absolute;top:3px;height:56px;border-radius:8px;background:color-mix(in srgb,var(--rec) 35%,transparent);border:1px solid var(--rec);box-sizing:border-box}
 .dph{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);z-index:3;pointer-events:none}
 .dsel .pc{min-width:48px}.dsel input[type=range]{min-width:0}.dsel{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;gap:8px;min-height:64px}
+.nav button[data-t=audio] svg{background:var(--hl);color:var(--hlT);border-radius:12px;padding:4px;box-sizing:content-box;width:20px;height:20px}.nav button[data-t=audio]{color:var(--ink);font-weight:700}
+.hero2{display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:12px;border-radius:18px;background:linear-gradient(135deg,#050505,#171106);color:#F6F1E4;border:1px solid #3a2f10}.hero2 b{display:block;font-size:19px;color:#F5C242}.hero2 small{display:block;margin-top:4px;color:#CFC6B0;line-height:1.35}.hero2 div{flex:1;min-width:0}.hero2 button{flex:0 0 auto;padding:12px 16px;background:#F5C242;color:#2A1A00;border-color:#F5C242;font-weight:700}
+.kar{max-height:34vh;overflow:auto;margin:10px 0;padding:14px 16px;border-radius:18px;background:linear-gradient(160deg,#050505,#171106);border:1px solid #3a2f10;scroll-behavior:smooth}
+.kl{font-size:24px;line-height:1.45;font-weight:600;margin:2px 0}.kw{color:#7a7260;cursor:pointer;transition:color .15s,transform .15s;display:inline-block}.kw.dn{color:#F5C242}.kw.cu{color:#fff;transform:scale(1.08);text-shadow:0 0 14px #F5C242;border-bottom:3px solid #F5C242}
+.khd{margin:12px 0 4px;font-size:13px;font-weight:700;color:#A8903E;letter-spacing:.04em}.ksp{height:12px}
 </style>
 </head>
 <body>
@@ -313,12 +318,12 @@ function list(){cur=null;mixStop();if(typeof edClose==='function')edClose();if(t
 
 function setSv(t){const e=$('#sv');if(e)e.textContent=t}
 function song(){const s=cur;if(tab==='ouvir')tab='estudio';
- const tabs=[['cifra','Cifra'],['letra','Letra'],['estudio','Estúdio'],['campo','Campo'],['audio','Áudio']];
+ const tabs=[['cifra','Cifra'],['letra','Letra'],['estudio','Estúdio'],['campo','Campo'],['audio','Mixer']];
  app.innerHTML=`<header class="sh"><button class="ic" id="back" aria-label="Voltar">${IC.back}</button><div class="tt"><input id="ti" class="ti" placeholder="Título da música" value="${esc(s.title)}" aria-label="Título"><input id="ar" class="ar" placeholder="Artista" value="${esc(s.artist)}" aria-label="Artista"></div><div class="side"><button class="ic" id="del" aria-label="Excluir música">${IC.trash}</button><span id="sv" class="sv"></span></div></header>
  <div class="meta2"><label class="sel"><span>Tom</span><select id="ky">${N.map(n=>`<option ${n===s.key?'selected':''}>${n}</option>`).join('')}</select></label><label class="sel"><span>Fase</span><select id="fs2"><option value="">—</option>${FASES.map(f=>`<option value="${f[0]}" ${s.fase===f[0]?'selected':''}>${f[1]}</option>`).join('')}</select></label><label class="sel"><span>Modo</span><select id="md"><option value="M" ${s.mode==='M'?'selected':''}>Maior</option><option value="m" ${s.mode==='m'?'selected':''}>Menor</option></select></label></div>
  ${s.outro?'<div class="alert"><span><b>Cifra de outro artista.</b> Está só no Repertório.</span><button id="tomain">Salvar na principal</button></div>':''}
  <div id="pane"></div>
- <nav class="nav" aria-label="Seções">${tabs.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}" aria-label="${t[1]}">${IC[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+ <nav class="nav" aria-label="Seções">${tabs.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}" aria-label="${t[1]}">${t[0]==='audio'?IC.mixr:IC[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
  $('#back').onclick=()=>{stopSR();metStop();tunerStop();meterStop();mixStop();if(rec&&rec.state==='recording')rec.stop();else if((!s.title||s.auto)&&!s.cifra&&!s.letra&&!s.ouvido&&!s.audios.length){songs=songs.filter(x=>x!==s);delSong(s)}else flushAll();list()};
  $('#del').onclick=()=>twice($('#del'),()=>{stopSR();mixStop();if(rec&&rec.state==='recording')rec.stop();songs=songs.filter(x=>x!==s);delSong(s);toast('Música excluída');list()},'<span style="font:700 13px var(--ui)">Confirmar?</span>');
  if($('#tomain'))$('#tomain').onclick=()=>{s.outro=false;save();put(s);toast('Salva na aba principal');song()};
@@ -327,7 +332,7 @@ function song(){const s=cur;if(tab==='ouvir')tab='estudio';
  $('#fs2').onchange=e=>{s.fase=e.target.value;save()};
  $('#ky').onchange=e=>{s.key=e.target.value;shift=0;save();pane()};
  $('#md').onchange=e=>{s.mode=e.target.value;save();pane()};
- document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{if(tab==='estudio'&&b.dataset.t!=='estudio'){tunerStop();if(!(rec&&rec.state==='recording')){metStop();if(srOn)stopSR()}}tab=b.dataset.t;if(tab!=='audio'&&!(rec&&rec.state==='recording'))mixStop();document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));pane()});
+ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{if(tab==='estudio'&&b.dataset.t!=='estudio'){tunerStop();if(!(rec&&rec.state==='recording')){metStop();if(srOn)stopSR()}}tab=b.dataset.t;if(tab!=='audio'&&!(rec&&rec.state==='recording'))mixStop();document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));pane();if(tab==='audio'&&!daw&&!(rec&&rec.state==='recording'))openDaw(cur)});
  pane()}
 
 function pane(){const p=$('#pane'),s=cur;
@@ -354,7 +359,7 @@ function pane(){const p=$('#pane'),s=cur;
  else audioTab(p)}
 
 let sr=null,srOn=false,recTipo='mix',recBk=true,recNS=true;
-function stopSR(){srOn=false;try{sr&&sr.stop()}catch(e){}}
+function stopSR(){karStop();srOn=false;try{sr&&sr.stop()}catch(e){}}
 /* ---------- mixer ---------- */
 const mx={ac:null,buf:{},bad:{},src:[],gn:{},master:null,playing:false,t0:0,pos:0,dur:0,raf:0,mv:1};
 const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
@@ -454,7 +459,7 @@ async function nrTrack(s,a,strength){const b=mx.buf[a.id];if(!b){toast('Esta fai
  catch(e){toast('Não consegui reduzir o ruído desta faixa.');if(bt)bt.disabled=false;if(bar)bar.hidden=true}}
 
 function audioTab(p){const s=cur,rc=rec&&rec.state==='recording';
- p.innerHTML=`<button class="pri" id="dawb" style="width:100%;margin-bottom:10px;padding:14px">🎛 Mixer estúdio (igual BandLab)</button><div class="card2"><select id="tp" aria-label="O que vou gravar">${tipoOpts()}</select>
+ p.innerHTML=`<div class="hero2"><div><b>🎛 Mixer estúdio</b><small>${s.audios.length?s.audios.length+(s.audios.length===1?' faixa':' faixas'):'Nenhuma faixa ainda'}. Pistas de voz, violão, baixo, teclado e bateria numa linha do tempo.</small></div><button class="pri" id="dawb">Entrar no estúdio</button></div><div class="card2"><select id="tp" aria-label="O que vou gravar">${tipoOpts()}</select>
  <label class="chk"><input type="checkbox" id="bkc" ${recBk?'checked':''}> Tocar as outras faixas enquanto gravo (use fones)</label>
  <label class="chk"><input type="checkbox" id="nsc" ${recNS?'checked':''}> Filtro de ruído do celular ao gravar</label>
  <div class="row"><label class="fb">Adicionar arquivo<input id="fl" type="file" accept="audio/*" multiple hidden></label><button id="rc" class="${rc?'rec':''}" style="flex:1">${rc?'■ Parar gravação':'● Gravar'}</button></div>
@@ -722,7 +727,7 @@ async function toggleRec(){const s=cur;
    else toast('A gravação saiu vazia. Tente de novo.');
    if(cur===s)refRec()};
   mr.start(1000);meterStart(st);
-  const okL=(tipo==='voz'||tipo==='mix')?startLetra(s):false;
+  const okL=(tipo==='voz'||tipo==='mix')?startLetra(s):false;if(!okL&&(tipo==='voz'||tipo==='mix'))karStart(s,true);
   if(useBk)mixStart(s,0,null);
   refRec();const g=$('#gst');
   if(g)g.textContent=!(tipo==='voz'||tipo==='mix')?'Gravando '+instI(tipo)[1].toLowerCase()+'…':(okL?'Gravando… o que você cantar vai aparecendo e fica salvo no rascunho.':'Gravando. Este aparelho não escreve a letra sozinho.');
@@ -861,6 +866,7 @@ function playBind(){const L=playable();
 
 /* ---------- estúdio ---------- */
 IC.estudio=IC.ouvir;
+IC.mixr='<svg class="i" viewBox="0 0 24 24"><path d="M6 4v16M12 4v16M18 4v16"/><circle cx="6" cy="9" r="2.3" fill="currentColor"/><circle cx="12" cy="15" r="2.3" fill="currentColor"/><circle cx="18" cy="8" r="2.3" fill="currentColor"/></svg>';
 const stu={met:false,id:0,next:0,beat:0,cnt:false,keep:false,lang:'pt-BR',tun:null,m:null,sw:null};
 function clk(ac,t,acc){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=acc?1600:1000;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.7,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+.06);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.08)}
 function dots(i){document.querySelectorAll('.bd i').forEach((d,k)=>d.classList.toggle('on',k===i))}
@@ -894,6 +900,25 @@ function tunUI(hz){const n=$('#tnn'),h=$('#tnh'),nd=$('#tnd'),st=$('#tns');if(!n
 /* letra ao vivo */
 const wc=t=>(t.trim().match(/\S+/g)||[]).length;
 function cnts(){const s=cur,e=$('#cn');if(!s||!e)return;const t=s.ouvido||'';e.textContent=wc(t)+' palavras · '+(t.trim()?t.trim().split('\n').length:0)+' linhas';}
+
+/* ===== Karaokê: a letra da música acende palavra por palavra enquanto você canta ===== */
+const KP={w:[],idx:0,base:0,ri:-1,timer:0,wpm:100,lines:[]};
+const karSim=(a,b)=>{if(a===b)return true;const m=Math.min(a.length,b.length);if(m>=4&&(a.startsWith(b)||b.startsWith(a)))return true;if(m>=5&&Math.abs(a.length-b.length)<=1){let d=0,i=0,j=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++}else{if(++d>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++}}}return d+(a.length-i)+(b.length-j)<=1}return false};
+function karBuild(s){const src=(s&&s.letra||'').replace(/\r/g,'').trim();KP.w=[];KP.lines=[];if(!src)return;
+ src.split('\n').forEach(l=>{const t=l.trim();if(!t){KP.lines.push({sp:1});return}if(/^\[.*\]$/.test(t)||/^(intro|verso|refr[aã]o|ponte|final|pr[eé]-refr[aã]o)\s*:?\s*$/i.test(t)){KP.lines.push({hd:t.replace(/^\[|\]$/g,'')});return}
+  const ws=t.split(/\s+/).map(w=>{const o={t:w,n:lvNz(w)};KP.w.push(o);return KP.w.length-1});KP.lines.push({ws})});
+ if(KP.idx>KP.w.length)KP.idx=0}
+function karRender(){const e=$('#kar');if(!e)return;if(!KP.w.length){e.hidden=true;return}e.hidden=false;
+ e.innerHTML=KP.lines.map(l=>l.sp?'<div class="ksp"></div>':l.hd?`<div class="khd">${esc(l.hd)}</div>`:`<div class="kl">${l.ws.map(i=>`<span class="kw ${i<KP.idx?'dn':i===KP.idx?'cu':''}" data-i="${i}">${esc(KP.w[i].t)}</span>`).join(' ')}</div>`).join('');
+ e.querySelectorAll('.kw').forEach(x=>x.onclick=()=>{KP.idx=KP.base=+x.dataset.i;KP.tap=true;karRender()});
+ const c=e.querySelector('.cu');if(c){const top=c.offsetTop-e.clientHeight/2+c.offsetHeight;e.scrollTo({top:Math.max(0,top),behavior:'smooth'})}}
+function karSet(i){if(i===KP.idx)return;KP.idx=i;const e=$('#kar');if(!e)return;e.querySelectorAll('.kw').forEach(x=>{const k=+x.dataset.i;x.classList.toggle('dn',k<KP.idx);x.classList.toggle('cu',k===KP.idx)});const c=e.querySelector('.cu');if(c){const top=c.offsetTop-e.clientHeight/2+c.offsetHeight;e.scrollTo({top:Math.max(0,top),behavior:'smooth'})}}
+function karFeed(e){if(!KP.w.length||!e.results.length)return;const ri=e.results.length-1;if(ri!==KP.ri){KP.ri=ri;KP.base=KP.idx}
+ const heard=lvNz(e.results[ri][0].transcript).split(' ').filter(Boolean);let p=KP.base;
+ heard.forEach(w=>{for(let j=p;j<Math.min(KP.w.length,p+8);j++){if(KP.w[j].n&&karSim(KP.w[j].n,w)){p=j+1;break}}});karSet(p)}
+function karStart(s,auto){karBuild(s);KP.ri=-1;if(!KP.tap)KP.idx=0;KP.tap=false;KP.base=KP.idx;clearInterval(KP.timer);karRender();
+ if(auto&&KP.w.length)KP.timer=setInterval(()=>{if(KP.idx<KP.w.length)karSet(KP.idx+1)},60000/KP.wpm)}
+function karStop(){clearInterval(KP.timer);KP.timer=0}
 let LV=null;
 const lvNz=t=>t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
 const lvText=()=>{const b=(LV.base||'').replace(/\s+$/,'');return b+(b&&LV.lines.length?'\n':'')+LV.lines.join('\n')};
@@ -905,13 +930,13 @@ function lvCommit(i,t){let x=(t||'').trim().replace(/\s+/g,' ');if(!x)return fal
  L.push(x);LV.map[i]=L.length-1;LV.t=now;return true}
 function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
  try{stopSR();sr=new SR();sr.lang=stu.lang;sr.continuous=true;sr.interimResults=true;srOn=true;
-  LV={base:s.ouvido||'',lines:[],map:{},t:0};
-  sr.onresult=e=>{let itm='',ch=false;for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal){if(lvCommit(i,t))ch=true}else if(i>=e.resultIndex)itm+=t}
+  LV={base:s.ouvido||'',lines:[],map:{},t:0};karStart(s,false);
+  sr.onresult=e=>{karFeed(e);let itm='',ch=false;for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal){if(lvCommit(i,t))ch=true}else if(i>=e.resultIndex)itm+=t}
    if(ch){s.ouvido=lvText();save(s);if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}
    const v=$('#lvi');if(v&&cur===s)v.textContent=itm||'Ouvindo…'};
   sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;const msg=e.error==='network'?'Para escrever a letra o Chrome precisa de internet.':e.error==='audio-capture'?'O microfone está ocupado e não deu para escrever a letra junto com a gravação. A gravação continua.':'Sem permissão do microfone para escrever a letra.';
    srOn=false;const g=$('#gst');if(g&&cur===s)g.textContent=msg;const v=$('#lvi');if(v)v.textContent='';const so=$('#so');if(so)so.textContent='✎ Só escrever'};
-  sr.onend=()=>{if(srOn){if(LV)LV.map={};try{sr.start()}catch(e){}}};
+  sr.onend=()=>{if(srOn){if(LV)LV.map={};KP.ri=-1;KP.base=KP.idx;try{sr.start()}catch(e){}}};
   sr.start();return true}catch(e){srOn=false;return false}}
 async function studioRec(){const s=cur;if(rec&&rec.state==='recording'){toggleRec();return}
  if(stu.tun)tunerStop();
@@ -930,6 +955,7 @@ function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechR
  <div class="row" style="gap:10px;flex-wrap:nowrap"><button id="rc" class="recbig ${rc?'rec':''}">${rc?'■ Parar':'● Gravar e escrever'}</button><button id="so" class="${srOn&&!rc?'pri':''}">${srOn&&!rc?'■ Parar':'✎ Só escrever'}</button></div>
  <p class="hint" id="gst">${rc?'Gravando…':SR?'A letra que você cantar aparece abaixo e fica guardada no rascunho.':'Neste app instalado o Android não escreve a letra sozinho. Para ver as palavras enquanto canta, abra o Clan music pelo Chrome. A gravação funciona normal.'}</p></div>
  <div class="card2"><div class="row" style="align-items:center"><b style="flex:1">Letra ao vivo</b><select id="lg" aria-label="Idioma" style="width:auto"><option value="pt-BR">Português</option><option value="en-US">English</option><option value="es-ES">Español</option></select></div>
+ <div id="kar" class="kar" hidden aria-label="Karaokê da letra"></div><p class="hint" id="karh" hidden>Karaokê: a palavra acesa acompanha o que você canta. Toque numa palavra para começar dali.</p>
  <div id="lvi" class="live" aria-live="polite"></div>
  <div class="chips">${['Intro','Verso','Pré-refrão','Refrão','Ponte','Final'].map(x=>`<button data-sec="${x}">${x}</button>`).join('')}</div>
  <textarea class="code" id="dr" style="white-space:pre-wrap;min-height:30vh;font-size:19px;line-height:1.5" placeholder="Rascunho da letra. O que você cantar aparece aqui sozinho; você pode corrigir com o dedo.">${esc(s.ouvido||'')}</textarea>
@@ -952,6 +978,7 @@ function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechR
  $('#rc').onclick=studioRec;$('#dawb2').onclick=()=>openDaw(s);
  $('#cap').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;fs.forEach(f=>s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,6),tipo:'arquivo',name:f.name,blob:f,vol:1}));save(s);put(s);studio(p)};
  $('#so').onclick=()=>{if(rc)return toast('Já está escrevendo junto com a gravação.');if(srOn){stopSR();studio(p);return}if(!SR)return toast('Este app não escreve a letra sozinho. Abra pelo Chrome.');if(!startLetra(s))toast('Não consegui iniciar o microfone.');else studio(p)};
+ karBuild(s);karRender();{const kh=$('#karh');if(kh)kh.hidden=!KP.w.length}
  const dr=$('#dr');dr.oninput=e=>{s.ouvido=e.target.value;if(LV){LV.base=s.ouvido;LV.lines=[];LV.map={}}save();cnts()};cnts();
  document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n\n':'')+'['+b.dataset.sec+']\n';dr.value=s.ouvido;dr.scrollTop=dr.scrollHeight;save();cnts()});
  $('#tl').onclick=()=>{const d=(s.ouvido||'').trim();if(!d)return toast('Ainda não há texto para passar.');if((s.letra||'').includes(d.slice(0,60)))return toast('Esse texto já está na Letra.');s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+d:d;save();toast('Passada para a aba Letra')};

@@ -14,7 +14,7 @@
 <style>
 html,body{margin:0;height:100%;background:#f6f4ef;color:#1d1b18;font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
 @media (prefers-color-scheme:dark){html,body{background:#16140f;color:#f2eee6}}
-iframe{position:fixed;left:0;right:0;bottom:0;top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));width:100%;height:auto;border:0}
+iframe{position:fixed;left:0;right:0;bottom:0;top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));width:100%;height:calc(100% - max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px)));border:0}
 form{padding-top:calc(28px + max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px)))!important}
 form{max-width:440px;margin:0 auto;padding:28px 18px}
 h1{font-size:22px;margin:0 0 6px}

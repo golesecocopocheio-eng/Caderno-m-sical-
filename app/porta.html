@@ -43,6 +43,8 @@ const $=s=>document.querySelector(s);
 const nuvem=!!window.FIREBASE_CONFIG;
 const doLink=decodeURIComponent((location.hash.match(/bar=([^&]+)/)||[])[1]||'');
 if(doLink&&doLink!==localStorage.getItem('bar-codigo')){localStorage.removeItem('bar-codigo')}
+// Valores da entrada vindos do QR Code (#p=turista,morador), quando o bar não sincroniza pela nuvem.
+{const m=location.hash.match(/p=([\d.]+),([\d.]+)/);if(m)localStorage.setItem('bar-porta-precos',JSON.stringify({turista:Number(m[1])||0,morador:Number(m[2])||0}))}
 const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 function abrir(){
   const f=document.createElement('iframe');f.title='Portaria do Bar';f.addEventListener('load',()=>{try{f.contentDocument.documentElement.style.zoom=parseFloat(localStorage.getItem('bar-zoom')||'1.12')||1.12}catch(e){}});f.src='portaria.html';document.body.appendChild(f);

@@ -136,9 +136,10 @@
       <div class="ft-r"><span>Total em dinheiro</span><b id="ftDinT">R$ 0,00</b></div></div>
     <div class="ft-card ft-tot" id="ftTotais"></div>
     <button id="ftAplicar">✅ Aplicar no fechamento do Caixa</button>
-    <button class="sec" id="ftCopiar">📋 Copiar relatório</button>
+    <button class="sec" id="ftCopiar">📋 Ver relatório do dia</button>
     <p id="ftMsg"></p>
-    <textarea id="ftRel" rows="8" readonly hidden></textarea>`;
+    <pre id="ftRel" class="ft-rel" hidden></pre>
+    <div class="ft-chips" id="ftRelBotoes" hidden><button id="ftRelCopiar" style="background:#6d28d9;color:#fff">📋 Copiar</button><button class="sec" id="ftRelCompart" style="margin-top:0">📤 Compartilhar</button></div>`;
 
   const campos = [['credito', 'Crédito'], ['debito', 'Débito'], ['pix', 'Pix'], ['qr', 'QR Code']];
   function desenharFotos() {
@@ -212,33 +213,48 @@
   $('#ftArq', painel).onchange = lerArquivos;
   $('#ftCam', painel).onchange = lerArquivos;
 
+  // Campos do fechamento do Caixa que a foto preenche: Bar → bd/bc/bp; Portaria → pd/pc/pp.
+  function camposCaixa() {
+    const t = totais(), k = destino === 'bar' ? { d: 'bd', c: 'bc', p: 'bp' } : { d: 'pd', c: 'pc', p: 'pp' };
+    return { k, novo: { [k.d]: campo(t.dinheiro), [k.c]: campo(t.cartao), [k.p]: campo(t.pixTotal) } };
+  }
+  // Mesmo relatório do lançamento do dia (aba Caixa), já com os valores das fotos.
   function relatorio() {
+    try {
+      const cx = document.getElementById('f-caixa'), w = cx && cx.contentWindow;
+      if (w && w.__cxRelatorio) return w.__cxRelatorio(data, camposCaixa().novo);
+    } catch (e) {}
     const t = totais(), dt = data.split('-').reverse().join('/');
     const L = ['*FECHAMENTO ' + (destino === 'bar' ? 'DO BAR' : 'DA PORTARIA') + ' - ' + dt + '*', ''];
-    estado.fotos.forEach((f, i) => L.push((f.mini ? 'Foto ' : 'Lançamento ') + (i + 1) + ': Crédito ' + brl(f.credito) + ' · Débito ' + brl(f.debito) + ' · Pix ' + brl(f.pix) + ' · QR Code ' + brl(f.qr)));
-    if (estado.fotos.length) L.push('');
     L.push('*CARTÃO* (crédito + débito): ' + brl(t.cartao));
     L.push('*PIX* (Pix + QR Code): ' + brl(t.pixTotal));
     L.push('*DINHEIRO*: ' + brl(t.dinheiro));
     L.push('_Total_: ' + brl(t.total));
     return L.join('\n');
   }
-  $('#ftCopiar', painel).onclick = async () => {
+  function mostrarRelatorio(aviso) {
     const txt = relatorio(), el = $('#ftRel', painel);
-    el.hidden = false; el.value = txt;
+    el.hidden = false; el.textContent = txt;
+    $('#ftRelBotoes', painel).hidden = false;
+    if (aviso) $('#ftMsg', painel).textContent = aviso;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  async function copiarRel() {
+    const txt = relatorio();
     try { await navigator.clipboard.writeText(txt); $('#ftMsg', painel).textContent = '✅ Relatório copiado. Cole no WhatsApp.'; }
-    catch (e) { el.select(); try { document.execCommand('copy'); $('#ftMsg', painel).textContent = '✅ Relatório copiado.'; } catch (x) { $('#ftMsg', painel).textContent = 'Copie o relatório abaixo.'; } }
-  };
+    catch (e) { const r = document.createRange(); r.selectNodeContents($('#ftRel', painel)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); $('#ftMsg', painel).textContent = '✅ Relatório copiado.'; } catch (x) { $('#ftMsg', painel).textContent = 'Copie o relatório abaixo.'; } }
+  }
+  $('#ftCopiar', painel).onclick = () => mostrarRelatorio();
+  $('#ftRelCopiar', painel).onclick = copiarRel;
+  $('#ftRelCompart', painel).onclick = async () => { const t = relatorio(); try { if (navigator.share) await navigator.share({ text: t }); else copiarRel(); } catch (e) {} };
 
   // Aplica no fechamento do dia: Bar → bd/bc/bp; Portaria → pd/pc/pp. Os outros campos do dia ficam como estão.
   let armado = false;
   $('#ftAplicar', painel).onclick = () => {
-    const t = totais(), msg = $('#ftMsg', painel);
-    const k = destino === 'bar' ? { d: 'bd', c: 'bc', p: 'bp' } : { d: 'pd', c: 'pc', p: 'pp' };
+    const msg = $('#ftMsg', painel), { k, novo } = camposCaixa();
     let days = {};
     try { days = JSON.parse(localStorage.getItem('caixa-bar')) || {}; } catch (e) {}
     const dia = days[data] || {};
-    const novo = { [k.d]: campo(t.dinheiro), [k.c]: campo(t.cartao), [k.p]: campo(t.pixTotal) };
     if (!armado) {
       armado = true;
       const nome = { d: 'Dinheiro', c: 'Cartão', p: 'Pix' };
@@ -252,8 +268,9 @@
     days[data] = Object.assign({}, dia, novo);
     localStorage.setItem('caixa-bar', JSON.stringify(days));
     const f = document.getElementById('f-caixa');
-    if (f && f.src) f.contentWindow.location.reload();
-    msg.textContent = '✅ Aplicado no fechamento de ' + data.split('-').reverse().join('/') + '. Abra a aba Caixa para conferir.';
+    const aviso = '✅ Aplicado no fechamento de ' + data.split('-').reverse().join('/') + '. Este é o relatório do dia, igual ao do Caixa:';
+    if (f && f.src) { f.addEventListener('load', () => setTimeout(() => mostrarRelatorio(aviso), 300), { once: true }); f.contentWindow.location.reload(); }
+    else mostrarRelatorio(aviso);
   };
 
   // Ao tocar na aba 📸 Foto: abre a câmera direto se o fechamento do dia ainda não tem foto.

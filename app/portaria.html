@@ -44,13 +44,26 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="row chips" id="pgs"></div>
   </div>
 
-  <div class="row" id="cats" style="margin-bottom:12px"></div>
+  <div id="cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+  <div class="card" id="listaBox" hidden style="border:2px solid var(--ac)">
+    <b>📝 Nome na lista</b>
+    <input id="listaNome" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Nome da pessoa" style="width:100%;box-sizing:border-box;margin-top:8px;padding:12px;font-size:17px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)">
+    <div class="msg" id="listaAviso"></div>
+    <div class="row" style="margin-top:6px"><button class="btn" id="listaOk" style="margin-top:0">✅ Lançar</button><button class="btn" id="listaCancela" style="margin-top:0;background:var(--bd);color:var(--tx)">Cancelar</button></div>
+  </div>
 
   <div class="card">
     <div class="sub" style="margin:0">Total da noite</div>
     <div class="tot" id="total">R$ 0,00</div>
     <div class="grid" id="resumo"></div>
     <div class="grid" id="resumoPg"></div>
+  </div>
+
+  <div class="card" id="envCard" hidden style="border:2px solid var(--ac)">
+    <b>📤 Enviar lançamentos para o dono</b>
+    <div class="sub" style="margin:4px 0 0">Este celular não está ligado ao caixa. No fim da noite (ou quando o dono pedir), toque abaixo e mande pelo WhatsApp. O dono cola em <b>Portaria → Restaurar backup</b> e as entradas somam com as dele, sem apagar nada.</div>
+    <button class="btn" id="envBtn">📤 Enviar lançamentos da noite</button>
+    <div class="msg" id="envMsg"></div>
   </div>
 
   <div class="card">
@@ -70,6 +83,11 @@ label{font-size:13px;color:var(--mut);flex:1}
       <button class="btn" id="salvar">Salvar valores</button>
       <button class="btn" id="zerar" style="background:var(--bd);color:var(--tx)">Zerar valores</button>
     </div>
+  </div>
+
+  <div class="card" id="listaCard" hidden>
+    <b>📝 Lista da noite (<span id="listaQtd">0</span>)</b>
+    <div id="listaNomes"></div>
   </div>
 
   <div class="card">
@@ -95,6 +113,7 @@ label{font-size:13px;color:var(--mut);flex:1}
       <div class="sub" id="qrLink" style="margin:8px 0 0;word-break:break-all"></div>
       <button class="btn" id="qrShare">📤 Compartilhar link</button>
       <div class="msg" id="qrMsg"></div>
+      <div class="sub" id="qrComo" style="margin:10px 0 0;text-align:left"></div>
     </div>
   </div>
 </main>
@@ -103,33 +122,43 @@ label{font-size:13px;color:var(--mut);flex:1}
 <script>
 // Link que o QR Code abre: só a Portaria, no site do app (funciona no iPhone e no Android).
 // Se o bar estiver sincronizando, o link leva o código do bar para a pessoa entrar direto.
-window.LINK_PORTARIA=(()=>{const base="https://golesecocopocheio-eng.github.io/Caderno-m-sical-/porta.html";let c="";try{c=localStorage.getItem("bar-codigo")||""}catch(e){}return c&&window.FIREBASE_CONFIG!==null?base+"#bar="+encodeURIComponent(c):base})();
+// Sem nuvem, o link leva os valores da entrada (#p=turista,morador) para o celular da pessoa já cobrar certo.
+window.NUVEM_BAR=(()=>{try{return !!(window.FIREBASE_CONFIG||window.parent.FIREBASE_CONFIG)}catch(e){return !!window.FIREBASE_CONFIG}})();
+window.MODO_PORTA=(()=>{try{return window.parent!==window&&/porta\.html/.test(window.parent.location.pathname)}catch(e){return false}})();
+window.linkPortaria=()=>{const base="https://golesecocopocheio-eng.github.io/Caderno-m-sical-/porta.html";let c="";try{c=localStorage.getItem("bar-codigo")||""}catch(e){}
+  if(c&&window.NUVEM_BAR)return base+"#bar="+encodeURIComponent(c);
+  const p=window.__precosPortaria||{};return base+"#p="+(Number(p.turista)||0)+","+(Number(p.morador)||0)+","+(Number(p.lista)||0)};
 </script>
 <script>
-const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"]];
+const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"],["lista","Lista"]];
 const PGS=[["dinheiro","Dinheiro"],["pix","Pix"],["cartao","Cartão"],["cortesia","Cortesia"]];
 const $=s=>document.querySelector(s);
 const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 // A noite vira só às 6h da manhã, para o movimento depois da meia-noite contar na mesma noite
 const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString("sv-SE");
-let db=null,precos={turista:0,morador:0,clan:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false;
+let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false;
 const preco=k=>k==="clan"?0:(Number(precos[k])||0);
+const escN=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function render(){
   $("#noite").textContent=(ver===noite?"Hoje · noite de ":"Noite de ")+ver.split("-").reverse().join("/");
   $("#dia").value=ver;
   $("#pgs").innerHTML=PGS.map(([k,n])=>`<button data-pg="${k}" class="${k===pg?"on":""}">${n}</button>`).join("");
-  $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan")?"Grátis":brl(preco(k))}</small></button>`).join("");
+  $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan"||(k==="lista"&&!preco(k)))?"Grátis":brl(preco(k))}${k==="lista"?" · com nome":""}</small></button>`).join("");
   const tot=ents.reduce((s,e)=>s+(e.valor||0),0);
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
-  $("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
+  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
   $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(ents.filter(e=>e.pg===k).reduce((s,e)=>s+e.valor,0))}</b><span>${n}</span></div>`).join("");
-  $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"?"Grátis":brl(precos[k]))).join(" · ");
+  $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"||!preco(k)?"Grátis":brl(precos[k]))).join(" · ");
+  const ls=ents.filter(e=>e.cat==="lista").sort((a,b)=>a.ts-b.ts);
+  $("#listaCard").hidden=!ls.length;
+  $("#listaNomes").innerHTML=ls.map((e,i)=>`<div class="item"><span>${i+1}. <b>${escN(e.nome||"(sem nome)")}</b> · ${new Date(e.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span><span>${brl(e.valor)}</span></div>`).join("");
+  $("#listaQtd").textContent=ls.length;
   const rec=[...ents].sort((a,b)=>b.ts-a.ts).slice(0,15);
   $("#lista").innerHTML=rec.length?rec.map(e=>{
     const h=new Date(e.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
     const c=CATS.find(x=>x[0]===e.cat)[1],p=PGS.find(x=>x[0]===e.pg)[1];
-    return `<div class="item"><span>${h} · ${c} · ${p}</span><span>${brl(e.valor)} ${owner?`<button data-del="${e.id}" aria-label="Remover">✕</button>`:""}</span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
+    return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} ${owner?`<button data-del="${e.id}" aria-label="Remover">✕</button>`:""}</span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
   const sm=a=>a.reduce((s,l)=>s+(l.valor||0),0);
   $("#audit").innerHTML=`<div><b>${lan.length}</b><span>Lançadas · ${brl(sm(lan))}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(sm(lan)-sm(apg))}</b><span>Saldo</span></div>`;
@@ -142,33 +171,41 @@ let armed=null;
 function conf(key,msg){
   if(armed===key){armed=null;return true}
   armed=key;$("#status").textContent=msg+" Toque de novo para confirmar.";
-  setTimeout(()=>{if(armed===key){armed=null;$("#status").textContent="● Sincronizado ao vivo"}},5000);
+  setTimeout(()=>{if(armed===key){armed=null;$("#status").textContent=NUVEM_BAR?"● Sincronizado ao vivo":"📱 Salvo neste celular"}},5000);
   return false;
 }
 document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button");if(!t)return;
   if(t.dataset.pg){pg=t.dataset.pg;render();return}
-  if(t.id==="qrShare"){const u=LINK_PORTARIA;try{if(navigator.share){await navigator.share({title:"Portaria do Bar",text:"Abra a portaria do bar:",url:u});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(u);$("#qrMsg").textContent="✅ Link copiado. Cole no WhatsApp para mandar."}catch(e){$("#qrMsg").textContent="Copie o link acima e mande para a pessoa."}return}
-  if(t.id==="qrBtn"){const b=$("#qrBox");b.hidden=!b.hidden;if(!b.hidden&&!b.dataset.ok){try{const qr=qrcode(0,"M");qr.addData(LINK_PORTARIA);$("#qrLink").textContent=LINK_PORTARIA;qr.make();$("#qrImg").innerHTML=qr.createImgTag(6,0);const im=$("#qrImg img");im.style.width="220px";im.style.height="220px";im.style.imageRendering="pixelated";b.dataset.ok=1}catch(e){$("#qrImg").textContent="Não foi possível gerar o QR Code."}}return}
+  if(t.id==="listaCancela"){$("#listaBox").hidden=true;return}
+  if(t.id==="qrShare"){const u=linkPortaria();try{if(navigator.share){await navigator.share({title:"Portaria do Bar",text:"Abra a portaria do bar:",url:u});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(u);$("#qrMsg").textContent="✅ Link copiado. Cole no WhatsApp para mandar."}catch(e){$("#qrMsg").textContent="Copie o link acima e mande para a pessoa."}return}
+  if(t.id==="qrBtn"){const b=$("#qrBox");b.hidden=!b.hidden;if(!b.hidden){try{const qr=qrcode(0,"M");const L=linkPortaria();qr.addData(L);$("#qrLink").textContent=L;qr.make();$("#qrImg").innerHTML=qr.createImgTag(6,0);const im=$("#qrImg img");im.style.width="220px";im.style.height="220px";im.style.imageRendering="pixelated";b.dataset.ok=1}catch(e){$("#qrImg").textContent="Não foi possível gerar o QR Code."}}return}
   if(!db){$("#status").textContent="Sem conexão com o banco de dados. Abra o link pelo Claude.";return}
   try{
-    if(t.dataset.cat){
+    if(t.dataset.cat||t.id==="listaOk"){
       if(ver!==noite){$("#status").textContent="Você está vendo outra noite. Escolha a data de hoje para lançar entradas.";return}
-      const free=t.dataset.cat==="clan"||pg==="cortesia";
-      const en={cat:t.dataset.cat,pg:free?"cortesia":pg,valor:free?0:preco(t.dataset.cat),noite,ts:Date.now()};
+      const cat=t.dataset.cat||"lista";let nome="";
+      if(cat==="lista"){
+        if(t.dataset.cat){$("#listaBox").hidden=false;$("#listaNome").value="";$("#listaNome").focus();return}
+        nome=$("#listaNome").value.trim().replace(/\s+/g," ").slice(0,60);
+        if(!nome){$("#listaNome").focus();$("#listaAviso").textContent="Digite o nome da pessoa.";return}
+        $("#listaBox").hidden=true;$("#listaAviso").textContent="";
+      }
+      const free=cat==="clan"||pg==="cortesia"||(cat==="lista"&&!preco(cat));
+      const en={cat,pg:free?"cortesia":pg,valor:free?0:preco(cat),noite,ts:Date.now()};if(nome)en.nome=nome;
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
     }else if(t.dataset.del){
       if(owner&&conf("del"+t.dataset.del,"Remover esta entrada?")){
         const e=ents.find(x=>x.id===t.dataset.del);
         await db.collection("entradas").doc(t.dataset.del).delete();
-        if(e)await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now()});
+        if(e)await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now(),...(e.nome?{nome:e.nome}:{})});
       }
     }else if(!owner){return}else if(t.id==="editBtn"){
       $("#inputs").innerHTML=CATS.filter(c=>c[0]!=="clan").map(([k,n])=>`<label>${n}<input type="number" inputmode="decimal" min="0" step="0.5" id="p_${k}" value="${precos[k]}"></label>`).join("");
       $("#editBox").hidden=!$("#editBox").hidden;
     }else if(t.id==="zerar"){
-      if(conf("zerar","Zerar todos os valores da portaria?")){await db.doc("config/precos").set({turista:0,morador:0,clan:0});$("#editBox").hidden=true}
+      if(conf("zerar","Zerar todos os valores da portaria?")){await db.doc("config/precos").set({turista:0,morador:0,clan:0,lista:0});$("#editBox").hidden=true}
     }else if(t.id==="limpar"){
       if(ents.length&&conf("limpar","Apagar as "+ents.length+" entradas desta noite? Não dá para desfazer.")){
         await Promise.all([...ents].map(async e=>{await db.collection("entradas").doc(e.id).delete();await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now()})}));
@@ -187,12 +224,15 @@ document.addEventListener("click",async ev=>{
   try{const u=await claude.use("user");owner=u?await u.isOwner():false}catch(e){owner=false}
   render();
   if(!db){clearTimeout(timer);$("#status").textContent="Modo demonstração: abra o link pelo Claude e faça login para sincronizar.";return}
-  db.doc("config/precos").onSnapshot(s=>{const d=s.exists&&s.data();if(d)precos={turista:d.turista||0,morador:d.morador||0,clan:d.clan||0};render()},e=>{$("#status").textContent="Erro ao ler valores"});
+  let doLink=null;try{doLink=MODO_PORTA&&!NUVEM_BAR&&JSON.parse(localStorage.getItem("bar-porta-precos")||"null")}catch(e){}
+  db.doc("config/precos").onSnapshot(s=>{const d=s.exists&&s.data();if(d)precos={turista:d.turista||0,morador:d.morador||0,clan:d.clan||0,lista:d.lista||0};window.__precosPortaria=precos;
+    if(doLink&&(doLink.turista!==precos.turista||doLink.morador!==precos.morador||(doLink.lista||0)!==precos.lista)){const v={turista:doLink.turista,morador:doLink.morador,clan:0,lista:doLink.lista||0};doLink=null;db.doc("config/precos").set(v).catch(()=>{})}
+    render()},e=>{$("#status").textContent="Erro ao ler valores"});
   const sub=()=>{
     if(unsub)unsub();if(unsubLog)unsubLog();
     unsubLog=db.collection("log").where("noite","==",ver).onSnapshot(s=>{logs=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
     unsub=db.collection("entradas").where("noite","==",ver).onSnapshot(s=>{
-      clearTimeout(timer);$("#status").textContent="● Sincronizado ao vivo";
+      clearTimeout(timer);$("#status").textContent=NUVEM_BAR?"● Sincronizado ao vivo":"📱 Salvo neste celular";
       ents=s.docs.map(d=>({id:d.id,...d.data()}));render();
     },e=>{clearTimeout(timer);$("#status").textContent="Erro ao ler entradas"});
   };
@@ -292,7 +332,8 @@ document.addEventListener("click",async ev=>{
   async function preparar(txt){
     if(!owner)return {erro:'Somente o dono pode restaurar o backup.'};
     txt=(txt||'').trim();let o;
-    try{o=JSON.parse(txt)}catch(e){o=lerResumo(txt);if(!o)return {erro:'Backup inválido. Cole o texto completo do backup, o resumo da noite da portaria, ou escolha o arquivo.'};if(o.erro)return {erro:'Resumo da noite: '+o.erro}}
+    try{o=JSON.parse(txt)}catch(e){try{const a=txt.indexOf('{'),b=txt.lastIndexOf('}');o=a>=0&&b>a?JSON.parse(txt.slice(a,b+1)):null}catch(x){o=null}}
+    if(!o){o=lerResumo(txt);if(!o)return {erro:'Backup inválido. Cole o texto completo do backup, o resumo da noite da portaria, ou escolha o arquivo.'};if(o.erro)return {erro:'Resumo da noite: '+o.erro}}
     const apps=normalizar(o);
     if(!apps)return {erro:'Não reconheci esse backup. Use um backup do app (completo, do Caixa, da Portaria ou do Estoque), o dados-do-bar.json ou o resumo da noite da portaria.'};
     const resumo=Object.entries(apps).map(([a,c])=>NOMES[a]+' '+contar(c)).join(', ');
@@ -310,7 +351,7 @@ document.addEventListener("click",async ev=>{
     else{for(const[c,docs]of Object.entries(apps.portaria||{}))for(const[id,v]of Object.entries(docs))await db.collection(c).doc(id).set(v)}
     // recarrega as outras abas para mostrarem os dados restaurados
     try{['f-caixa','f-estoque'].forEach(id=>{const f=window.parent.document.getElementById(id);if(f&&f.src)f.contentWindow.location.reload()})}catch(e){}
-    $('#status').textContent='● Sincronizado ao vivo';
+    $("#status").textContent=NUVEM_BAR?"● Sincronizado ao vivo":"📱 Salvo neste celular";
     return '✅ Restaurado: '+resumo+' registros.'+(apps.caixa?' Abra a aba Caixa para ver.':'');
   }
   window.__barPreparar=preparar;window.__barExecutar=executar;
@@ -330,5 +371,28 @@ document.addEventListener("click",async ev=>{
   };
 })();
 </script>
+<script>
+/* Celular da equipe (aberto pelo QR Code) sem sincronização: as entradas ficam no celular da pessoa.
+   Ela manda os lançamentos da noite pelo WhatsApp e o dono cola em Restaurar backup (soma, não apaga). */
+(function(){
+  if(!NUVEM_BAR&&MODO_PORTA)$("#envCard").hidden=false;
+  if(!NUVEM_BAR)$("#qrComo").innerHTML="Como funciona: a pessoa abre o link, já com os valores da entrada, e lança no celular dela. No fim da noite ela toca em <b>📤 Enviar lançamentos da noite</b> e manda para você pelo WhatsApp. Você cola em <b>Restaurar backup</b> (aqui na Portaria ou na aba Backup) e as entradas dela somam com as suas.";
+  $("#envBtn").onclick=async()=>{
+    const msg=$("#envMsg");
+    if(!db){msg.textContent="Sem banco de dados neste celular.";return}
+    const out={tipo:"portaria-backup",versao:1,criado:new Date().toISOString(),envio:true,noite:ver,entradas:{},log:{}};
+    for(const c of ["entradas","log"]){const q=await db.collection(c).where("noite","==",ver).get();q.docs.forEach(d=>out[c][d.id]=d.data())}
+    const es=Object.values(out.entradas),n=es.length,tot=es.reduce((a,e)=>a+(Number(e.valor)||0),0);
+    if(!n){msg.textContent="Nenhuma entrada nesta noite para enviar.";return}
+    const quem=(localStorage.getItem("bar-nome")||"").trim();
+    const txt=JSON.stringify(out);
+    const cab="Portaria · noite de "+ver.split("-").reverse().join("/")+(quem?" · "+quem:"")+": "+n+" entradas, "+brl(tot)+". Cole este texto em Portaria → Restaurar backup:\n\n";
+    try{if(navigator.share){await navigator.share({text:cab+txt});msg.textContent="✅ Enviado: "+n+" entradas, "+brl(tot)+".";return}}catch(e){if(e&&e.name==="AbortError")return}
+    try{await navigator.clipboard.writeText(txt);msg.textContent="✅ Copiado ("+n+" entradas, "+brl(tot)+"). Cole no WhatsApp do dono."}
+    catch(e){msg.innerHTML="Copie o texto abaixo e mande para o dono:<textarea rows='4' style='width:100%;margin-top:6px' readonly>"+txt.replace(/</g,"&lt;")+"</textarea>"}
+  };
+})();
+</script>
+<script>$("#listaNome").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#listaOk").click()}});</script>
 </body>
 </html>

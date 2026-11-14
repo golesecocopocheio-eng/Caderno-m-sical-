@@ -14,7 +14,8 @@
 <style>
 html,body{margin:0;height:100%;background:#f6f4ef;color:#1d1b18;font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
 @media (prefers-color-scheme:dark){html,body{background:#16140f;color:#f2eee6}}
-iframe{position:fixed;left:0;right:0;bottom:0;top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));width:100%;height:calc(100% - max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px)));border:0}
+:root{--topo:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px))}
+iframe{position:fixed;left:0;top:var(--topo);width:100%;height:calc(100% - var(--topo));height:calc(100dvh - var(--topo));border:0;display:block}
 form{padding-top:calc(28px + max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px)))!important}
 form{max-width:440px;margin:0 auto;padding:28px 18px}
 h1{font-size:22px;margin:0 0 6px}
@@ -43,6 +44,8 @@ const $=s=>document.querySelector(s);
 const nuvem=!!window.FIREBASE_CONFIG;
 const doLink=decodeURIComponent((location.hash.match(/bar=([^&]+)/)||[])[1]||'');
 if(doLink&&doLink!==localStorage.getItem('bar-codigo')){localStorage.removeItem('bar-codigo')}
+// Valores da entrada vindos do QR Code (#p=turista,morador), quando o bar não sincroniza pela nuvem.
+{const m=location.hash.match(/p=([\d.]+),([\d.]+)(?:,([\d.]+))?/);if(m)localStorage.setItem('bar-porta-precos',JSON.stringify({turista:Number(m[1])||0,morador:Number(m[2])||0,lista:Number(m[3])||0}))}
 const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 function abrir(){
   const f=document.createElement('iframe');f.title='Portaria do Bar';f.addEventListener('load',()=>{try{f.contentDocument.documentElement.style.zoom=parseFloat(localStorage.getItem('bar-zoom')||'1.12')||1.12}catch(e){}});f.src='portaria.html';document.body.appendChild(f);

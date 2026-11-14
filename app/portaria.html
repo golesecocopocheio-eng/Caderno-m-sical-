@@ -44,7 +44,13 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="row chips" id="pgs"></div>
   </div>
 
-  <div class="row" id="cats" style="margin-bottom:12px"></div>
+  <div id="cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+  <div class="card" id="listaBox" hidden style="border:2px solid var(--ac)">
+    <b>📝 Nome na lista</b>
+    <input id="listaNome" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Nome da pessoa" style="width:100%;box-sizing:border-box;margin-top:8px;padding:12px;font-size:17px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)">
+    <div class="msg" id="listaAviso"></div>
+    <div class="row" style="margin-top:6px"><button class="btn" id="listaOk" style="margin-top:0">✅ Lançar</button><button class="btn" id="listaCancela" style="margin-top:0;background:var(--bd);color:var(--tx)">Cancelar</button></div>
+  </div>
 
   <div class="card">
     <div class="sub" style="margin:0">Total da noite</div>
@@ -77,6 +83,11 @@ label{font-size:13px;color:var(--mut);flex:1}
       <button class="btn" id="salvar">Salvar valores</button>
       <button class="btn" id="zerar" style="background:var(--bd);color:var(--tx)">Zerar valores</button>
     </div>
+  </div>
+
+  <div class="card" id="listaCard" hidden>
+    <b>📝 Lista da noite (<span id="listaQtd">0</span>)</b>
+    <div id="listaNomes"></div>
   </div>
 
   <div class="card">
@@ -116,33 +127,38 @@ window.NUVEM_BAR=(()=>{try{return !!(window.FIREBASE_CONFIG||window.parent.FIREB
 window.MODO_PORTA=(()=>{try{return window.parent!==window&&/porta\.html/.test(window.parent.location.pathname)}catch(e){return false}})();
 window.linkPortaria=()=>{const base="https://golesecocopocheio-eng.github.io/Caderno-m-sical-/porta.html";let c="";try{c=localStorage.getItem("bar-codigo")||""}catch(e){}
   if(c&&window.NUVEM_BAR)return base+"#bar="+encodeURIComponent(c);
-  const p=window.__precosPortaria||{};return base+"#p="+(Number(p.turista)||0)+","+(Number(p.morador)||0)};
+  const p=window.__precosPortaria||{};return base+"#p="+(Number(p.turista)||0)+","+(Number(p.morador)||0)+","+(Number(p.lista)||0)};
 </script>
 <script>
-const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"]];
+const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"],["lista","Lista"]];
 const PGS=[["dinheiro","Dinheiro"],["pix","Pix"],["cartao","Cartão"],["cortesia","Cortesia"]];
 const $=s=>document.querySelector(s);
 const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 // A noite vira só às 6h da manhã, para o movimento depois da meia-noite contar na mesma noite
 const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString("sv-SE");
-let db=null,precos={turista:0,morador:0,clan:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false;
+let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false;
 const preco=k=>k==="clan"?0:(Number(precos[k])||0);
+const escN=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function render(){
   $("#noite").textContent=(ver===noite?"Hoje · noite de ":"Noite de ")+ver.split("-").reverse().join("/");
   $("#dia").value=ver;
   $("#pgs").innerHTML=PGS.map(([k,n])=>`<button data-pg="${k}" class="${k===pg?"on":""}">${n}</button>`).join("");
-  $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan")?"Grátis":brl(preco(k))}</small></button>`).join("");
+  $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan"||(k==="lista"&&!preco(k)))?"Grátis":brl(preco(k))}${k==="lista"?" · com nome":""}</small></button>`).join("");
   const tot=ents.reduce((s,e)=>s+(e.valor||0),0);
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
-  $("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
+  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
   $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(ents.filter(e=>e.pg===k).reduce((s,e)=>s+e.valor,0))}</b><span>${n}</span></div>`).join("");
-  $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"?"Grátis":brl(precos[k]))).join(" · ");
+  $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"||!preco(k)?"Grátis":brl(precos[k]))).join(" · ");
+  const ls=ents.filter(e=>e.cat==="lista").sort((a,b)=>a.ts-b.ts);
+  $("#listaCard").hidden=!ls.length;
+  $("#listaNomes").innerHTML=ls.map((e,i)=>`<div class="item"><span>${i+1}. <b>${escN(e.nome||"(sem nome)")}</b> · ${new Date(e.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span><span>${brl(e.valor)}</span></div>`).join("");
+  $("#listaQtd").textContent=ls.length;
   const rec=[...ents].sort((a,b)=>b.ts-a.ts).slice(0,15);
   $("#lista").innerHTML=rec.length?rec.map(e=>{
     const h=new Date(e.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
     const c=CATS.find(x=>x[0]===e.cat)[1],p=PGS.find(x=>x[0]===e.pg)[1];
-    return `<div class="item"><span>${h} · ${c} · ${p}</span><span>${brl(e.valor)} ${owner?`<button data-del="${e.id}" aria-label="Remover">✕</button>`:""}</span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
+    return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} ${owner?`<button data-del="${e.id}" aria-label="Remover">✕</button>`:""}</span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
   const sm=a=>a.reduce((s,l)=>s+(l.valor||0),0);
   $("#audit").innerHTML=`<div><b>${lan.length}</b><span>Lançadas · ${brl(sm(lan))}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(sm(lan)-sm(apg))}</b><span>Saldo</span></div>`;
@@ -161,27 +177,35 @@ function conf(key,msg){
 document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button");if(!t)return;
   if(t.dataset.pg){pg=t.dataset.pg;render();return}
+  if(t.id==="listaCancela"){$("#listaBox").hidden=true;return}
   if(t.id==="qrShare"){const u=linkPortaria();try{if(navigator.share){await navigator.share({title:"Portaria do Bar",text:"Abra a portaria do bar:",url:u});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(u);$("#qrMsg").textContent="✅ Link copiado. Cole no WhatsApp para mandar."}catch(e){$("#qrMsg").textContent="Copie o link acima e mande para a pessoa."}return}
   if(t.id==="qrBtn"){const b=$("#qrBox");b.hidden=!b.hidden;if(!b.hidden){try{const qr=qrcode(0,"M");const L=linkPortaria();qr.addData(L);$("#qrLink").textContent=L;qr.make();$("#qrImg").innerHTML=qr.createImgTag(6,0);const im=$("#qrImg img");im.style.width="220px";im.style.height="220px";im.style.imageRendering="pixelated";b.dataset.ok=1}catch(e){$("#qrImg").textContent="Não foi possível gerar o QR Code."}}return}
   if(!db){$("#status").textContent="Sem conexão com o banco de dados. Abra o link pelo Claude.";return}
   try{
-    if(t.dataset.cat){
+    if(t.dataset.cat||t.id==="listaOk"){
       if(ver!==noite){$("#status").textContent="Você está vendo outra noite. Escolha a data de hoje para lançar entradas.";return}
-      const free=t.dataset.cat==="clan"||pg==="cortesia";
-      const en={cat:t.dataset.cat,pg:free?"cortesia":pg,valor:free?0:preco(t.dataset.cat),noite,ts:Date.now()};
+      const cat=t.dataset.cat||"lista";let nome="";
+      if(cat==="lista"){
+        if(t.dataset.cat){$("#listaBox").hidden=false;$("#listaNome").value="";$("#listaNome").focus();return}
+        nome=$("#listaNome").value.trim().replace(/\s+/g," ").slice(0,60);
+        if(!nome){$("#listaNome").focus();$("#listaAviso").textContent="Digite o nome da pessoa.";return}
+        $("#listaBox").hidden=true;$("#listaAviso").textContent="";
+      }
+      const free=cat==="clan"||pg==="cortesia"||(cat==="lista"&&!preco(cat));
+      const en={cat,pg:free?"cortesia":pg,valor:free?0:preco(cat),noite,ts:Date.now()};if(nome)en.nome=nome;
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
     }else if(t.dataset.del){
       if(owner&&conf("del"+t.dataset.del,"Remover esta entrada?")){
         const e=ents.find(x=>x.id===t.dataset.del);
         await db.collection("entradas").doc(t.dataset.del).delete();
-        if(e)await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now()});
+        if(e)await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now(),...(e.nome?{nome:e.nome}:{})});
       }
     }else if(!owner){return}else if(t.id==="editBtn"){
       $("#inputs").innerHTML=CATS.filter(c=>c[0]!=="clan").map(([k,n])=>`<label>${n}<input type="number" inputmode="decimal" min="0" step="0.5" id="p_${k}" value="${precos[k]}"></label>`).join("");
       $("#editBox").hidden=!$("#editBox").hidden;
     }else if(t.id==="zerar"){
-      if(conf("zerar","Zerar todos os valores da portaria?")){await db.doc("config/precos").set({turista:0,morador:0,clan:0});$("#editBox").hidden=true}
+      if(conf("zerar","Zerar todos os valores da portaria?")){await db.doc("config/precos").set({turista:0,morador:0,clan:0,lista:0});$("#editBox").hidden=true}
     }else if(t.id==="limpar"){
       if(ents.length&&conf("limpar","Apagar as "+ents.length+" entradas desta noite? Não dá para desfazer.")){
         await Promise.all([...ents].map(async e=>{await db.collection("entradas").doc(e.id).delete();await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now()})}));
@@ -201,8 +225,8 @@ document.addEventListener("click",async ev=>{
   render();
   if(!db){clearTimeout(timer);$("#status").textContent="Modo demonstração: abra o link pelo Claude e faça login para sincronizar.";return}
   let doLink=null;try{doLink=MODO_PORTA&&!NUVEM_BAR&&JSON.parse(localStorage.getItem("bar-porta-precos")||"null")}catch(e){}
-  db.doc("config/precos").onSnapshot(s=>{const d=s.exists&&s.data();if(d)precos={turista:d.turista||0,morador:d.morador||0,clan:d.clan||0};window.__precosPortaria=precos;
-    if(doLink&&(doLink.turista!==precos.turista||doLink.morador!==precos.morador)){const v={turista:doLink.turista,morador:doLink.morador,clan:0};doLink=null;db.doc("config/precos").set(v).catch(()=>{})}
+  db.doc("config/precos").onSnapshot(s=>{const d=s.exists&&s.data();if(d)precos={turista:d.turista||0,morador:d.morador||0,clan:d.clan||0,lista:d.lista||0};window.__precosPortaria=precos;
+    if(doLink&&(doLink.turista!==precos.turista||doLink.morador!==precos.morador||(doLink.lista||0)!==precos.lista)){const v={turista:doLink.turista,morador:doLink.morador,clan:0,lista:doLink.lista||0};doLink=null;db.doc("config/precos").set(v).catch(()=>{})}
     render()},e=>{$("#status").textContent="Erro ao ler valores"});
   const sub=()=>{
     if(unsub)unsub();if(unsubLog)unsubLog();
@@ -369,5 +393,6 @@ document.addEventListener("click",async ev=>{
   };
 })();
 </script>
+<script>$("#listaNome").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#listaOk").click()}});</script>
 </body>
 </html>

@@ -236,6 +236,8 @@ const nuvem=!!window.FIREBASE_CONFIG;
 const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
+/* Escolher foto pela janela principal: no APK a câmera não abre de dentro das abas (iframes). */
+window.__barEscolherFoto=(camera,varias)=>new Promise(ok=>{const i=document.createElement('input');i.type='file';i.accept='image/*';if(camera)i.setAttribute('capture','environment');if(varias)i.multiple=true;i.style.display='none';document.body.appendChild(i);i.onchange=()=>{ok([...(i.files||[])]);i.remove()};i.click()});
 function abrir(t){
   if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
   const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';

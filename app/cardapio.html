@@ -166,7 +166,7 @@ function desenharCarrinho(){
 }
 const podeMontar=()=>dono||!itens.length;
 function fotoCard(){return `<div class="card"><h2>📷 Montar pela foto do cardápio</h2><p class="sub">Tire uma foto bem reta e com luz do cardápio impresso (ou escolha da galeria). O app lê nomes e preços e monta o cardápio digital. Você confere antes de salvar.</p>
-    <div class="row"><label class="foto" style="flex:1;margin:0">📷 Tirar foto<input type="file" id="fotoCam" accept="image/*" capture="environment" hidden></label><label class="foto" style="flex:1;margin:0;background:#4c1d95;color:#fff">🖼️ Galeria<input type="file" id="fotoGal" accept="image/*" multiple hidden></label></div>
+    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px">📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff">🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
     <p class="msg" id="fotoMsg">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`}
 function telaCardapio(){
   let h='';
@@ -271,8 +271,8 @@ function aplicarCaixa(){
 async function copiar(t){try{await navigator.clipboard.writeText(t);toast('✅ Copiado')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('✅ Copiado')}catch(x){toast('Não consegui copiar')}a.remove()}}
 
 /* ---------- foto do cardápio ---------- */
-async function lerFotos(e){
-  const arqs=[...(e.target.files||[])];e.target.value='';if(!arqs.length)return;
+async function lerFotos(arqs){
+  if(!arqs||!arqs.length)return;
   const ocr=window.parent&&window.parent.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
   leitura={itens:(leitura&&leitura.itens)||[],msg:'Lendo a foto… (a primeira vez demora um pouco)'};aba='cardapio';draw();
   for(const [k,a] of arqs.entries()){
@@ -308,6 +308,7 @@ document.addEventListener('click',async ev=>{
   if(d.via&&folha){folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
+  if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barEscolherFoto){P.__barEscolherFoto(d.foto==='cam',d.foto!=='cam').then(lerFotos)}else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
   if(b.id==='fConfirmar'){b.disabled=true;await confirmarVenda();return}
   if(b.id==='relBtn'){copiar(relatorio());return}
   if(b.id==='caixaBtn'){aplicarCaixa();return}
@@ -333,7 +334,7 @@ document.addEventListener('input',e=>{const t=e.target;
   if(t.dataset.lk&&leitura){const x=leitura.itens[+t.dataset.li];if(!x)return;if(t.dataset.lk==='ok'){x.ok=t.checked;const s=$('#lerSalvar');if(s)s.textContent='✅ Adicionar '+leitura.itens.filter(y=>y.ok).length+' itens ao cardápio'}else if(t.dataset.lk==='p')x.p=nv(t.value);else x[t.dataset.lk]=t.value}
 });
 document.addEventListener('change',async e=>{const t=e.target;
-  if(t.id==='fotoCam'||t.id==='fotoGal'){lerFotos(e);return}
+  if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
   if(!dono)return;
   try{

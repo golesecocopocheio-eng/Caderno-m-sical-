@@ -76,16 +76,11 @@
     $('#estTemas').hidden = true; $('#estCartoes').hidden = false;
     $('#estTitulo').textContent = tema.ico + ' ' + tema.nome + ' · ' + C.nomeLingua(alvoLingua);
     $('#estMinha').textContent = 'Traduzindo as frases…'; $('#estAlvo').textContent = '';
-    gato.dizer('Preparando as frases de ' + tema.nome + '… 🐾');
-    // traduz de 3 em 3 para não sobrecarregar o serviço
-    itens = tema.frases.map((pt) => ({ pt, minha: pt, alvo: '' }));
-    for (let k = 0; k < itens.length; k += 3) {
-      await Promise.all(itens.slice(k, k + 3).map(async (it) => {
-        const [m, a] = await Promise.all([C.traduzir(it.pt, 'pt-BR', minha), C.traduzir(it.pt, 'pt-BR', alvoLingua)]);
-        it.minha = m; it.alvo = a;
-      }));
-      if (tema !== TEMAS[i]) return; // trocou de tema no meio
-    }
+    // tudo num pedido só por idioma (e na hora, se já foi traduzido antes)
+    const atual = tema;
+    const [minhas, alvos] = await Promise.all([C.traduzirVarias(tema.frases, 'pt-BR', minha), C.traduzirVarias(tema.frases, 'pt-BR', alvoLingua)]);
+    if (tema !== atual) return; // trocou de tema no meio
+    itens = tema.frases.map((pt, k) => ({ pt, minha: minhas[k], alvo: alvos[k] }));
     pos = 0; modo = 'cartao';
     mostrar();
     gato.dizer('Toque em 🔊 para ouvir e em 🎤 para repetir. Você consegue! 💪');

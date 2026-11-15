@@ -310,7 +310,7 @@
     try { const qr = qrcode(0, 'M'); qr.addData(L); qr.make(); $('#qrImg').innerHTML = qr.createImgTag(6, 0); } catch (e) { $('#qrImg').textContent = ''; }
   };
   $('#btCopiar').onclick = () => navigator.clipboard.writeText(linkSala()).then(() => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = 'Copiar link'; }, 1500); }).catch(() => prompt('Copie o link:', linkSala()));
-  $('#btCompart').onclick = () => navigator.share ? navigator.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala de tradução: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {}) : $('#btCopiar').onclick();
+  $('#btCompart').onclick = () => navigator.share ? navigator.share({ title: 'Clã Speak', text: 'Entre na minha sala de tradução: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {}) : $('#btCopiar').onclick();
   window.addEventListener('pagehide', () => { conexao && conexao.sair(); });
 
   // ---------- Frente a frente ----------

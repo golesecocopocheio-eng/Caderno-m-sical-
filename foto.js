@@ -280,6 +280,7 @@
   window.__barFotoAbrir = () => { if (!estado.fotos.length) $('#ftCam', painel).click(); };
   window.__barFotoLer = lerComprovante; // usado nos testes
   // Leitura de foto compartilhada com a aba 💲 Preços (notas de compra)
+  window.__barOCRPreparar = () => obterWorker().catch(() => {}); // aquece o leitor (aba Cardápio)
   window.__barOCR = async (arquivo, aoProgredir, max, psm) => {
     const { canvas, miniatura } = await prepararImagem(arquivo, max);
     progresso = aoProgredir || (() => {});

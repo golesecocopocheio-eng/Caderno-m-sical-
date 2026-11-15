@@ -58,4 +58,10 @@ if 'text-recognition' not in g:
     g, n = re.subn(r'dependencies\s*\{', "dependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'", g, count=1)
     assert n == 1, 'dependencies não encontrado no build.gradle'
     gradle.write_text(g, encoding='utf-8')
+# só processadores de celular (ARM): o modelo do leitor vem para cada tipo; tira os de PC (x86)
+g = gradle.read_text(encoding='utf-8')
+if 'abiFilters' not in g:
+    g, n = re.subn(r'(defaultConfig\s*\{)', r"\1\n        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }", g, count=1)
+    assert n == 1, 'defaultConfig não encontrado'
+    gradle.write_text(g, encoding='utf-8')
 print('ajustes do Android aplicados')

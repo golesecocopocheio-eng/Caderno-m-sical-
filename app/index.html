@@ -33,9 +33,9 @@ iframe.on,.painel.on{display:block}
 .painel button.sec{background:#dcdfe8;color:#161826}
 .painel .info{background:#fff;border:1px solid #dcdfe8;border-radius:12px;padding:12px;font-size:15px;line-height:1.7}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
-nav{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:linear-gradient(180deg,#1e0b36,#12051f);border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
+nav{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:linear-gradient(180deg,#1e0b36,#12051f);border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
-nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 11px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
+nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 10.5px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
 nav button span{font-size:23px;line-height:1;transition:transform .2s}
 nav button.on{color:#fcd34d;background:linear-gradient(180deg,rgba(245,158,11,.22),rgba(245,158,11,.08));box-shadow:inset 0 0 0 1px rgba(252,211,77,.25)}
 nav button.on span{transform:translateY(-1px) scale(1.08)}
@@ -159,6 +159,7 @@ nav button:active{background:rgba(255,255,255,.08)}
   <iframe id="f-caixa" title="Caixa bar" data-src="caixa.html"></iframe>
   <iframe id="f-portaria" title="Portaria do Bar" data-src="portaria.html"></iframe>
   <iframe id="f-estoque" title="Estoque do Bar" data-src="estoque.html"></iframe>
+  <iframe id="f-cardapio" title="Cardápio e vendas" data-src="cardapio.html"></iframe>
 
   <form class="painel" id="entrar">
     <h1>🍸 Bar Conect</h1>
@@ -223,6 +224,7 @@ nav button:active{background:rgba(255,255,255,.08)}
   <button data-tab="caixa"><span>🍸</span>Caixa</button>
   <button data-tab="portaria"><span>🚪</span>Portaria</button>
   <button data-tab="estoque"><span>📦</span>Estoque</button>
+  <button data-tab="cardapio"><span>🍽️</span>Cardápio</button>
   <button data-tab="precos"><span>💲</span>Preços</button>
   <button data-tab="foto"><span>📸</span>Foto</button>
   <button data-tab="backup"><span>💾</span>Backup</button>
@@ -236,7 +238,7 @@ const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
 function abrir(t){
   if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
-  const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
+  const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
   if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
@@ -329,7 +331,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{abrir(b.datase
 document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStorage.setItem('bar-zoom',b.dataset.z);aplicarZoomTudo()});
 
 /* ---- Histórico ---- */
-const NOMEAPP={caixa:'🍸 Caixa',portaria:'🚪 Portaria',estoque:'📦 Estoque'};
+const NOMEAPP={caixa:'🍸 Caixa',portaria:'🚪 Portaria',estoque:'📦 Estoque',cardapio:'🍽️ Cardápio'};
 const META={fichas:'fichas técnicas',custo:'preços dos ingredientes',tabPrecos:'tabela de preços',sup:'fornecedores',fin:'pagamentos a fornecedores',adv:'vales',reg:'faltas e feriados',pg:'comissões e salários pagos',nomes:'equipe',sal:'salários',piso:'piso salarial',est:'estoque do caixa',semCom:'quem não tem comissão',fer:'feriados',base:'saldo inicial'};
 const PGN={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',cortesia:'Cortesia'},CATN={turista:'Turista',morador:'Morador',clan:'Clã',lista:'Lista'};
 const brl=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});

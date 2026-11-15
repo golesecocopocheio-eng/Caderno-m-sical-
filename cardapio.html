@@ -137,6 +137,7 @@ const CATKW=/\b(drinks?|drinques?|autora(?:l|is)|cl[aá]ssic[oa]s?|coquet[eé]is
 const MINUSC=new Set(['de','da','do','das','dos','e','com','ao','à','a','o','na','no','em','para']);
 const titulo=t=>{const l=t.replace(/[^A-Za-zÀ-ú]/g,'');if(!l||l!==l.toUpperCase())return t.charAt(0).toUpperCase()+t.slice(1);return t.toLowerCase().split(' ').map((w,k)=>k&&MINUSC.has(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ')};
 function lerCardapio(txt,semPreco){
+  const SEM='\u0000sem';
   const LET=/[A-Za-zÀ-ú]{3}/;
   const limpa=t=>t.replace(/^§\s*/,'').replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
   const PRECO=/^(.*?)(?:^|[\s.:\-–—·…_=$])(?:R\s?\$\s*)?(\d{1,3}(?:\s?[.,]\s?\d{1,2})?)\s*[,.\-–]*\s*$/;
@@ -149,17 +150,22 @@ function lerCardapio(txt,semPreco){
     const w=sg.t.split(' ').length;sg.desc=!sg.p&&(/,/.test(sg.t)||/^[a-zà-ú]/.test(sg.t)||w>6)});
   const prox=(i,k)=>{for(let j=i+1;j<segs.length&&j<i+8;j++)if(segs[j].k===k)return segs[j];return null};
   const out=[],sobra=[],cats=[],pend=[],ult=[];let ordem=0;
-  const novo=(n,k,p,d)=>{const it={n:titulo(n),c:cats[k]||cats[0]||'Cardápio',p,o:ordem++};if(d)it.d=d;out.push(it);ult[k]=it;return it};
+  const novo=(n,k,p,d)=>{const it={n:titulo(n),c:cats[k]||cats[0]||SEM,p,o:ordem++};if(d)it.d=d;out.push(it);ult[k]=it;return it};
   segs.forEach((sg,i)=>{const k=sg.k;pend[k]=pend[k]||[];
-    if(sg.comPreco){if(pend[k].length){/* linhas soltas antes: descrição deste item? */const d=pend[k].filter(x=>x.desc).map(x=>x.t).join(' ');pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||'Cardápio',p:0}));novo(sg.nome,k,sg.p,d)}else novo(sg.nome,k,sg.p);pend[k]=[];return}
+    if(sg.comPreco){if(pend[k].length){/* linhas soltas antes: descrição deste item? */const d=pend[k].filter(x=>x.desc).map(x=>x.t).join(' ');pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||SEM,p:0}));novo(sg.nome,k,sg.p,d)}else novo(sg.nome,k,sg.p);pend[k]=[];return}
     if(sg.soPreco){const P=pend[k];pend[k]=[];if(!P.length)return;const nm=P.find(x=>!x.desc)||P[0];novo(nm.t,k,sg.p,P.filter(x=>x!==nm).map(x=>x.t).join(' '));return}
     if(!LET.test(sg.t))return;
     const nx=prox(i,k),w=sg.t.split(' ').length,semDig=!/\d/.test(sg.t);
     const eTitulo=semDig&&w<=5&&!(nx&&nx.soPreco)&&((CATKW.test(sg.t)&&!sg.desc)||(sg.grande&&!(nx&&nx.desc)));
-    if(eTitulo){pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||'Cardápio',p:0}));cats[k]=titulo(sg.t);pend[k]=[];ult[k]=null;return}
+    if(eTitulo){pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||SEM,p:0}));cats[k]=titulo(sg.t);pend[k]=[];ult[k]=null;return}
     if(sg.desc&&ult[k]&&!pend[k].length){ult[k].d=(ult[k].d?ult[k].d+' ':'')+sg.t;return}
     pend[k].push(sg)});
-  pend.forEach((P,k)=>(P||[]).filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||'Cardápio',p:0})));
+  pend.forEach((P,k)=>(P||[]).filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||SEM,p:0})));
+  // itens antes do primeiro título: se o cardápio tem "Clássicos", os de cima são os autorais
+  // (ex.: Clandestino — Momosuke, Cabra da Peste, Lei Seca… e depois "Drinks Clássicos")
+  const grupos=[...out,...sobra].map(x=>x.c).filter(c=>c!==SEM);
+  const semTitulo=grupos.some(c=>/cl[aá]ssic/i.test(c))?'Drinks Autorais':grupos.some(c=>/drink|coquet/i.test(c))?'Drinks':'Cardápio';
+  [...out,...sobra].forEach(x=>{if(x.c===SEM)x.c=semTitulo});
   const m=new Map();out.forEach(x=>m.set(x.n.toLowerCase(),x));
   if(semPreco||!m.size){if(semPreco)sobra.forEach(x=>{if(!m.has(x.n.toLowerCase())&&x.n.split(' ').some(w=>w.length>=3))m.set(x.n.toLowerCase(),{...x,o:ordem++})})}
   return [...m.values()];
@@ -527,7 +533,7 @@ async function lerFotos(arqs,guardar=true){
     msg('Montando o cardápio…');
     const salvos=[];
     for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
-      if(ja){atual++;continue}
+      if(ja){atual++;const up={};if(x.c&&(!ja.c||/^(card[aá]pio|outros)$/i.test(ja.c))&&ja.c!==x.c)up.c=x.c;if(x.d&&!ja.d)up.d=x.d;if(Object.keys(up).length)salvos.push(db.collection('itens').doc(ja.id).set({...strip(ja),...up}).catch(()=>{}));continue}
       const it={n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now(),o:base+(x.o||0)};if(x.d)it.d=x.d;salvos.push(db.collection('itens').add(it).catch(e=>{erro=e.message||String(e)}));novos++}
     await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
   }catch(e){erro=(e&&e.message)||String(e)}
@@ -544,7 +550,7 @@ function nomeDoBar(tx){if((cfg.nome||'').trim())return;const l=String(tx||'').sp
 async function salvarLidos(lidos){
   let novos=0,atual=0,erro='';const salvos=[];const base=itens.reduce((m,i)=>Math.max(m,(i.o??0)+1),0);
   for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
-    if(ja){atual++;continue}
+    if(ja){atual++;const up={};if(x.c&&(!ja.c||/^(card[aá]pio|outros)$/i.test(ja.c))&&ja.c!==x.c)up.c=x.c;if(x.d&&!ja.d)up.d=x.d;if(Object.keys(up).length)salvos.push(db.collection('itens').doc(ja.id).set({...strip(ja),...up}).catch(()=>{}));continue}
     const it={n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now(),o:base+(x.o||0)};if(x.d)it.d=x.d;salvos.push(db.collection('itens').add(it).catch(e=>{erro=e.message||String(e)}));novos++}
   await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
   return {novos,atual,erro};

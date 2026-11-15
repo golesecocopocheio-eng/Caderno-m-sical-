@@ -154,6 +154,7 @@ nav button:active{background:rgba(255,255,255,.08)}
   const sair=()=>{if(el.classList.contains('sai'))return;el.classList.add('sai');setTimeout(()=>el.hidden=true,950)};
   el.addEventListener('click',sair);setTimeout(sair,6200*v)})();
 </script>
+<input type="file" id="cardCam" accept="image/*" capture="environment" hidden onchange="fotoCardapioEscolhida(event)"><input type="file" id="cardGal" accept="image/*" multiple hidden onchange="fotoCardapioEscolhida(event)">
 <header class="marca" id="marca"><img src="icons/logo-horizontal.png" alt="Bar Conect"><span id="marcaAba"></span></header>
 <div class="frames">
   <iframe id="f-caixa" title="Caixa bar" data-src="caixa.html"></iframe>
@@ -236,6 +237,11 @@ const nuvem=!!window.FIREBASE_CONFIG;
 const codigo=()=>(localStorage.getItem('bar-codigo')||'').trim();
 const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 
+/* Foto do cardápio pela janela principal (no APK a câmera não abre de dentro das abas).
+   Os campos ficam fixos na página, como os da aba 📸 Foto, que funcionam no celular. */
+window.__barFotoCardapio=cam=>{const i=document.getElementById(cam?'cardCam':'cardGal');i.value='';i.click()};
+function fotoCardapioEscolhida(e){const a=[...(e.target.files||[])];if(!a.length)return;abrir('cardapio');
+  const f=document.getElementById('f-cardapio');const ir=()=>{try{f.contentWindow.__cardLerFotos(a)}catch(x){setTimeout(ir,500)}};ir()}
 function abrir(t){
   if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
   const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
@@ -327,7 +333,7 @@ $('#arquivo').onchange=async e=>{
     setTimeout(()=>location.reload(),1800);
   }catch(err){msg.textContent='❌ Não consegui importar este arquivo. Confira se é o arquivo de dados do bar.'}
 };
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{abrir(b.dataset.tab);if(b.dataset.tab==='foto'&&window.__barFotoAbrir)window.__barFotoAbrir()});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{abrir(b.dataset.tab);if(b.dataset.tab==='foto'&&window.__barFotoAbrir)window.__barFotoAbrir();if(b.dataset.tab==='cardapio'){try{document.getElementById('f-cardapio').contentWindow.__cardAoAbrir()}catch(e){}}});
 document.querySelectorAll('#zoom [data-z]').forEach(b=>b.onclick=()=>{localStorage.setItem('bar-zoom',b.dataset.z);aplicarZoomTudo()});
 
 /* ---- Histórico ---- */

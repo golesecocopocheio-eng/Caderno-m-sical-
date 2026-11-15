@@ -19,7 +19,7 @@
   async function ehDono() { try { const c = await window.__barIniciarCore(); return !c || c.dono; } catch (e) { return true; } }
 
   /* ---------------- abas ---------------- */
-  const ABAS = [['caixa', '🍸 Caixa'], ['portaria', '🚪 Portaria'], ['estoque', '📦 Estoque'], ['precos', '💲 Preços'], ['foto', '📸 Foto'], ['backup', '💾 Backup']];
+  const ABAS = [['caixa', '🍸 Caixa'], ['portaria', '🚪 Portaria'], ['estoque', '📦 Estoque'], ['cardapio', '🍽️ Cardápio'], ['precos', '💲 Preços'], ['foto', '📸 Foto'], ['backup', '💾 Backup']];
   const cfgAbas = () => { const c = lerJSON('bar-abas', {}); const ordem = (c.ordem || []).filter((id) => ABAS.some((a) => a[0] === id)); ABAS.forEach(([id]) => { if (!ordem.includes(id)) ordem.push(id); }); return { ordem, ocultas: c.ocultas || [] }; };
   function aplicarAbas() {
     const c = cfgAbas(), nav = document.getElementById('nav');

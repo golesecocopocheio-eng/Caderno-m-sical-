@@ -1,12 +1,12 @@
 # Caderno-m-sical-
 Cardeno músical
 
-## Tradutor ao Vivo (`app/tradutor.html`)
+## Clã Speak · tradutor ao vivo (`app/tradutor.html`)
 
 Aplicativo de tradução de voz em tempo real. Você fala no seu idioma e a outra pessoa lê
 (e ouve) no idioma dela, enquanto você ainda está falando. Pode ser instalado na tela inicial
-como app próprio ("Tradutor"). Arquivos: `app/tradutor.html`, `app/tradutor.js`,
-`app/tradutor.webmanifest`, `app/icons/tradutor.svg`.
+como app próprio ("Clã Speak", ícone do gatinho preto "MIAU!"). Arquivos: `app/tradutor.html`, `app/tradutor.js`,
+`app/tradutor.webmanifest`, `app/icons/clan-speak-*.png`.
 
 - **Sala remota:** cada pessoa usa o próprio celular, de qualquer lugar. Crie uma sala (código de
   6 letras) e toque em **Convidar** para mandar o link ou mostrar o QR Code. Cada um escolhe o seu

@@ -134,7 +134,12 @@
   async function conectar(sala, eu, h) {
     const cfg = window.FIREBASE_CONFIG;
     if (cfg) {
-      try { return await conectarFirebase(cfg, sala, eu, h); } catch (e) { console.warn('Firebase indisponível, usando só este aparelho', e); h.aviso && h.aviso('Sem conexão com a nuvem: a sala funciona só neste aparelho.'); }
+      try { return await conectarFirebase(cfg, sala, eu, h); } catch (e) {
+        console.warn('Firebase indisponível, usando só este aparelho', e);
+        h.aviso(e && e.code === 'permission-denied'
+          ? 'A nuvem recusou a sala: falta publicar no Firebase a regra das salas (firestore.rules). Por enquanto a sala funciona só entre abas deste aparelho.'
+          : 'Sem conexão com a nuvem: a sala funciona só entre abas deste aparelho. Verifique a internet e entre de novo.');
+      }
     }
     return conectarLocal(sala, eu, h);
   }
@@ -150,21 +155,26 @@
       const t = setTimeout(() => err(new Error('tempo esgotado')), 12000);
       const off = auth.onAuthStateChanged((u) => { if (u) { clearTimeout(t); off(); ok(u); } else auth.signInAnonymously().catch(err); });
     });
-    const meu = user.uid;
+    // Cada aba é um participante: abas do mesmo navegador dividem o login anônimo do Firebase,
+    // então o id da pessoa na sala é por aba (fica igual se a aba for recarregada).
+    const meu = sessionStorage.getItem('trad-aba') || (() => { const u = user.uid.slice(0, 8) + '-' + Math.random().toString(36).slice(2, 8); sessionStorage.setItem('trad-aba', u); return u; })();
     const db = app.firestore();
     const base = db.collection('salas').doc(sala);
     const pessoa = base.collection('pessoas').doc(meu);
     const entrada = Date.now();
-    await pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now(), vivo: '' });
-    const pulso = setInterval(() => pessoa.update({ t: Date.now() }).catch(() => {}), 30000);
+    // Sem internet o Firestore não responde nem dá erro: depois de 15 s desiste.
+    await Promise.race([pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now(), vivo: '' }),
+      new Promise((_, err) => setTimeout(() => err(new Error('tempo esgotado')), 15000))]);
+    const pulso = setInterval(() => pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now() }, { merge: true }).catch(() => {}), 30000);
     const offs = [];
     offs.push(base.collection('falas').orderBy('t').limitToLast(60).onSnapshot((s) => {
       s.docChanges().forEach((c) => { if (c.type === 'added') { const d = c.doc.data(); h.fala({ ...d, id: c.doc.id, eu: d.uid === meu, nova: d.t >= entrada }); } });
-    }, (e) => h.aviso && h.aviso('Sem permissão na nuvem (publique as regras do firestore.rules).')));
-    offs.push(base.collection('pessoas').onSnapshot((s) => {
-      const agora = Date.now();
-      h.pessoas(s.docs.map((d) => ({ ...d.data(), uid: d.id, eu: d.id === meu })).filter((p) => agora - p.t < 120000));
-    }));
+    }, () => h.aviso('A nuvem recusou a sala: falta publicar no Firebase a regra das salas (firestore.rules).')));
+    // Quem não dá sinal há 2 minutos (fechou o app sem sair) some da lista.
+    let lista = [];
+    const mostrar = () => { const agora = Date.now(); h.pessoas(lista.filter((p) => p.eu || agora - p.t < 120000)); };
+    offs.push(base.collection('pessoas').onSnapshot((s) => { lista = s.docs.map((d) => ({ ...d.data(), uid: d.id, eu: d.id === meu })); mostrar(); }));
+    const revisar = setInterval(mostrar, 30000);
     let ultimo = 0, pend = null, tm = null;
     const vivo = (texto) => {
       pend = texto;
@@ -176,7 +186,7 @@
       nuvem: true,
       enviar: (texto) => { pend = null; pessoa.update({ vivo: '' }).catch(() => {}); return base.collection('falas').add({ uid: meu, nome: eu.nome, lingua: eu.lingua, texto, t: Date.now() }); },
       vivo,
-      sair: () => { clearInterval(pulso); offs.forEach((f) => f()); return pessoa.delete().catch(() => {}); }
+      sair: () => { clearInterval(pulso); clearInterval(revisar); offs.forEach((f) => f()); return pessoa.delete().catch(() => {}); }
     };
   }
 
@@ -267,12 +277,12 @@
     localStorage.setItem('trad-nome', nome); localStorage.setItem('trad-lingua', eu.lingua); localStorage.setItem('trad-sala', sala);
     history.replaceState(null, '', '?sala=' + sala);
     $('#salaCod').textContent = sala;
-    msgs.innerHTML = ''; vivos.clear();
+    msgs.innerHTML = ''; vivos.clear(); $('#avisoSala').hidden = true;
     $('#pessoas').textContent = 'Conectando…';
     mostrarTela('salaTela');
     $('#btVoz').textContent = vozLigada ? '🔊' : '🔇';
     try {
-      conexao = await conectar(sala, eu, { fala: bolha, pessoas: atualizarPessoas, aviso: (t) => { $('#pessoas').textContent = t; } });
+      conexao = await conectar(sala, eu, { fala: bolha, pessoas: atualizarPessoas, aviso: (t) => { const a = $('#avisoSala'); a.textContent = '⚠️ ' + t; a.hidden = false; } });
     } catch (e) { alert('Não foi possível entrar na sala: ' + e.message); mostrarTela('inicio'); }
   }
 
@@ -312,6 +322,8 @@
   $('#btCopiar').onclick = () => navigator.clipboard.writeText(linkSala()).then(() => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = 'Copiar link'; }, 1500); }).catch(() => prompt('Copie o link:', linkSala()));
   $('#btCompart').onclick = () => navigator.share ? navigator.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala de tradução: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {}) : $('#btCopiar').onclick();
   window.addEventListener('pagehide', () => { conexao && conexao.sair(); });
+  // Voltou para a página pelo botão Voltar (cópia guardada pelo navegador): entra de novo na sala.
+  window.addEventListener('pageshow', (e) => { if (e.persisted && $('#salaTela').classList.contains('on')) { conexao = null; entrarSala(); } });
 
   // ---------- Frente a frente ----------
   const lados = {};

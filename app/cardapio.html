@@ -31,7 +31,17 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}
 .menu .mi .mn{font-weight:600}
 .menu .mi .ml{flex:1;border-bottom:2px dotted rgba(245,243,255,.28);transform:translateY(-4px);min-width:16px}
 .menu .mi .mp{font-weight:800;color:#fde047;white-space:nowrap}
+.menu .md{color:rgba(245,243,255,.62);font-size:13px;font-style:italic;margin:-5px 0 6px;line-height:1.3}
+.cliente .menu .md{font-size:15px}
 .menu .mf{text-align:center;color:rgba(245,243,255,.55);font-size:11px;letter-spacing:.12em;margin-top:22px}
+.scan{position:fixed;inset:0;z-index:40;background:radial-gradient(120% 80% at 50% 0%,#3b0764,#12051f 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;color:#f5f3ff;text-align:center}
+.scan .quadro{position:relative;width:min(78vw,320px);aspect-ratio:3/4;border-radius:18px;overflow:hidden;box-shadow:0 0 0 2px rgba(250,204,21,.6),0 18px 50px rgba(0,0,0,.5);background:#000}
+.scan .quadro img{width:100%;height:100%;object-fit:contain;opacity:.9}
+.scan .linha{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#facc15,transparent);box-shadow:0 0 18px 4px rgba(250,204,21,.55);animation:varre 1.6s ease-in-out infinite alternate}
+.scan .canto{position:absolute;width:26px;height:26px;border:3px solid #facc15}
+.scan .c1{top:8px;left:8px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}.scan .c2{top:8px;right:8px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}.scan .c3{bottom:8px;left:8px;border-right:0;border-top:0;border-radius:0 0 0 8px}.scan .c4{bottom:8px;right:8px;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.scan b{font-size:19px;letter-spacing:.02em}.scan p{margin:0;color:#fcd34d;font-size:14px;min-height:20px}
+@keyframes varre{from{top:4%}to{top:94%}}
 .cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#12051f;padding:20px 14px 40px}
 .cliente .menu{max-width:620px;margin:0 auto;box-shadow:none}
 .cliente .menu .mi{font-size:19px}.cliente .menu .mt{font-size:32px}
@@ -116,45 +126,56 @@ function pixCodigo(conta,valor){
 window.__pixCodigo=pixCodigo;
 
 /* ---------- Leitura do cardápio pela foto ---------- */
+/* Leitura do cardápio a partir do texto escaneado.
+   - Cada linha é dividida em colunas (espaço grande); "¦" marca coluna vazia.
+   - Preço: número no fim ("Caipirinha 25", "Gin .... R$ 32,00") ou sozinho na linha de baixo.
+   - Grupo (categoria): só título com palavra de cardápio (Drinks Autorais, Clássicos, Cervejas,
+     Doses, Sem álcool…) ou letra bem maior ("§" vindo do scanner), e que não tenha preço logo
+     abaixo (aí é nome de item, ex.: "Gin Tônica" / "32").
+   - Nome × descrição: a descrição (ingredientes, com vírgula/minúscula) fica no item. */
+const CATKW=/\b(drinks?|drinques?|autora(?:l|is)|cl[aá]ssic[oa]s?|coquet[eé]is|caipirinhas?|caipis|cervejas?|chopps?|petiscos?|por[cç][oõ]es|lanches?|entradas?|pratos?|sobremesas?|sem\s+[aá]lcool|n[aã]o\s+alco[oó]lic[oa]s?|bebidas?|doses?|destilados?|vinhos?|espumantes?|whiske?ys?|whiskies|shots?|combos?|cozinha|refrigerantes?|sucos?|softs?|batidas?|cacha[çc]as?|baldes?|garrafas?|happy\s+hour|promo[cç][oõ]es|especiais|da\s+casa|tradicionais|cl[aá]ssicos)\b/i;
+const MINUSC=new Set(['de','da','do','das','dos','e','com','ao','à','a','o','na','no','em','para']);
+const titulo=t=>{const l=t.replace(/[^A-Za-zÀ-ú]/g,'');if(!l||l!==l.toUpperCase())return t.charAt(0).toUpperCase()+t.slice(1);return t.toLowerCase().split(' ').map((w,k)=>k&&MINUSC.has(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ')};
 function lerCardapio(txt,semPreco){
-  // Cada linha é dividida em colunas (espaço grande entre elas). Em cada pedaço, o número do
-  // fim é o preço: "Caipirinha 25", "Gin ..... R$ 32,00", "Mojito 28,90". Título sem preço
-  // (ex.: "Drinks") vira a categoria daquela coluna.
-  const linhas=String(txt||'').split(/\n/);
-  const out=[],nomes=[];const cats=[];let pend=[];
+  const SEM='\u0000sem';
   const LET=/[A-Za-zÀ-ú]{3}/;
-  const limpa=t=>t.replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
+  const limpa=t=>t.replace(/^§\s*/,'').replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
   const PRECO=/^(.*?)(?:^|[\s.:\-–—·…_=$])(?:R\s?\$\s*)?(\d{1,3}(?:\s?[.,]\s?\d{1,2})?)\s*[,.\-–]*\s*$/;
-  for(const bruta of linhas){
-    if(!bruta.trim())continue;
-    const segs=bruta.replace(/\t/g,'    ').split(/\s{3,}/).map(x=>x.trim()).filter(Boolean);
-    segs.forEach((seg0,k)=>{
-      const seg=seg0.replace(/(\d)[oO](?=\d|\b)/g,'$10').replace(/[oO](?=\d)/g,'0');
-      const m=seg.match(PRECO);
-      const p=m?nv(m[2].replace(/\s/g,'')):0;
-      let nome=m?limpa(m[1]):'';
-      if(m&&p>=0.5&&p<1000){
-        if(!LET.test(nome)&&pend[k]){nome=pend[k].t;if(pend[k].cat)cats[k]=pend[k].antes}
-        pend[k]=null;
-        if(LET.test(nome))out.push({n:nome,c:cats[k]||cats[0]||'Cardápio',p});
-      }else{
-        const t=limpa(seg);if(!LET.test(t))return;
-        const palavras=t.split(' ').length,semDig=!/\d/.test(t);
-        if(semDig&&palavras<=3&&t.length<=28){pend[k]={t,cat:true,antes:cats[k]};cats[k]=t.charAt(0).toUpperCase()+t.slice(1)}
-        else pend[k]={t,cat:false};
-        nomes.push({n:t,c:cats[k]||cats[0]||'Cardápio',p:0});
-      }
-    });
-  }
+  const segs=[]; // pedaços de texto com a coluna (k); "¦" = coluna vazia, conta mas não entra
+  String(txt||'').split(/\n/).forEach(l=>{if(!l.trim())return;l.replace(/\t/g,'    ').split(/\s{3,}/).map(x=>x.trim()).filter(x=>x).forEach((x,k)=>{if(x!=='¦')segs.push({k,raw:x,grande:/^§/.test(x)})})});
+  segs.forEach(sg=>{const r=sg.raw.replace(/^§\s*/,'').replace(/(\d)[oO](?=\d|\b)/g,'$10').replace(/[oO](?=\d)/g,'0');const m=r.match(PRECO);
+    sg.p=m?nv(m[2].replace(/\s/g,'')):0;sg.nome=m?limpa(m[1]):'';sg.t=limpa(r);
+    if(!(m&&sg.p>=0.5&&sg.p<1000)){sg.p=0;sg.nome=''}
+    sg.soPreco=sg.p>0&&!LET.test(sg.nome);sg.comPreco=sg.p>0&&LET.test(sg.nome);
+    const w=sg.t.split(' ').length;sg.desc=!sg.p&&(/,/.test(sg.t)||/^[a-zà-ú]/.test(sg.t)||w>6)});
+  const prox=(i,k)=>{for(let j=i+1;j<segs.length&&j<i+8;j++)if(segs[j].k===k)return segs[j];return null};
+  const out=[],sobra=[],cats=[],pend=[],ult=[];let ordem=0;
+  const novo=(n,k,p,d)=>{const it={n:titulo(n),c:cats[k]||cats[0]||SEM,p,o:ordem++};if(d)it.d=d;out.push(it);ult[k]=it;return it};
+  segs.forEach((sg,i)=>{const k=sg.k;pend[k]=pend[k]||[];
+    if(sg.comPreco){if(pend[k].length){/* linhas soltas antes: descrição deste item? */const d=pend[k].filter(x=>x.desc).map(x=>x.t).join(' ');pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||SEM,p:0}));novo(sg.nome,k,sg.p,d)}else novo(sg.nome,k,sg.p);pend[k]=[];return}
+    if(sg.soPreco){const P=pend[k];pend[k]=[];if(!P.length)return;const nm=P.find(x=>!x.desc)||P[0];novo(nm.t,k,sg.p,P.filter(x=>x!==nm).map(x=>x.t).join(' '));return}
+    if(!LET.test(sg.t))return;
+    const nx=prox(i,k),w=sg.t.split(' ').length,semDig=!/\d/.test(sg.t);
+    const eTitulo=semDig&&w<=5&&!(nx&&nx.soPreco)&&((CATKW.test(sg.t)&&!sg.desc)||(sg.grande&&!(nx&&nx.desc)));
+    if(eTitulo){pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||SEM,p:0}));cats[k]=titulo(sg.t);pend[k]=[];ult[k]=null;return}
+    if(sg.desc&&ult[k]&&!pend[k].length){ult[k].d=(ult[k].d?ult[k].d+' ':'')+sg.t;return}
+    pend[k].push(sg)});
+  pend.forEach((P,k)=>(P||[]).filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||SEM,p:0})));
+  // itens antes do primeiro título: se o cardápio tem "Clássicos", os de cima são os autorais
+  // (ex.: Clandestino — Momosuke, Cabra da Peste, Lei Seca… e depois "Drinks Clássicos")
+  const grupos=[...out,...sobra].map(x=>x.c).filter(c=>c!==SEM);
+  const semTitulo=grupos.some(c=>/cl[aá]ssic/i.test(c))?'Drinks Autorais':grupos.some(c=>/drink|coquet/i.test(c))?'Drinks':'Cardápio';
+  [...out,...sobra].forEach(x=>{if(x.c===SEM)x.c=semTitulo});
   const m=new Map();out.forEach(x=>m.set(x.n.toLowerCase(),x));
-  if(!m.size&&semPreco)nomes.filter(x=>x.n.split(' ').some(w=>w.length>=3)).slice(0,60).forEach(x=>m.set(x.n.toLowerCase(),x));
+  if(semPreco||!m.size){if(semPreco)sobra.forEach(x=>{if(!m.has(x.n.toLowerCase())&&x.n.split(' ').some(w=>w.length>=3))m.set(x.n.toLowerCase(),{...x,o:ordem++})})}
   return [...m.values()];
 }
 window.__lerCardapio=lerCardapio;
 
 /* ---------- cálculo ---------- */
 const ativos=()=>itens.filter(i=>i.on!==false);
-const categorias=()=>{const c=[];itens.forEach(i=>{const k=i.c||'Outros';if(!c.includes(k))c.push(k)});return c};
+const categorias=()=>{const m=new Map();itens.forEach(i=>{const k=i.c||'Outros',o=i.o??1e9;if(!m.has(k)||o<m.get(k))m.set(k,o)});return [...m.entries()].sort((a,b)=>a[1]-b[1]||a[0].localeCompare(b[0],'pt')).map(x=>x[0])};
+const porOrdem=(x,y)=>(x.o??1e9)-(y.o??1e9)||x.n.localeCompare(y.n,'pt');
 const totalCarrinho=()=>Object.entries(carrinho).reduce((s,[id,q])=>{const i=itens.find(x=>x.id===id);return s+(i?i.p*q:0)},0);
 const qtdCarrinho=()=>Object.values(carrinho).reduce((a,b)=>a+b,0);
 const daNoite=()=>vendas.filter(v=>v.noite===ver).sort((a,b)=>b.t-a.t);
@@ -244,12 +265,12 @@ function telaVender(){
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
   let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="${cat===c?'on':''}">${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
   if(editar){
-    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome e preço direto aqui. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
-    (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));if(!l.length)return;
-      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
+    (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
+      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:12px;color:var(--mut)">Grupo</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"><input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
-  (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt'));if(!l.length)return;
+  (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
     h+=`${cat?'':`<h2 style="margin:12px 2px 6px">${esc(c)}</h2>`}<div class="prod">${l.map(i=>`<button data-add="${i.id}">${esc(i.n)}<small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
   return h;
 }
@@ -260,8 +281,8 @@ function desenharCarrinho(){
   const linhas=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?`<div class="it"><span>${esc(i.n)}<small>${R(i.p)} cada</small></span><span class="q"><button data-menos="${id}">−</button><b>${q}</b><button data-mais="${id}">+</button></span><b style="min-width:76px;text-align:right">${R(i.p*q)}</b></div>`:''}).join('');
   el.innerHTML=`<div class="in"><details id="carDet"${carAberto?' open':''}><summary class="row" style="justify-content:space-between;list-style:none;cursor:pointer"><span>🛒 <b>${n}</b> ${n>1?'itens':'item'} · <span class="link">ver</span></span><span class="big">${R(totalCarrinho())}</span></summary><div style="max-height:34vh;overflow:auto;margin-top:6px">${linhas}</div><button class="btn sec" id="limpar" style="margin-top:6px">Limpar</button></details><button class="btn ok" id="cobrar">Cobrar ${R(totalCarrinho())}</button></div>`;
 }
-function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Tire a foto do cardápio impresso (bem reto e com luz). O app lê nomes, preços e categorias e <b>já monta o cardápio de venda</b> sozinho. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
-    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
+function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Aponte para o cardápio impresso (bem reto e com luz). O app <b>escaneia</b> nomes, preços e categorias e <b>monta o cardápio de venda</b> na hora. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
+    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Escanear cardápio</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
     <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p>${leitura&&leitura.texto&&!lendo?`<details><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`}
 const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p>${leitura.texto?`<details style="margin-top:8px"><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`:'';
 const nomeBar=()=>(cfg.nome||'').trim()||'Bar Conect';
@@ -270,7 +291,7 @@ function menuHTML(){
   const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
   const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
   return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
-  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>`).join('')).join('')}
+  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
   <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
 }
 function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
@@ -279,8 +300,8 @@ function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();retur
 // imagem do cardápio (para WhatsApp, Instagram, imprimir)
 function imagemCardapio(){
   const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c)),W=1080,lin=[];
-  C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).forEach(i=>lin.push({i}))});
-  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66),0)+140;
+  C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).forEach(i=>lin.push({i}))});
+  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66+(l.i.d?42:0)),0)+140;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
   const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.9);bg.addColorStop(0,'#5b21b6');bg.addColorStop(.45,'#2e1065');bg.addColorStop(1,'#12051f');g.fillStyle=bg;g.fillRect(0,0,W,H);
   const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
@@ -295,7 +316,8 @@ function imagemCardapio(){
     const i=l.i,pr=i.p?R(i.p):'—';g.font='800 38px '+F;const pw=g.measureText(pr).width;
     const nome=fit(i.n,W-200-pw,'600 38px '+F);g.fillStyle='#f5f3ff';g.font='600 38px '+F;g.fillText(nome,80,y+30);const nw=g.measureText(nome).width;
     g.fillStyle='rgba(245,243,255,.35)';for(let x=80+nw+16;x<W-80-pw-16;x+=14)g.fillRect(x,y+26,5,5);
-    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66});
+    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
+    if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-160,'italic 400 28px '+F);g.font='italic 400 28px '+F;g.fillText(d,80,y+18);y+=42}});
   g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
   return cv.toDataURL('image/png');
 }
@@ -434,6 +456,52 @@ function aplicarCaixa(){
 async function copiar(t){try{await navigator.clipboard.writeText(t);toast('✅ Copiado')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('✅ Copiado')}catch(x){toast('Não consegui copiar')}a.remove()}}
 
 /* ---------- foto do cardápio ---------- */
+/* ---------- Scanner: leitor de texto do Android (ML Kit) ----------
+   Lê a foto em ~1 s, no celular e sem internet, e devolve cada linha com a posição.
+   Com a posição o cardápio é remontado: nome à esquerda + preço à direita na mesma linha,
+   e colunas separadas. Fora do APK, usa o leitor do navegador (mais lento). */
+const leitorNativo=()=>{try{const P=window.parent;return P&&P.Capacitor&&P.Capacitor.isPluginAvailable&&P.Capacitor.isPluginAvailable('LeitorTexto')?P.Capacitor.Plugins.LeitorTexto:null}catch(e){return null}};
+async function paraBase64(arq,max){
+  const P=window.parent,url=(P.URL||URL).createObjectURL(arq);
+  try{const img=await new Promise((ok,er)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=er;i.src=url});
+    const e=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*e);c.height=Math.round(img.height*e);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.9)}finally{(P.URL||URL).revokeObjectURL(url)}
+}
+function montarTexto(linhas){
+  const L=(linhas||[]).filter(l=>l&&l.t&&l.h>0).map(l=>({t:String(l.t),x:+l.x||0,w:+l.w||0,h:+l.h,cy:(+l.y||0)+(+l.h)/2}));
+  if(!L.length)return '';
+  const SO_PRECO=t=>/^(?:R\s?\$\s*)?\d{1,3}(?:\s?[.,]\s?\d{1,2})?[,.\-]*$/.test(t.trim());
+  const hs=L.filter(l=>!SO_PRECO(l.t)).map(l=>l.h).sort((a,b)=>a-b),hm=hs[Math.floor(hs.length/2)]||10;
+  // colunas: maior vão entre os começos (x) das linhas de texto
+  const xs=L.filter(l=>!SO_PRECO(l.t)).map(l=>l.x).sort((a,b)=>a-b),larg=Math.max(...L.map(l=>l.x+l.w))||1;
+  // o corte fica logo antes de onde começa o texto da coluna da direita (os preços da coluna
+  // da esquerda ficam antes dele)
+  let corte=Infinity,maior=0;for(let i=1;i<xs.length;i++){const g=xs[i]-xs[i-1];if(g>maior){maior=g;corte=xs[i]-hm*.5}}
+  if(maior<larg*.22||xs.filter(x=>x>corte).length<3)corte=Infinity;
+  L.sort((a,b)=>a.cy-b.cy);
+  const rows=[];
+  for(const l of L){const r=rows.length?rows[rows.length-1]:null;
+    if(r&&Math.abs(r.cy-l.cy)<hm*.6){r.it.push(l);r.cy=r.it.reduce((s,x)=>s+x.cy,0)/r.it.length}else rows.push({cy:l.cy,it:[l]})}
+  const junta=it=>{it.sort((a,b)=>a.x-b.x);let s='';it.forEach((l,k)=>{const t=(!SO_PRECO(l.t)&&l.h>=hm*1.8?'§ ':'')+l.t;if(!k){s=t;return}s+=(SO_PRECO(l.t)&&!SO_PRECO(it[k-1].t)?' ':'     ')+t});return s};
+  return rows.map(r=>{
+    if(corte===Infinity)return junta(r.it);
+    const a=r.it.filter(l=>l.x<corte),b=r.it.filter(l=>l.x>=corte);
+    return (a.length?junta(a):'¦')+(b.length?'     '+junta(b):'')}).join('\n');
+}
+window.__montarTexto=montarTexto;
+async function escanear(arq,prog){
+  const nat=leitorNativo();
+  if(nat){prog('Escaneando…');const r=await nat.ler({imagem:await paraBase64(arq,2200)});prog('Montando o cardápio…');return {texto:montarTexto(r.linhas)||r.texto||'',nativo:true}}
+  const ocr=window.parent.__barOCR;if(!ocr)throw new Error('a leitura de foto só funciona dentro do app');
+  const t=(await ocr(arq,m=>{if(m.status==='recognizing text')prog('Escaneando… '+Math.round(m.progress*100)+'%')},1600)).texto;
+  return {texto:t,nativo:false};
+}
+function telaScan(arq,on){
+  let el=$('#scan');if(!on){if(el)el.remove();return}
+  if(!el){el=document.createElement('div');el.id='scan';el.className='scan';document.body.appendChild(el)}
+  let src='';try{src=(window.parent.URL||URL).createObjectURL(arq)}catch(e){}
+  el.innerHTML=`<div class="quadro">${src?`<img src="${src}" alt="">`:''}<div class="linha"></div><i class="canto c1"></i><i class="canto c2"></i><i class="canto c3"></i><i class="canto c4"></i></div><b>📷 Escaneando o cardápio</b><p id="scanMsg">Preparando…</p>`;
+}
 async function comprimir(arq){
   const url=URL.createObjectURL(arq);
   try{const img=await new Promise((ok,er)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=er;i.src=url});
@@ -444,41 +512,76 @@ async function comprimir(arq){
 const deDataUrl=async u=>{const r=await fetch(u);const b=await r.blob();return new File([b],'cardapio.jpg',{type:b.type||'image/jpeg'})};
 async function lerFotos(arqs,guardar=true){
   if(!arqs||!arqs.length||(leitura&&leitura.lendo))return;
-  const P=window.parent,ocr=P&&P!==window&&P.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
-  leitura={lendo:true,msg:'📷 Foto recebida. Lendo o cardápio… (a primeira vez demora um pouco)'};aba='vender';editar=false;draw();
-  const msg=t=>{leitura.msg=t;['#fotoMsg','#fotoMsg2'].forEach(s=>{const el=$(s);if(el)el.textContent=t})};
-  const lidos=[];let erro='',novos=0,atual=0,textoLido='';
+  leitura={lendo:true,msg:'📷 Escaneando o cardápio…'};aba='vender';editar=false;draw();
+  telaScan(arqs[0],true);
+  const msg=t=>{leitura.msg=t;const el=$('#scanMsg');if(el)el.textContent=t};
+  const lidos=[];let erro='',novos=0,atual=0,textoLido='',nativo=false;const t0=Date.now();const base=itens.reduce((m,i)=>Math.max(m,(i.o??0)+1),0);
   try{
     for(const [k,a] of arqs.entries()){
-      const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+': ':'';
+      const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+' · ':'';
+      if(k)telaScan(a,true);
       try{
-        // mesma leitura das abas Foto e Preços (que funcionam no celular): 1800 px, modo 6
-        const prog=m=>{if(m.status==='recognizing text')msg(pre+'lendo o cardápio… '+Math.round(m.progress*100)+'%')};
-        let tx=(await ocr(a,prog,1800)).texto,lista=lerCardapio(tx);
-        if(lista.length<4){msg(pre+'lendo de outro jeito…');const t2=(await ocr(a,prog,1800,4)).texto,l2=lerCardapio(t2);if(l2.length>lista.length){lista=l2;tx=t2}}
-        if(!lista.length)lista=lerCardapio(tx,true); // achou nomes mas não preços: cria com preço 0 para completar
-        textoLido+=(textoLido?'\n----\n':'')+tx;
+        const r=await escanear(a,t=>msg(pre+t));nativo=r.nativo;
+        let lista=lerCardapio(r.texto);
+        if(!lista.length&&!r.nativo){msg(pre+'Escaneando de outro jeito…');const t2=(await window.parent.__barOCR(a,()=>{},1600,4)).texto,l2=lerCardapio(t2);if(l2.length){lista=l2;r.texto=t2}}
+        if(!lista.length)lista=lerCardapio(r.texto,true);
+        textoLido+=(textoLido?'\n----\n':'')+r.texto;nomeDoBar(r.texto);
+        {const b0=lidos.length;lista.forEach(x=>x.o=b0+(x.o||0))}
         lidos.push(...lista);
       }catch(e){erro=(e&&e.message)||String(e)}
     }
-    // grava os itens sem esperar a internet (aparecem na hora; a nuvem sincroniza depois)
+    msg('Montando o cardápio…');
     const salvos=[];
     for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
-      if(ja){atual++;continue}
-      salvos.push(db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()}).catch(e=>{erro=e.message||String(e)}));novos++}
-    await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,4000))]);
+      if(ja){atual++;const up={};if(x.c&&(!ja.c||/^(card[aá]pio|outros)$/i.test(ja.c))&&ja.c!==x.c)up.c=x.c;if(x.d&&!ja.d)up.d=x.d;if(Object.keys(up).length)salvos.push(db.collection('itens').doc(ja.id).set({...strip(ja),...up}).catch(()=>{}));continue}
+      const it={n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now(),o:base+(x.o||0)};if(x.d)it.d=x.d;salvos.push(db.collection('itens').add(it).catch(e=>{erro=e.message||String(e)}));novos++}
+    await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
   }catch(e){erro=(e&&e.message)||String(e)}
   finally{
-    const semP=lidos.filter(x=>!x.p).length;
-    leitura={lendo:false,texto:textoLido,msg:lidos.length?`✅ Cardápio digitalizado: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}.${semP?' '+semP+' ficaram sem preço (R$ 0,00): preencha.':''} Confira e ajuste aqui embaixo; depois toque em ✅ Pronto para vender.`
-      :'❌ Não consegui achar itens com preço nessa foto'+(erro?' (erro: '+erro+')':'')+'. Tente de novo mais perto, bem reta e sem reflexo, ou adicione à mão em ✏️ Editar.'};
-    aba='vender';editar=lidos.length>0;draw();
+    const seg=((Date.now()-t0)/1000).toFixed(1).replace('.',','),semP=lidos.filter(x=>!x.p).length;
+    leitura={lendo:false,texto:textoLido,msg:lidos.length?`✅ Cardápio escaneado em ${seg} s: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}.${semP?' '+semP+' ficaram sem preço: preencha.':''} Confira e toque em ✅ Pronto para vender.`
+      :'❌ Não consegui achar itens nessa foto'+(erro?' (erro: '+erro+')':'')+'. Tente de novo mais perto, bem reta e sem reflexo.'};
+    telaScan(null,false);aba='vender';editar=lidos.length>0;draw();
   }
-  // guarda a foto na nuvem do bar em segundo plano (não trava a leitura)
   if(guardar)arqs.forEach(a=>comprimir(a).then(img=>db.collection('fotos').add({img,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim()})).catch(()=>{}));
 }
+// nome do bar: primeira linha em letra bem maior que não é grupo (ex.: CLANDESTINO)
+function nomeDoBar(tx){if((cfg.nome||'').trim())return;const l=String(tx||'').split('\n').map(x=>x.split(/\s{3,}/)[0].trim()).find(x=>/^§/.test(x));if(!l)return;const t=l.replace(/^§\s*/,'').trim();if(!t||CATKW.test(t)||/\d/.test(t)||t.split(' ').length>4)return;cfg.nome=titulo(t);salvarCfg()}
+async function salvarLidos(lidos){
+  let novos=0,atual=0,erro='';const salvos=[];const base=itens.reduce((m,i)=>Math.max(m,(i.o??0)+1),0);
+  for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
+    if(ja){atual++;const up={};if(x.c&&(!ja.c||/^(card[aá]pio|outros)$/i.test(ja.c))&&ja.c!==x.c)up.c=x.c;if(x.d&&!ja.d)up.d=x.d;if(Object.keys(up).length)salvos.push(db.collection('itens').doc(ja.id).set({...strip(ja),...up}).catch(()=>{}));continue}
+    const it={n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now(),o:base+(x.o||0)};if(x.d)it.d=x.d;salvos.push(db.collection('itens').add(it).catch(e=>{erro=e.message||String(e)}));novos++}
+  await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
+  return {novos,atual,erro};
+}
+const scannerNativo=()=>{const n=leitorNativo();return n&&typeof n.digitalizar==='function'?n:null};
+// 📷 Scanner do Google: acha as bordas, recorta, endireita e deixa nítido; depois lê as informações
+async function digitalizar(){
+  const n=scannerNativo();if(!n){try{window.parent.__barFotoCardapio(true)}catch(e){}return}
+  if(leitura&&leitura.lendo)return;
+  let r;
+  try{r=await n.digitalizar({paginas:4})}
+  catch(e){const c=e&&(e.code||'');if(/CANCEL/i.test(c+(e.message||'')))return;
+    if(/INDISPON/i.test(c+(e.message||''))){toast('Scanner do Google indisponível neste celular. Abrindo a câmera…');try{window.parent.__barFotoCardapio(true)}catch(x){}return}
+    leitura={lendo:false,msg:'❌ Não consegui digitalizar: '+((e&&e.message)||e)};draw();return}
+  const pags=(r&&r.paginas)||[];if(!pags.length)return;
+  const t0=Date.now();leitura={lendo:true,msg:'Montando o cardápio…'};aba='vender';editar=false;draw();
+  let el=document.createElement('div');el.id='scan';el.className='scan';document.body.appendChild(el);
+  el.innerHTML=`<div class="quadro"><img src="${pags[0].imagem}" alt=""><div class="linha"></div><i class="canto c1"></i><i class="canto c2"></i><i class="canto c3"></i><i class="canto c4"></i></div><b>✅ Cardápio digitalizado</b><p id="scanMsg">Montando o cardápio…</p>`;
+  const lidos=[];let textoLido='';
+  pags.forEach(p=>{const tx=montarTexto(p.linhas)||p.texto||'';nomeDoBar(tx);textoLido+=(textoLido?'\n----\n':'')+tx;let l=lerCardapio(tx);if(!l.length)l=lerCardapio(tx,true);const b0=lidos.length;l.forEach(x=>x.o=b0+(x.o||0));lidos.push(...l)});
+  const {novos,atual,erro}=await salvarLidos(lidos);
+  // guarda as páginas digitalizadas (já recortadas e nítidas) na nuvem do bar
+  pags.forEach(p=>{const img=p.imagem;(img.length<700000?Promise.resolve(img):deDataUrl(img).then(comprimir)).then(im=>db.collection('fotos').add({img:im,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim(),digitalizada:true})).catch(()=>{})});
+  const seg=((Date.now()-t0)/1000).toFixed(1).replace('.',','),semP=lidos.filter(x=>!x.p).length;
+  await new Promise(r=>setTimeout(r,500));el.remove();
+  leitura={lendo:false,texto:textoLido,msg:lidos.length?`✅ Cardápio digitalizado (${pags.length} ${pags.length>1?'páginas':'página'}) e montado ${(Date.now()-t0)<1500?"na hora":"em "+seg+" s"}: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}.${semP?' '+semP+' ficaram sem preço: preencha.':''} A imagem digitalizada fica em 📋 Cardápio → Fotos. Confira e toque em ✅ Pronto.`
+    :'❌ Digitalizei, mas não achei itens'+(erro?' (erro: '+erro+')':'')+'. Veja a imagem em 📋 Cardápio → Fotos e tente de novo mais perto.'};
+  aba='vender';editar=lidos.length>0;draw();
+}
 window.__cardLerFotos=a=>lerFotos(a);
-window.__cardAoAbrir=()=>{if(carregado&&!itens.length&&!sessionStorage.getItem('card-auto')&&!(leitura&&leitura.lendo)){sessionStorage.setItem('card-auto','1');try{window.parent.__barFotoCardapio(true)}catch(e){}}};
+window.__cardAoAbrir=()=>{if(!leitorNativo()){try{window.parent.__barOCRPreparar&&window.parent.__barOCRPreparar()}catch(e){}}if(carregado&&!itens.length&&!sessionStorage.getItem('card-auto')&&!(leitura&&leitura.lendo)){sessionStorage.setItem('card-auto','1');if(scannerNativo()){digitalizar();return}try{window.parent.__barFotoCardapio(true)}catch(e){}}};
 const strip=i=>{const o={...i};delete o.id;return o};
 async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(JSON.stringify(cfg)))}catch(e){toast('Sem permissão para alterar')}}
 
@@ -504,6 +607,7 @@ document.addEventListener('click',async ev=>{
   if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
+  if(d.foto==='cam'&&scannerNativo()){digitalizar();return}
   if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
   if(b.id==='editarBtn'){editar=!editar;aba='vender';draw();return}
   if(b.id==='clienteBtn'){mostrarCliente(true);return}
@@ -541,7 +645,9 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
   if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
   try{
-    if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):'Nome salvo'));return}
+    if(t.dataset.grupo!==undefined){const de=t.dataset.grupo,para=t.value.trim();if(!para||para===de)return;for(const i of itens.filter(x=>(x.c||'Outros')===de))await db.collection('itens').doc(i.id).set({...strip(i),c:para});if(cat===de)cat=para;toast('✅ Grupo agora se chama '+para);return}
+    if(t.dataset.ed==='d'){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const o={...strip(i)};const v=t.value.trim();if(v)o.d=v;else delete o.d;await db.collection('itens').doc(i.id).set(o);toast('✅ Descrição salva');return}
+    if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):t.dataset.ed==='c'?i.n+' → '+v:'Nome salvo'));return}
     if(!dono)return;
     if(t.dataset.mq!==undefined){cfg.maquinas[+t.dataset.mq].n=t.value.trim()||'Maquininha';await salvarCfg()}
     if(t.dataset.ct!==undefined){cfg.contas[+t.dataset.ct][t.dataset.cf]=t.value.trim();await salvarCfg()}

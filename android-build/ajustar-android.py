@@ -55,7 +55,7 @@ if 'LeitorTextoPlugin' not in ma:
 gradle = Path('android/app/build.gradle')
 g = gradle.read_text(encoding='utf-8')
 if 'text-recognition' not in g:
-    g, n = re.subn(r'dependencies\s*\{', "dependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'", g, count=1)
+    g, n = re.subn(r'dependencies\s*\{', "dependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'\n    implementation 'com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1'", g, count=1)
     assert n == 1, 'dependencies não encontrado no build.gradle'
     gradle.write_text(g, encoding='utf-8')
 # só processadores de celular (ARM): o modelo do leitor vem para cada tipo; tira os de PC (x86)

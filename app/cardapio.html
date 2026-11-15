@@ -21,8 +21,24 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}
 .cats button{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:99px;padding:7px 12px;font-size:13.5px}
 .cats button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 .prod{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.menu{background:radial-gradient(120% 80% at 50% 0%,#5b21b6 0%,#2e1065 45%,#12051f 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px}
+.menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+.menu .mt span{color:#facc15}
+.menu .ms{text-align:center;color:#fcd34d;font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px}
+.menu .mc{display:flex;align-items:center;gap:10px;margin:22px 0 8px;color:#facc15;font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+.menu .mc:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(250,204,21,.6),transparent)}
+.menu .mi{display:flex;align-items:baseline;gap:6px;padding:7px 0;font-size:16px}
+.menu .mi .mn{font-weight:600}
+.menu .mi .ml{flex:1;border-bottom:2px dotted rgba(245,243,255,.28);transform:translateY(-4px);min-width:16px}
+.menu .mi .mp{font-weight:800;color:#fde047;white-space:nowrap}
+.menu .mf{text-align:center;color:rgba(245,243,255,.55);font-size:11px;letter-spacing:.12em;margin-top:22px}
+.cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#12051f;padding:20px 14px 40px}
+.cliente .menu{max-width:620px;margin:0 auto;box-shadow:none}
+.cliente .menu .mi{font-size:19px}.cliente .menu .mt{font-size:32px}
 .prod button{position:relative;text-align:left;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:14px;padding:12px 10px;min-height:74px;font-size:14.5px;font-weight:600;line-height:1.25}
-.prod button small{display:block;color:var(--ac);font-weight:800;font-size:15px;margin-top:6px}
+.prod button small{display:block;width:fit-content;color:var(--ac);font-weight:800;font-size:14.5px;margin-top:8px;background:rgba(109,40,217,.09);padding:2px 9px;border-radius:99px}
+.prod button{box-shadow:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.05);border-radius:16px!important;transition:transform .08s}
+.prod button:active{transform:scale(.97)}
 .prod button .qt{position:absolute;top:6px;right:6px;background:var(--ac);color:var(--on);border-radius:99px;min-width:22px;height:22px;font-size:12.5px;display:grid;place-items:center;padding:0 6px}
 .it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--bd);font-size:14.5px}
 .it:first-of-type{border-top:0}
@@ -100,34 +116,38 @@ function pixCodigo(conta,valor){
 window.__pixCodigo=pixCodigo;
 
 /* ---------- Leitura do cardápio pela foto ---------- */
-function lerCardapio(txt){
-  const linhas=String(txt||'').split(/\n/).map(l=>l.replace(/[|_~«»"“”]+/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
-  const out=[];let categoria='Cardápio',pendente='';
-  const LETRAS=/[A-Za-zÀ-ú]{2}/;
-  // preço: "25,00", "R$ 25,00", "R$25", "25.90"; inteiro só com R$ antes
-  const PRECO=/(?:R\s?\$\s*(\d{1,4}(?:[.,]\d{1,2})?)|(\d{1,4}[.,]\d{2}))(?![\d])/g;
-  const limpaNome=t=>t.replace(/[.\-–—·…:=*•]+\s*$/,'').replace(/^[\s.\-–—·…:=*•\d]+(?=[A-Za-zÀ-ú])/,'').replace(/\s*R\s?\$?\s*$/,'').trim();
-  for(const l of linhas){
-    const ms=[...l.matchAll(PRECO)];
-    if(ms.length){
-      let ini=0;
-      ms.forEach((m,k)=>{
-        let nome=limpaNome(l.slice(ini,m.index));ini=m.index+m[0].length;
-        if(!LETRAS.test(nome)&&pendente&&k===0)nome=pendente;
-        else if(pendente&&k===0&&nome.length<4)nome=pendente+' '+nome;
-        const p=nv(m[1]||m[2]);
-        if(LETRAS.test(nome)&&p>0&&p<5000)out.push({n:nome,c:categoria,p});
-      });
-      pendente='';
-    }else if(/[A-Za-zÀ-ú]{3}/.test(l)&&l.length<=48){
-      const letras=l.replace(/[^A-Za-zÀ-ú]/g,'');
-      const maiusc=letras&&letras===letras.toUpperCase();
-      if(maiusc&&letras.length>=3&&l.split(' ').length<=4){categoria=l.replace(/[^\wÀ-ú &/-]/g,'').trim();pendente=''}
-      else pendente=limpaNome(l);
-    }
+function lerCardapio(txt,semPreco){
+  // Cada linha é dividida em colunas (espaço grande entre elas). Em cada pedaço, o número do
+  // fim é o preço: "Caipirinha 25", "Gin ..... R$ 32,00", "Mojito 28,90". Título sem preço
+  // (ex.: "Drinks") vira a categoria daquela coluna.
+  const linhas=String(txt||'').split(/\n/);
+  const out=[],nomes=[];const cats=[];let pend=[];
+  const LET=/[A-Za-zÀ-ú]{3}/;
+  const limpa=t=>t.replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
+  const PRECO=/^(.*?)(?:^|[\s.:\-–—·…_=$])(?:R\s?\$\s*)?(\d{1,3}(?:\s?[.,]\s?\d{1,2})?)\s*[,.\-–]*\s*$/;
+  for(const bruta of linhas){
+    if(!bruta.trim())continue;
+    const segs=bruta.replace(/\t/g,'    ').split(/\s{3,}/).map(x=>x.trim()).filter(Boolean);
+    segs.forEach((seg0,k)=>{
+      const seg=seg0.replace(/(\d)[oO](?=\d|\b)/g,'$10').replace(/[oO](?=\d)/g,'0');
+      const m=seg.match(PRECO);
+      const p=m?nv(m[2].replace(/\s/g,'')):0;
+      let nome=m?limpa(m[1]):'';
+      if(m&&p>=0.5&&p<1000){
+        if(!LET.test(nome)&&pend[k]){nome=pend[k].t;if(pend[k].cat)cats[k]=pend[k].antes}
+        pend[k]=null;
+        if(LET.test(nome))out.push({n:nome,c:cats[k]||cats[0]||'Cardápio',p});
+      }else{
+        const t=limpa(seg);if(!LET.test(t))return;
+        const palavras=t.split(' ').length,semDig=!/\d/.test(t);
+        if(semDig&&palavras<=3&&t.length<=28){pend[k]={t,cat:true,antes:cats[k]};cats[k]=t.charAt(0).toUpperCase()+t.slice(1)}
+        else pend[k]={t,cat:false};
+        nomes.push({n:t,c:cats[k]||cats[0]||'Cardápio',p:0});
+      }
+    });
   }
-  // tira repetidos (mesmo nome): fica o último preço lido
   const m=new Map();out.forEach(x=>m.set(x.n.toLowerCase(),x));
+  if(!m.size&&semPreco)nomes.filter(x=>x.n.split(' ').some(w=>w.length>=3)).slice(0,60).forEach(x=>m.set(x.n.toLowerCase(),x));
   return [...m.values()];
 }
 window.__lerCardapio=lerCardapio;
@@ -145,6 +165,68 @@ function resumo(lista){
   return r;
 }
 const nomeVia=id=>{const m=cfg.maquinas.find(x=>x.id===id);if(m)return m.n;const c=cfg.contas.find(x=>x.id===id);return c?c.n:id};
+
+/* ---------- Mercado Pago Point (maquininha ligada ao app) ----------
+   O app manda o valor para a maquininha (modo integrado/PDV) e acompanha até aprovar.
+   A chave (Access Token) fica SÓ neste celular: ela dá acesso à conta Mercado Pago, então
+   não vai para a nuvem do bar nem para o backup. Só funciona no APK (o navegador bloqueia). */
+const MP={tk:()=>localStorage.getItem('mp-token')||'',dev:()=>localStorage.getItem('mp-device')||'',maq:()=>localStorage.getItem('mp-maquina')||'mp'};
+const mpLigada=()=>!!(MP.tk()&&MP.dev());
+let mpEst={devs:null,msg:'',busy:false},mpCob=null;
+async function mpReq(method,path,body){
+  const url='https://api.mercadopago.com'+path,headers={Authorization:'Bearer '+MP.tk(),'Content-Type':'application/json'};
+  if(method==='POST')headers['X-Idempotency-Key']='bar-'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  let H=null;try{H=(window.parent.Capacitor||window.Capacitor).Plugins.CapacitorHttp}catch(e){}
+  let st,data;
+  if(H){const r=await H.request({url,method,headers,data:body});st=r.status;data=r.data;if(typeof data==='string'){try{data=JSON.parse(data)}catch(e){}}}
+  else{const r=await fetch(url,{method,headers,body:body?JSON.stringify(body):undefined});st=r.status;data=await r.json().catch(()=>({}))}
+  if(st>=400){const m=(data&&(data.message||data.error))||('erro '+st);const e=new Error(st===401?'chave (Access Token) inválida ou sem permissão':m);e.status=st;throw e}
+  return data;
+}
+window.__mpReq=mpReq;
+async function mpBuscar(){
+  mpEst.busy=true;mpEst.msg='Buscando suas maquininhas…';draw();
+  try{const d=await mpReq('GET','/point/integration-api/devices');mpEst.devs=(d&&d.devices)||[];
+    mpEst.msg=mpEst.devs.length?'✅ Conectado ao Mercado Pago. Escolha a maquininha:':'Conectado, mas nenhuma maquininha Point apareceu nessa conta. Ligue a maquininha e confira se ela está vinculada à mesma conta.'}
+  catch(e){mpEst.devs=null;mpEst.msg='❌ Não consegui conectar: '+(e.message||e)+(window.parent.Capacitor?'':' (a ligação só funciona no app instalado, APK)')}
+  mpEst.busy=false;draw();
+}
+async function mpModoPDV(id){
+  mpEst.msg='Ativando o modo integrado…';draw();
+  try{await mpReq('PATCH','/point/integration-api/devices/'+encodeURIComponent(id),{operating_mode:'PDV'});await mpBuscar();mpEst.msg='✅ Modo integrado ativado. Reinicie a maquininha (desligue e ligue) para valer.';draw()}
+  catch(e){mpEst.msg='❌ Não consegui ativar: '+(e.message||e);draw()}
+}
+async function mpCobrar(){
+  const total=Math.round(totalCarrinho()*100);if(!total||!folha)return;
+  mpCob={estado:'enviando',msg:'Enviando '+R(total/100)+' para a maquininha…'};desenharFolha();
+  try{
+    const r=await mpReq('POST','/point/integration-api/devices/'+encodeURIComponent(MP.dev())+'/payment-intents',
+      {amount:total,additional_info:{external_reference:'bar-'+Date.now(),print_on_terminal:true},payment:{type:folha.pg==='debito'?'debit_card':'credit_card',installments:1,installments_cost:'seller'}});
+    mpCob={id:r.id,estado:'OPEN',msg:'📲 Valor enviado. Peça para o cliente aproximar ou inserir o cartão na maquininha.'};desenharFolha();mpAcompanhar(r.id);
+  }catch(e){mpCob={estado:'erro',msg:'❌ '+(e.message||e)+'. Confira se a maquininha está ligada, no modo integrado e sem outra cobrança aberta.'};desenharFolha()}
+}
+async function mpAcompanhar(id){
+  for(let i=0;i<120&&mpCob&&mpCob.id===id;i++){
+    await new Promise(r=>setTimeout(r,3000));if(!mpCob||mpCob.id!==id)return;
+    let d;try{d=await mpReq('GET','/point/integration-api/payment-intents/'+encodeURIComponent(id))}catch(e){continue}
+    const st=d&&d.state;
+    if(st==='FINISHED'){
+      let ok=true,pid=d.payment&&d.payment.id;
+      if(pid){try{const p=await mpReq('GET','/v1/payments/'+pid);ok=p.status==='approved'}catch(e){}}
+      if(ok){mpCob={id,estado:'aprovado',msg:'✅ Pagamento aprovado na maquininha.'};desenharFolha();await confirmarVenda({mp:String(pid||id)});return}
+      mpCob={id,estado:'erro',msg:'❌ O pagamento não foi aprovado. Tente outro cartão ou outra forma.'};desenharFolha();return}
+    if(st==='CANCELED'||st==='ABANDONED'||st==='ERROR'){mpCob={id,estado:'erro',msg:st==='CANCELED'?'Cobrança cancelada na maquininha.':'❌ A maquininha não concluiu ('+st+'). Envie de novo.'};desenharFolha();return}
+    mpCob.msg=st==='PROCESSING'?'⏳ Processando o pagamento…':st==='ON_TERMINAL'?'📲 Na maquininha: aguardando o cartão do cliente…':mpCob.msg;desenharFolha();
+  }
+  if(mpCob&&mpCob.id===id){mpCob.estado='erro';mpCob.msg='Tempo esgotado. Confira na maquininha; se aprovou, confirme a venda à mão.';desenharFolha()}
+}
+async function mpCancelar(){
+  const c=mpCob;if(!c||!c.id){mpCob=null;desenharFolha();return}
+  mpCob={estado:'erro',msg:'Cancelando na maquininha…'};desenharFolha();
+  try{await mpReq('DELETE','/point/integration-api/devices/'+encodeURIComponent(MP.dev())+'/payment-intents/'+encodeURIComponent(c.id));mpCob={estado:'erro',msg:'Cobrança cancelada.'}}
+  catch(e){mpCob={estado:'erro',msg:'Não consegui cancelar pelo app ('+(e.message||e)+'). Cancele na própria maquininha.'}}
+  desenharFolha();
+}
 
 /* ---------- desenho ---------- */
 function draw(){
@@ -164,7 +246,7 @@ function telaVender(){
   if(editar){
     h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome e preço direto aqui. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));if(!l.length)return;
-      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt'));if(!l.length)return;
@@ -180,21 +262,67 @@ function desenharCarrinho(){
 }
 function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Tire a foto do cardápio impresso (bem reto e com luz). O app lê nomes, preços e categorias e <b>já monta o cardápio de venda</b> sozinho. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
     <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
-    <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`}
-const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p></div>`:'';
-function telaCardapio(){
-  let h=fotoCard();
-  if(fotos.length)h+=`<div class="card"><h2>🖼️ Fotos do cardápio (${fotos.length})</h2><p class="sub">Guardadas na nuvem do bar (conta do Bar Conect), não no seu celular.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[...fotos].sort((a,b)=>b.t-a.t).map(f=>`<button data-fv="${f.id}" style="border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)"><img src="${f.img}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div></div>`;
-  const C=categorias();
-  h+=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">📋 Cardápio (${itens.length})</h2><button class="link" data-aba="vender" id="irEditar">✏️ Editar valores</button></div>`;
-  if(!itens.length)h+='<p class="sub" style="margin-top:8px">Nenhum item ainda.</p>';
-  C.forEach(c=>{const l=itens.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));
-    h+=`<h2 style="margin:14px 0 2px">${esc(c)} <span class="chip">${l.length}</span></h2>`+l.map(i=>`<div class="it" style="${i.on===false?'opacity:.5':''}"><span>${esc(i.n)}</span><b>${R(i.p)}</b></div>`).join('')});
-  h+='</div>';
-  if(itens.length)h+=`<button class="btn sec" id="copiarCard">📋 Copiar cardápio (texto para WhatsApp)</button>`;
-  if(itens.length&&dono)h+=`<button class="btn sec" id="zerarCard" style="color:var(--bad)">Apagar o cardápio inteiro</button>`;
-  return h;
+    <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p>${leitura&&leitura.texto&&!lendo?`<details><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`}
+const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p>${leitura.texto?`<details style="margin-top:8px"><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`:'';
+const nomeBar=()=>(cfg.nome||'').trim()||'Bar Conect';
+function menuHTML(){
+  const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));
+  const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
+  const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
+  return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
+  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>`).join('')).join('')}
+  <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
 }
+function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
+  if(!el){el=document.createElement('div');el.id='cliente';el.className='cliente';document.body.appendChild(el)}
+  el.innerHTML=`<button class="x" id="clienteFechar" style="position:fixed;top:12px;right:14px;color:#fff;font-size:26px;z-index:31">✕</button>${menuHTML()}`}
+// imagem do cardápio (para WhatsApp, Instagram, imprimir)
+function imagemCardapio(){
+  const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c)),W=1080,lin=[];
+  C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).forEach(i=>lin.push({i}))});
+  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66),0)+140;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.9);bg.addColorStop(0,'#5b21b6');bg.addColorStop(.45,'#2e1065');bg.addColorStop(1,'#12051f');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  g.textAlign='center';g.fillStyle='#ffffff';g.font='900 74px '+F;
+  const nb=nomeBar().toUpperCase();g.fillText(nb,W/2,150);
+  g.fillStyle='#fcd34d';g.font='600 30px '+F;g.fillText(((cfg.sub||'').trim()||'Cardápio').toUpperCase().split('').join(' '),W/2,215);
+  let y=300;g.textAlign='left';
+  const fit=(t,max,font)=>{g.font=font;if(g.measureText(t).width<=max)return t;while(t.length>3&&g.measureText(t+'…').width>max)t=t.slice(0,-1);return t+'…'};
+  lin.forEach(l=>{
+    if(l.cat){y+=40;g.fillStyle='#facc15';g.font='800 34px '+F;const t=l.cat.toUpperCase();g.fillText(t,80,y+20);const w=g.measureText(t).width;
+      const gr=g.createLinearGradient(100+w,0,W-80,0);gr.addColorStop(0,'rgba(250,204,21,.7)');gr.addColorStop(1,'rgba(250,204,21,0)');g.fillStyle=gr;g.fillRect(100+w,y+8,W-180-w,3);y+=70;return}
+    const i=l.i,pr=i.p?R(i.p):'—';g.font='800 38px '+F;const pw=g.measureText(pr).width;
+    const nome=fit(i.n,W-200-pw,'600 38px '+F);g.fillStyle='#f5f3ff';g.font='600 38px '+F;g.fillText(nome,80,y+30);const nw=g.measureText(nome).width;
+    g.fillStyle='rgba(245,243,255,.35)';for(let x=80+nw+16;x<W-80-pw-16;x+=14)g.fillRect(x,y+26,5,5);
+    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66});
+  g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
+  return cv.toDataURL('image/png');
+}
+async function compartilharImagem(){
+  const url=imagemCardapio(),nome='cardapio-'+nomeBar().toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
+  const P=window.parent,Cap=P&&P.Capacitor&&P.Capacitor.Plugins;
+  try{
+    if(Cap&&Cap.Filesystem&&Cap.Share){const r=await Cap.Filesystem.writeFile({path:nome,data:url.split(',')[1],directory:'CACHE'});await Cap.Share.share({title:'Cardápio',files:[r.uri],dialogTitle:'Compartilhar cardápio'});return}
+    const b=await (await fetch(url)).blob(),f=new File([b],nome,{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Cardápio'});return}
+    const a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();toast('✅ Imagem do cardápio baixada');
+  }catch(e){if(!(e&&(e.name==='AbortError'||/cancel/i.test(e.message||''))))toast('Não consegui compartilhar: '+(e.message||e))}
+}
+window.__cardImagem=imagemCardapio;
+function telaCardapio(){
+  if(itens.length){
+    let h=menuHTML();
+    h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Compartilhar imagem</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
+    h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div></div>`;
+    h+=fotoCard();
+    if(fotos.length)h+=fotosHTML();
+    if(dono)h+=`<button class="btn sec" id="zerarCard" style="color:var(--bad)">Apagar o cardápio inteiro</button>`;
+    return h;
+  }
+  return fotoCard()+(fotos.length?fotosHTML():'')+'<p class="sub" style="text-align:center">Depois de digitalizar, o cardápio aparece aqui pronto para mostrar ao cliente.</p>';
+}
+const fotosHTML=()=>`<div class="card"><h2>🖼️ Fotos do cardápio (${fotos.length})</h2><p class="sub">Guardadas na nuvem do bar (conta do Bar Conect), não no seu celular.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[...fotos].sort((a,b)=>b.t-a.t).map(f=>`<button data-fv="${f.id}" style="border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)"><img src="${f.img}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div></div>`;
 function verFoto(){
   let f=$('#fotoFolha');if(!fotoVer){if(f)f.remove();return}
   const x=fotos.find(y=>y.id===fotoVer);if(!x){fotoVer=null;if(f)f.remove();return}
@@ -222,7 +350,22 @@ function telaPag(){
     <label>Chave Pix (CPF, CNPJ, celular +55…, e-mail ou aleatória)<input data-k="ct" data-ct="${k}" data-cf="chave" value="${esc(c.chave||'')}" autocapitalize="none" ${dono?'':'readonly'}></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>Nome do recebedor<input data-k="ct" data-ct="${k}" data-cf="nome" value="${esc(c.nome||'')}" placeholder="Como no banco" ${dono?'':'readonly'}></label><label>Cidade<input data-k="ct" data-ct="${k}" data-cf="cidade" value="${esc(c.cidade||'')}" ${dono?'':'readonly'}></label></div>
     ${dono?`<button class="link" data-ctdel="${k}" style="margin-top:8px;color:var(--bad)">Remover conta</button>`:''}</div>`).join('')}${dono?'<button class="link" id="ctNova">+ Conta</button>':''}</div>`;
-  h+=`<div class="card"><h2>🔌 Ligação automática com a maquininha</h2><p class="sub" style="margin:0">Hoje o valor é passado na maquininha e confirmado aqui com um toque. A ligação automática (o app manda o valor direto para a maquininha) é possível com a <b>Mercado Pago Point</b>, usando a chave de integração da sua conta Mercado Pago. Para a <b>Santander/Getnet</b>, a ligação depende de liberação comercial do banco.</p></div>`;
+  {const tk=MP.tk(),dev=MP.dev();
+  h+=`<div class="card" style="border:2px solid ${mpLigada()?'var(--ok)':'var(--bd)'}"><h2>🔌 Mercado Pago Point ligada ao app ${mpLigada()?'<span class="chip" style="color:var(--ok)">ligada neste celular</span>':''}</h2>
+  <p class="sub">Com a maquininha ligada, ao cobrar no cartão o app <b>manda o valor direto para a Point</b> e registra a venda sozinho quando o pagamento for aprovado.</p>
+  <details ${tk&&(mpLigada()||(mpEst.devs&&mpEst.devs.length))?'':'open'}><summary style="font-weight:600;cursor:pointer">1. Chave de acesso (Access Token)</summary>
+  <p class="sub" style="margin-top:6px">No computador ou celular, entre em <b>mercadopago.com.br/developers/panel</b> com a conta do bar → <b>Suas integrações → Criar aplicação</b> (pagamentos presenciais / Point) → <b>Credenciais de produção</b> → copie o <b>Access Token</b> (começa com APP_USR-).</p>
+  <label>Access Token<input data-k="mpt" id="mpTk" type="password" autocomplete="off" autocapitalize="none" placeholder="APP_USR-…" value="${esc(tk)}"></label>
+  <p class="sub" style="font-size:12px">🔒 A chave fica guardada <b>só neste celular</b>. Não vai para a nuvem nem para o backup. Em outro celular que for cobrar, coloque de novo.</p></details>
+  <button class="btn" id="mpBuscar" ${mpEst.busy?'disabled':''}>${tk?'2. Conectar e buscar a maquininha':'Salvar chave e conectar'}</button>
+  ${mpEst.msg?`<p class="msg" style="font-weight:600;color:var(--tx)">${esc(mpEst.msg)}</p>`:''}
+  ${mpEst.devs&&mpEst.devs.length?`<div class="opc">${mpEst.devs.map(d=>`<button data-mpdev="${esc(d.id)}" class="${dev===d.id?'on':''}">${esc(d.id)}<small>${d.operating_mode==='PDV'?'✅ modo integrado (PDV)':'⚠️ modo '+esc(d.operating_mode||'?')+' — precisa ativar o integrado'}</small></button>`).join('')}</div>
+    ${(()=>{const d=mpEst.devs.find(x=>x.id===dev);return d&&d.operating_mode!=='PDV'?`<button class="btn sec" data-mppdv="${esc(d.id)}">Ativar modo integrado nesta maquininha</button>`:''})()}`:''}
+  ${dev?`<label>3. Qual maquininha da lista de cobrança é essa?<select id="mpMaq">${cfg.maquinas.map(m=>`<option value="${m.id}" ${MP.maq()===m.id?'selected':''}>${esc(m.n)}</option>`).join('')}</select></label>
+    <p class="sub" style="margin-top:8px">✅ Pronto: ao cobrar em Crédito ou Débito e escolher <b>${esc(nomeVia(MP.maq()))}</b>, aparece <b>📲 Enviar para a maquininha</b>.</p>
+    <button class="link" id="mpDesligar" style="color:var(--bad)">Desligar a maquininha deste celular</button>`:''}
+  </div>`;
+  h+=`<div class="card"><h2>Santander (Getnet)</h2><p class="sub" style="margin:0">A ligação automática da Getnet depende de liberação comercial do banco. Por enquanto: passe o valor na maquininha e confirme a venda no app.</p></div>`;}
   if(!dono)h+='<p class="msg">Só o dono altera maquininhas e contas.</p>';
   return h;
 }
@@ -243,7 +386,11 @@ function desenharFolha(){
     <p class="big" style="text-align:center;margin:12px 0 0;color:${tr<0?'var(--bad)':'var(--ok)'}">${rec?(tr<0?'Falta '+R(-tr):'Troco '+R(tr)):''}</p>`}
   if(F.pg==='credito'||F.pg==='debito'){
     h+=`<label>Qual maquininha?</label><div class="opc">${cfg.maquinas.map(m=>`<button data-via="${m.id}" class="${F.via===m.id?'on':''}">${esc(m.n)}</button>`).join('')}</div>`;
-    if(F.via)h+=`<p class="msg" style="font-size:15px">Passe <b>${R(total)}</b> no <b>${F.pg==='credito'?'crédito':'débito'}</b> da <b>${esc(nomeVia(F.via))}</b> e confirme quando aprovar.</p>`}
+    if(F.via&&F.via===MP.maq()&&mpLigada()){
+      if(!mpCob)h+=`<button class="btn" id="mpEnviar" style="background:#009ee3;color:#fff">📲 Enviar ${R(total)} para a maquininha</button><p class="msg">Ou passe à mão e confirme abaixo.</p>`;
+      else h+=`<div class="card" style="margin-top:10px;border-color:#009ee3"><p class="msg" style="font-size:15px;font-weight:600;color:var(--tx);margin:0">${esc(mpCob.msg)}</p>${mpCob.estado==='OPEN'||mpCob.estado==='enviando'?'<button class="btn sec" id="mpCancelar">Cancelar cobrança</button>':''}${mpCob.estado==='erro'?'<button class="btn sec" id="mpDeNovo">Tentar de novo</button>':''}</div>`;
+    }
+    else if(F.via)h+=`<p class="msg" style="font-size:15px">Passe <b>${R(total)}</b> no <b>${F.pg==='credito'?'crédito':'débito'}</b> da <b>${esc(nomeVia(F.via))}</b> e confirme quando aprovar.</p>`}
   if(F.pg==='pix'){
     h+=`<label>Receber em qual conta?</label><div class="opc">${cfg.contas.map(c=>`<button data-via="${c.id}" class="${F.via===c.id?'on':''}">${esc(c.n)}<small>${esc(c.tipo||'')}${c.chave?' · chave '+esc(c.chave):' · sem chave Pix cadastrada'}</small></button>`).join('')}</div>`;
     const c=cfg.contas.find(x=>x.id===F.via);
@@ -251,17 +398,18 @@ function desenharFolha(){
       if(cod){let img='';try{const q=qrcode(0,'M');q.addData(cod);q.make();img=q.createImgTag(5,0)}catch(e){}
         h+=`<div class="qr">${img}</div><p class="msg">O cliente lê o QR Code no app do banco e paga <b>${R(total)}</b> direto na conta <b>${esc(c.n)}</b>. Confira no extrato e confirme.</p><div class="copia" id="pixCod">${esc(cod)}</div><button class="btn sec" id="pixCopiar">📋 Copiar Pix copia e cola</button>`}
       else h+=`<p class="msg">Essa conta não tem chave Pix. ${dono?'Cadastre em <b>💳 Receber</b>.':'Peça ao dono para cadastrar.'} Você ainda pode confirmar se o cliente pagou pelo QR Code da conta.</p>`}}
-  const pode=F.pg&&(F.pg==='dinheiro'?(!F.recebido||nv(F.recebido)>=total):!!F.via);
+  const pode=F.pg&&(F.pg==='dinheiro'?(!F.recebido||nv(F.recebido)>=total):!!F.via)&&!(mpCob&&mpCob.estado!=='erro');
   h+=`<button class="btn ok" id="fConfirmar" ${pode?'':'disabled'}>✅ Confirmar venda</button></div>`;
   f.innerHTML=h;
 }
-async function confirmarVenda(){
+async function confirmarVenda(extra){
   const total=totalCarrinho();if(!total||!folha||!folha.pg)return;
   const lista=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?{i:id,n:i.n,p:i.p,q}:null}).filter(Boolean);
   const t=Date.now(),v={itens:lista,total:Math.round(total*100)/100,pg:folha.pg,noite:noiteDe(t),t,quem:(localStorage.getItem('bar-nome')||'').trim()};
   if(folha.via)v.via=folha.via;
+  if(extra&&extra.mp)v.mp=extra.mp;
   if(folha.pg==='dinheiro'&&nv(folha.recebido)){v.recebido=nv(folha.recebido);v.troco=Math.round((v.recebido-total)*100)/100}
-  try{await db.collection('vendas').add(v);carrinho={};folha=null;desenharFolha();ver=noiteDe(Date.now());toast('✅ Venda de '+R(v.total)+' registrada'+(v.troco?' · troco '+R(v.troco):''));draw()}
+  try{await db.collection('vendas').add(v);carrinho={};folha=null;mpCob=null;desenharFolha();ver=noiteDe(Date.now());toast('✅ Venda de '+R(v.total)+' registrada'+(v.troco?' · troco '+R(v.troco):''));draw()}
   catch(e){toast('Não consegui salvar a venda: '+(e.message||e))}
 }
 
@@ -289,34 +437,45 @@ async function copiar(t){try{await navigator.clipboard.writeText(t);toast('✅ C
 async function comprimir(arq){
   const url=URL.createObjectURL(arq);
   try{const img=await new Promise((ok,er)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=er;i.src=url});
-    let max=1400,q=.7,out='';
-    for(let k=0;k<6;k++){const e=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*e);c.height=Math.round(img.height*e);c.getContext('2d').drawImage(img,0,0,c.width,c.height);out=c.toDataURL('image/jpeg',q);if(out.length<700000)break;max=Math.round(max*.82);q=Math.max(.45,q-.07)}
+    let max=1200,q=.65,out='';
+    for(let k=0;k<6;k++){const e=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*e);c.height=Math.round(img.height*e);c.getContext('2d').drawImage(img,0,0,c.width,c.height);out=c.toDataURL('image/jpeg',q);if(out.length<450000)break;max=Math.round(max*.82);q=Math.max(.45,q-.07)}
     return out}finally{URL.revokeObjectURL(url)}
 }
 const deDataUrl=async u=>{const r=await fetch(u);const b=await r.blob();return new File([b],'cardapio.jpg',{type:b.type||'image/jpeg'})};
 async function lerFotos(arqs,guardar=true){
   if(!arqs||!arqs.length||(leitura&&leitura.lendo))return;
   const P=window.parent,ocr=P&&P!==window&&P.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
-  leitura={lendo:true,msg:'📷 Foto recebida. Lendo o cardápio… (a primeira vez demora um pouco)'};if(!itens.length)aba='vender';draw();
+  leitura={lendo:true,msg:'📷 Foto recebida. Lendo o cardápio… (a primeira vez demora um pouco)'};aba='vender';editar=false;draw();
   const msg=t=>{leitura.msg=t;['#fotoMsg','#fotoMsg2'].forEach(s=>{const el=$(s);if(el)el.textContent=t})};
-  const lidos=[];let erro='';
-  for(const [k,a] of arqs.entries()){
-    const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+': ':'';
-    try{
-      if(guardar){msg(pre+'guardando a foto na nuvem do bar…');try{const img=await comprimir(a);await db.collection('fotos').add({img,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim()})}catch(e){}}
-      const prog=m=>{if(m.status==='recognizing text')msg(pre+'lendo o cardápio… '+Math.round(m.progress*100)+'%')};
-      let novos=lerCardapio((await ocr(a,prog,2400,4)).texto);
-      if(novos.length<4){msg(pre+'lendo de outro jeito…');const n2=lerCardapio((await ocr(a,prog,2400,6)).texto);if(n2.length>novos.length)novos=n2}
-      lidos.push(...novos);
-    }catch(e){erro=(e&&e.message)||String(e)}
+  const lidos=[];let erro='',novos=0,atual=0,textoLido='';
+  try{
+    for(const [k,a] of arqs.entries()){
+      const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+': ':'';
+      try{
+        // mesma leitura das abas Foto e Preços (que funcionam no celular): 1800 px, modo 6
+        const prog=m=>{if(m.status==='recognizing text')msg(pre+'lendo o cardápio… '+Math.round(m.progress*100)+'%')};
+        let tx=(await ocr(a,prog,1800)).texto,lista=lerCardapio(tx);
+        if(lista.length<4){msg(pre+'lendo de outro jeito…');const t2=(await ocr(a,prog,1800,4)).texto,l2=lerCardapio(t2);if(l2.length>lista.length){lista=l2;tx=t2}}
+        if(!lista.length)lista=lerCardapio(tx,true); // achou nomes mas não preços: cria com preço 0 para completar
+        textoLido+=(textoLido?'\n----\n':'')+tx;
+        lidos.push(...lista);
+      }catch(e){erro=(e&&e.message)||String(e)}
+    }
+    // grava os itens sem esperar a internet (aparecem na hora; a nuvem sincroniza depois)
+    const salvos=[];
+    for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
+      if(ja){atual++;continue}
+      salvos.push(db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()}).catch(e=>{erro=e.message||String(e)}));novos++}
+    await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,4000))]);
+  }catch(e){erro=(e&&e.message)||String(e)}
+  finally{
+    const semP=lidos.filter(x=>!x.p).length;
+    leitura={lendo:false,texto:textoLido,msg:lidos.length?`✅ Cardápio digitalizado: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}.${semP?' '+semP+' ficaram sem preço (R$ 0,00): preencha.':''} Confira e ajuste aqui embaixo; depois toque em ✅ Pronto para vender.`
+      :'❌ Não consegui achar itens com preço nessa foto'+(erro?' (erro: '+erro+')':'')+'. Tente de novo mais perto, bem reta e sem reflexo, ou adicione à mão em ✏️ Editar.'};
+    aba='vender';editar=lidos.length>0;draw();
   }
-  let novos=0,atual=0;
-  for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
-    try{if(ja){atual++}
-      else{await db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()});novos++}}catch(e){erro=e.message||String(e)}}
-  leitura={lendo:false,msg:lidos.length?`✅ Cardápio digitalizado: ${novos} itens novos${atual?' ('+atual+' já estavam no cardápio, mantive o preço)':''}. Já estão em 🛒 Vender. Para mudar valores, toque em ✏️ Editar.`
-    :'Não consegui achar itens com preço nessa foto'+(erro?' ('+erro+')':'')+'. Tente de novo mais perto, bem reta e sem reflexo, ou adicione à mão em ✏️ Editar.'};
-  aba='vender';draw();
+  // guarda a foto na nuvem do bar em segundo plano (não trava a leitura)
+  if(guardar)arqs.forEach(a=>comprimir(a).then(img=>db.collection('fotos').add({img,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim()})).catch(()=>{}));
 }
 window.__cardLerFotos=a=>lerFotos(a);
 window.__cardAoAbrir=()=>{if(carregado&&!itens.length&&!sessionStorage.getItem('card-auto')&&!(leitura&&leitura.lendo)){sessionStorage.setItem('card-auto','1');try{window.parent.__barFotoCardapio(true)}catch(e){}}};
@@ -333,13 +492,23 @@ document.addEventListener('click',async ev=>{
   if(d.menos){if(--carrinho[d.menos]<=0)delete carrinho[d.menos];draw();return}
   if(b.id==='limpar'){carrinho={};draw();return}
   if(b.id==='cobrar'){abrirCobranca();return}
-  if(b.id==='fFechar'){folha=null;desenharFolha();return}
-  if(d.pg&&folha){folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
-  if(d.via&&folha){folha.via=d.via;desenharFolha();return}
+  if(b.id==='fFechar'){if(mpCob&&(mpCob.estado==='OPEN'||mpCob.estado==='enviando')){toast('Cancele a cobrança na maquininha antes de fechar');return}folha=null;mpCob=null;desenharFolha();return}
+  if(b.id==='mpEnviar'){mpCobrar();return}
+  if(b.id==='mpCancelar'){mpCancelar();return}
+  if(b.id==='mpDeNovo'){mpCob=null;desenharFolha();return}
+  if(b.id==='mpBuscar'){const t=$('#mpTk');if(t)localStorage.setItem('mp-token',t.value.trim());if(!MP.tk()){mpEst.msg='Cole o Access Token primeiro.';draw();return}mpBuscar();return}
+  if(d.mpdev){localStorage.setItem('mp-device',d.mpdev);draw();return}
+  if(d.mppdv){mpModoPDV(d.mppdv);return}
+  if(b.id==='mpDesligar'){['mp-token','mp-device'].forEach(k=>localStorage.removeItem(k));mpEst={devs:null,msg:'Maquininha desligada deste celular.',busy:false};draw();return}
+  if(d.pg&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
+  if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
   if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
   if(b.id==='editarBtn'){editar=!editar;aba='vender';draw();return}
+  if(b.id==='clienteBtn'){mostrarCliente(true);return}
+  if(b.id==='clienteFechar'){mostrarCliente(false);return}
+  if(b.id==='imgBtn'){compartilharImagem();return}
   if(b.id==='irEditar'){editar=true;aba='vender';draw();return}
   if(d.fv){fotoVer=d.fv;verFoto();return}
   if(b.id==='fvFechar'){fotoVer=null;verFoto();return}
@@ -368,6 +537,9 @@ document.addEventListener('input',e=>{const t=e.target;
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
+  if(t.id==='nbNome'||t.id==='nbSub'){cfg[t.id==='nbNome'?'nome':'sub']=t.value.trim();await salvarCfg();return}
+  if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
+  if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
   try{
     if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):'Nome salvo'));return}
     if(!dono)return;
@@ -384,7 +556,7 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
   db.collection('itens').onSnapshot(s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));carregado=true;draw()},()=>{});
   db.collection('fotos').onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.img);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
-  db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas};draw()},()=>{});
+  db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||''};draw()},()=>{});
   draw();
 })();
 </script>

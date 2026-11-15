@@ -4,6 +4,8 @@
   tela branca antes da apresentação do app.
 - Câmera: declara a intenção IMAGE_CAPTURE em <queries> (Android 11+), senão o Capacitor não acha
   o app de câmera e abre só o seletor de arquivos.
+- Leitor de texto nativo (Google ML Kit) para escanear o cardápio na hora: copia o plugin
+  LeitorTexto, registra na MainActivity e adiciona a dependência no build.gradle.
 """
 import re, shutil, sys
 from pathlib import Path
@@ -34,4 +36,26 @@ m = manif.read_text(encoding='utf-8')
 if 'IMAGE_CAPTURE' not in m:
     m = m.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>\n    </queries>\n</manifest>')
 manif.write_text(m, encoding='utf-8')
+# ---- leitor de texto nativo (ML Kit) ----
+java = Path('android/app/src/main/java/br/bar/caixaportaria')
+shutil.copy('nativo/LeitorTextoPlugin.java', java / 'LeitorTextoPlugin.java')
+main = java / 'MainActivity.java'
+ma = main.read_text(encoding='utf-8')
+if 'LeitorTextoPlugin' not in ma:
+    ma = re.sub(r'public class MainActivity extends BridgeActivity\s*\{\s*\}',
+        'public class MainActivity extends BridgeActivity {\n'
+        '    @Override\n'
+        '    public void onCreate(android.os.Bundle savedInstanceState) {\n'
+        '        registerPlugin(LeitorTextoPlugin.class);\n'
+        '        super.onCreate(savedInstanceState);\n'
+        '    }\n'
+        '}', ma)
+    assert 'LeitorTextoPlugin' in ma, 'MainActivity diferente do esperado: ' + ma
+    main.write_text(ma, encoding='utf-8')
+gradle = Path('android/app/build.gradle')
+g = gradle.read_text(encoding='utf-8')
+if 'text-recognition' not in g:
+    g, n = re.subn(r'dependencies\s*\{', "dependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'", g, count=1)
+    assert n == 1, 'dependencies não encontrado no build.gradle'
+    gradle.write_text(g, encoding='utf-8')
 print('ajustes do Android aplicados')

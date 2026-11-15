@@ -29,7 +29,22 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // ---------- Tradução ----------
+  // As traduções ficam guardadas no aparelho: a mesma frase sai na hora, até sem internet.
   const cache = new Map();
+  try { Object.entries(JSON.parse(localStorage.getItem('trad-cache') || '{}')).forEach(([k, v]) => cache.set(k, v)); } catch (e) {}
+  let salvarTm = null;
+  const guardar = (k, v) => {
+    cache.delete(k); cache.set(k, v);
+    while (cache.size > 1500) cache.delete(cache.keys().next().value);
+    clearTimeout(salvarTm);
+    salvarTm = setTimeout(() => { try { localStorage.setItem('trad-cache', JSON.stringify(Object.fromEntries(cache))); } catch (e) {} }, 800);
+  };
+  // Cada serviço tem 3,5 s: se demorar, passa para o próximo
+  const buscar = async (u, ms = 3500) => {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
+    try { return await (await fetch(u, { signal: ctl.signal })).json(); } finally { clearTimeout(t); }
+  };
+  const emAndamento = new Map(); // a mesma frase pedida duas vezes ao mesmo tempo vira um pedido só
   async function traduzir(texto, de, para) {
     texto = (texto || '').trim();
     if (!texto) return '';
@@ -37,31 +52,46 @@
     if (sl === tl) return texto;
     const k = sl + '|' + tl + '|' + texto;
     if (cache.has(k)) return cache.get(k);
-    let r = '';
-    try {
-      const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' + sl + '&tl=' + tl + '&q=' + encodeURIComponent(texto);
-      const j = await (await fetch(u)).json();
-      r = (j[0] || []).map((p) => p[0]).join('');
-    } catch (e) { /* tenta a reserva */ }
-    if (!r) {
+    if (emAndamento.has(k)) return emAndamento.get(k);
+    const p = (async () => {
+      let r = '';
       try {
-        const u = 'https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=' + sl + '&tl=' + tl + '&q=' + encodeURIComponent(texto);
-        const j = await (await fetch(u)).json();
-        const x = Array.isArray(j) ? j[0] : null;
-        r = (Array.isArray(x) ? x[0] : x) || '';
-      } catch (e) { /* tenta a próxima */ }
-    }
-    if (!r) {
+        const j = await buscar('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' + sl + '&tl=' + tl + '&q=' + encodeURIComponent(texto));
+        r = (j[0] || []).map((x) => x[0]).join('');
+      } catch (e) { /* tenta a reserva */ }
+      if (!r) {
+        try {
+          const j = await buscar('https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=' + sl + '&tl=' + tl + '&q=' + encodeURIComponent(texto));
+          const x = Array.isArray(j) ? j[0] : null;
+          r = (Array.isArray(x) ? x[0] : x) || '';
+        } catch (e) { /* tenta a próxima */ }
+      }
+      if (!r) {
+        try {
+          const j = await buscar('https://api.mymemory.translated.net/get?langpair=' + sl + '|' + tl + '&q=' + encodeURIComponent(texto.slice(0, 480)), 5000);
+          r = (j.responseData && j.responseData.translatedText) || '';
+        } catch (e) { /* sem internet */ }
+      }
+      if (!r) return '⚠️ (sem tradução: verifique a internet) ' + texto;
+      guardar(k, r);
+      return r;
+    })();
+    emAndamento.set(k, p);
+    try { return await p; } finally { emAndamento.delete(k); }
+  }
+  // Várias frases num pedido só (uma por linha); se não der certo, traduz todas ao mesmo tempo
+  async function traduzirVarias(lista, de, para) {
+    const sl = codTrad(de), tl = codTrad(para);
+    if (sl === tl) return lista.slice();
+    const faltam = lista.filter((t) => !cache.has(sl + '|' + tl + '|' + t.trim()));
+    if (faltam.length > 1) {
       try {
-        const u = 'https://api.mymemory.translated.net/get?langpair=' + sl + '|' + tl + '&q=' + encodeURIComponent(texto.slice(0, 480));
-        const j = await (await fetch(u)).json();
-        r = (j.responseData && j.responseData.translatedText) || '';
-      } catch (e) { /* sem internet */ }
+        const j = await buscar('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' + sl + '&tl=' + tl + '&q=' + encodeURIComponent(faltam.join('\n')), 5000);
+        const partes = (j[0] || []).map((x) => x[0]).join('').split('\n').map((x) => x.trim());
+        if (partes.length === faltam.length && partes.every(Boolean)) faltam.forEach((t, i) => guardar(sl + '|' + tl + '|' + t.trim(), partes[i]));
+      } catch (e) { /* cai para uma por uma */ }
     }
-    if (!r) return '⚠️ (sem tradução: verifique a internet) ' + texto;
-    if (cache.size > 500) cache.delete(cache.keys().next().value);
-    cache.set(k, r);
-    return r;
+    return Promise.all(lista.map((t) => traduzir(t, de, para)));
   }
 
   // ---------- App Android (APK) ----------
@@ -86,16 +116,16 @@
         }
         this.handles.push(await P.addListener('partialResults', (d) => {
           const t = (d.matches && d.matches[0]) || '';
-          if (t && !this.acabou) { this.ultimo = t; this._emitir(t, false); }
+          if (t && !this.acabou) { this.ultimo = t; this._emitir(t, false); if (this.parou) this._fim(); } // depois do "stopped", é o resultado final
         }));
-        // "stopped" chega antes do resultado final: espera um pouco por ele
-        this.handles.push(await P.addListener('listeningState', (d) => { if (d.status === 'stopped') setTimeout(() => this._fim(), 700); }));
+        // "stopped" chega um instante antes do resultado final: espera no máximo 600 ms por ele
+        this.handles.push(await P.addListener('listeningState', (d) => { if (d.status === 'stopped') { this.parou = true; setTimeout(() => this._fim(), 600); } }));
         const inicio = Date.now();
         // Silêncio ou erro não geram aviso no plugin: confere se ainda está ouvindo
         this.vigia = setInterval(() => {
-          if (Date.now() - inicio < 1500) return;
-          P.isListening().then((r) => { if (!r.listening) setTimeout(() => this._fim(), 500); }).catch(() => {});
-        }, 1000);
+          if (Date.now() - inicio < 1000) return;
+          P.isListening().then((r) => { if (!r.listening) setTimeout(() => this._fim(), 300); }).catch(() => {});
+        }, 500);
         await P.start({ language: this.lang, maxResults: 1, partialResults: true, popup: false });
       } catch (e) { this._fim(); }
     }
@@ -117,7 +147,7 @@
   let fone = localStorage.getItem('trad-fone') === '1';
   const falando = { n: 0 };
   function falar(texto, lingua, opc = {}) {
-    if ((!vozLigada && !opc.sempre) || !texto) return;
+    if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) return; // aviso de falha não é lido
     const vel = opc.vel || 1.0;
     const TTS = plugin('TextToSpeech');
     if (TTS) {
@@ -169,7 +199,7 @@
           this.ativo = false; this.cb.erro && this.cb.erro('Permita o uso do microfone para falar.');
         }
       };
-      r.onend = () => { if (this.rec === r) { this.rec = null; if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 150); else if (!this.ativo) this.cb && this.cb.fim && this.cb.fim(); } };
+      r.onend = () => { if (this.rec === r) { this.rec = null; if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 60); else if (!this.ativo) this.cb && this.cb.fim && this.cb.fim(); } };
       this.rec = r;
       try { r.start(); } catch (e) { /* já iniciado */ }
     },
@@ -243,17 +273,27 @@
     return conectarLocal(sala, eu, h);
   }
 
+  // Carrega o Firebase e faz o login uma vez só (começa em segundo plano quando o app abre)
+  let nuvemPronta = null;
+  function preparaNuvem(cfg) {
+    nuvemPronta = nuvemPronta || (async () => {
+      await loadScript('vendor/firebase-app-compat.js');
+      await loadScript('vendor/firebase-auth-compat.js');
+      await loadScript('vendor/firebase-firestore-compat.js');
+      const fb = window.firebase;
+      const app = fb.apps.length ? fb.app() : fb.initializeApp(cfg);
+      const auth = app.auth();
+      const user = await new Promise((ok, err) => {
+        const t = setTimeout(() => err(new Error('tempo esgotado')), 12000);
+        const off = auth.onAuthStateChanged((u) => { if (u) { clearTimeout(t); off(); ok(u); } else auth.signInAnonymously().catch(err); });
+      });
+      return { app, user };
+    })();
+    nuvemPronta.catch(() => { nuvemPronta = null; }); // falhou: tenta de novo na próxima vez
+    return nuvemPronta;
+  }
   async function conectarFirebase(cfg, sala, eu, h) {
-    await loadScript('vendor/firebase-app-compat.js');
-    await loadScript('vendor/firebase-auth-compat.js');
-    await loadScript('vendor/firebase-firestore-compat.js');
-    const fb = window.firebase;
-    const app = fb.apps.length ? fb.app() : fb.initializeApp(cfg);
-    const auth = app.auth();
-    const user = await new Promise((ok, err) => {
-      const t = setTimeout(() => err(new Error('tempo esgotado')), 12000);
-      const off = auth.onAuthStateChanged((u) => { if (u) { clearTimeout(t); off(); ok(u); } else auth.signInAnonymously().catch(err); });
-    });
+    const { app, user } = await preparaNuvem(cfg);
     // Cada aba é um participante: abas do mesmo navegador dividem o login anônimo do Firebase,
     // então o id da pessoa na sala é por aba (fica igual se a aba for recarregada).
     const meu = sessionStorage.getItem('trad-aba') || (() => { const u = user.uid.slice(0, 8) + '-' + Math.random().toString(36).slice(2, 8); sessionStorage.setItem('trad-aba', u); return u; })();
@@ -278,8 +318,8 @@
     const vivo = (texto) => {
       pend = texto;
       const ag = Date.now();
-      if (ag - ultimo > 500) { ultimo = ag; pessoa.update({ vivo: texto }).catch(() => {}); pend = null; }
-      else if (!tm) tm = setTimeout(() => { tm = null; if (pend !== null) { ultimo = Date.now(); pessoa.update({ vivo: pend }).catch(() => {}); pend = null; } }, 500);
+      if (ag - ultimo > 300) { ultimo = ag; pessoa.update({ vivo: texto }).catch(() => {}); pend = null; }
+      else if (!tm) tm = setTimeout(() => { tm = null; if (pend !== null) { ultimo = Date.now(); pessoa.update({ vivo: pend }).catch(() => {}); pend = null; } }, 300);
     };
     return {
       nuvem: true,
@@ -395,7 +435,7 @@
       }
       $('.orig', el).textContent = p.vivo;
       clearTimeout(vivoTimers.get(p.uid));
-      vivoTimers.set(p.uid, setTimeout(() => traduzir(p.vivo, p.lingua, eu.lingua).then((t) => { $('.tr', el).textContent = t; rolar(); }), 500));
+      vivoTimers.set(p.uid, setTimeout(() => traduzir(p.vivo, p.lingua, eu.lingua).then((t) => { $('.tr', el).textContent = t; rolar(); }), 250));
       rolar();
     });
     for (const [id, el] of vivos) if (!ids.has(id)) { el.remove(); vivos.delete(id); clearTimeout(vivoTimers.get(id)); }
@@ -498,7 +538,7 @@
   if (nomeSalvo) setTimeout(() => gatoInicio.dizer('Miau! Que bom te ver, ' + nomeSalvo + '! 😺'), 400);
 
   // Para a aba Estudar (tradutor-estudo.js)
-  window.ClaSpeak = { traduzir, falar, ouvinte, miau, gato, LINGUAS, preencher, nomeLingua, codTrad, esc, linguaPadrao, minhaLingua: () => linguaEl.value, temVoz: () => !!SR };
+  window.ClaSpeak = { traduzir, traduzirVarias, falar, ouvinte, miau, gato, LINGUAS, preencher, nomeLingua, codTrad, esc, linguaPadrao, minhaLingua: () => linguaEl.value, temVoz: () => !!SR };
 
   // ---------- Frente a frente ----------
   const lados = {};
@@ -516,7 +556,7 @@
         parcial: (t) => {
           l.txt.innerHTML = '<span class="p">' + esc(t || 'Ouvindo…') + '</span>';
           clearTimeout(tm);
-          if (t) tm = setTimeout(() => traduzir(t, l.sel.value, outro.sel.value).then((r) => { outro.txt.innerHTML = '<span class="p">' + esc(r) + '</span>'; }), 500);
+          if (t) tm = setTimeout(() => traduzir(t, l.sel.value, outro.sel.value).then((r) => { outro.txt.innerHTML = '<span class="p">' + esc(r) + '</span>'; }), 250);
         },
         final: async (t) => {
           clearTimeout(tm);
@@ -536,6 +576,10 @@
   $('#f2fLimpar').onclick = () => { lados.a.txt.textContent = ''; lados.b.txt.textContent = ''; };
   $('#f2fFone').onclick = () => definirFone(!fone);
   $('#f2fSair').onclick = () => { ouvinte.parar(); mostrarTela('inicio'); };
+
+  // Adianta o que demora: a nuvem e a tradução já começam a se preparar com o app aberto
+  const ocioso = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
+  ocioso(() => { if (window.FIREBASE_CONFIG) preparaNuvem(window.FIREBASE_CONFIG).catch(() => {}); });
 
   // Link de convite: entra direto se já tiver nome salvo
   if (params.get('sala') && nomeEl.value) entrarSala();

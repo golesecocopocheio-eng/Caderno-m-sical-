@@ -15,6 +15,15 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Frente a frente:** um celular só, na mesa entre duas pessoas. A tela se divide (a parte de cima
   fica de cabeça para baixo); cada lado tem seu idioma e seu microfone.
 - Dá para digitar em vez de falar.
+- **Tema escuro** (preto e amarelo) em todas as telas.
+- **Gatinho mascote** (a foto do logo): fala com você, mia quando é tocado e reage ao que acontece
+  (alguém entrou na sala, microfone ligado, acertos nos estudos).
+- **Aba 📚 Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
+  Compras, Números, Emergência, Gatinhos) traduzidas na hora, com 🔊 ouvir, 🐢 devagar, 🎤 repetir (o app
+  confere a pronúncia) e 🧩 quiz. Pontos ⭐ e dias seguidos 🔥 ficam guardados no aparelho.
+- **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **Sala animada:** avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂
+  nas mensagens (ou toque duas vezes) e "fulano está falando..." com pontinhos.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
 - **APK Android próprio ("Clã Speak", logo com a foto de um gatinho preto miando, balão "Miau!" e o nome, em amarelo e preto):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta

@@ -16,7 +16,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica de cabeça para baixo); cada lado tem seu idioma e seu microfone.
 - Dá para digitar em vez de falar.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
-- **APK Android próprio ("Clã Speak", ícone do gatinho listrado):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+- **APK Android próprio ("Clã Speak", ícone do gatinho em contorno preto, estilo anime, no roxo e dourado):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
   `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
   em voz alta), e o convite para a sala é pelo código.

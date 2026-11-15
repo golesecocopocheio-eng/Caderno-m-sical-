@@ -31,6 +31,8 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}
 .menu .mi .mn{font-weight:600}
 .menu .mi .ml{flex:1;border-bottom:2px dotted rgba(245,243,255,.28);transform:translateY(-4px);min-width:16px}
 .menu .mi .mp{font-weight:800;color:#fde047;white-space:nowrap}
+.menu .md{color:rgba(245,243,255,.62);font-size:13px;font-style:italic;margin:-5px 0 6px;line-height:1.3}
+.cliente .menu .md{font-size:15px}
 .menu .mf{text-align:center;color:rgba(245,243,255,.55);font-size:11px;letter-spacing:.12em;margin-top:22px}
 .scan{position:fixed;inset:0;z-index:40;background:radial-gradient(120% 80% at 50% 0%,#3b0764,#12051f 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;color:#f5f3ff;text-align:center}
 .scan .quadro{position:relative;width:min(78vw,320px);aspect-ratio:3/4;border-radius:18px;overflow:hidden;box-shadow:0 0 0 2px rgba(250,204,21,.6),0 18px 50px rgba(0,0,0,.5);background:#000}
@@ -124,45 +126,50 @@ function pixCodigo(conta,valor){
 window.__pixCodigo=pixCodigo;
 
 /* ---------- Leitura do cardápio pela foto ---------- */
+/* Leitura do cardápio a partir do texto escaneado.
+   - Cada linha é dividida em colunas (espaço grande); "¦" marca coluna vazia.
+   - Preço: número no fim ("Caipirinha 25", "Gin .... R$ 32,00") ou sozinho na linha de baixo.
+   - Grupo (categoria): só título com palavra de cardápio (Drinks Autorais, Clássicos, Cervejas,
+     Doses, Sem álcool…) ou letra bem maior ("§" vindo do scanner), e que não tenha preço logo
+     abaixo (aí é nome de item, ex.: "Gin Tônica" / "32").
+   - Nome × descrição: a descrição (ingredientes, com vírgula/minúscula) fica no item. */
+const CATKW=/\b(drinks?|drinques?|autora(?:l|is)|cl[aá]ssic[oa]s?|coquet[eé]is|caipirinhas?|caipis|cervejas?|chopps?|petiscos?|por[cç][oõ]es|lanches?|entradas?|pratos?|sobremesas?|sem\s+[aá]lcool|n[aã]o\s+alco[oó]lic[oa]s?|bebidas?|doses?|destilados?|vinhos?|espumantes?|whiske?ys?|whiskies|shots?|combos?|cozinha|refrigerantes?|sucos?|softs?|batidas?|cacha[çc]as?|baldes?|garrafas?|happy\s+hour|promo[cç][oõ]es|especiais|da\s+casa|tradicionais|cl[aá]ssicos)\b/i;
+const MINUSC=new Set(['de','da','do','das','dos','e','com','ao','à','a','o','na','no','em','para']);
+const titulo=t=>{const l=t.replace(/[^A-Za-zÀ-ú]/g,'');if(!l||l!==l.toUpperCase())return t.charAt(0).toUpperCase()+t.slice(1);return t.toLowerCase().split(' ').map((w,k)=>k&&MINUSC.has(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ')};
 function lerCardapio(txt,semPreco){
-  // Cada linha é dividida em colunas (espaço grande entre elas). Em cada pedaço, o número do
-  // fim é o preço: "Caipirinha 25", "Gin ..... R$ 32,00", "Mojito 28,90". Título sem preço
-  // (ex.: "Drinks") vira a categoria daquela coluna.
-  const linhas=String(txt||'').split(/\n/);
-  const out=[],nomes=[];const cats=[];let pend=[];
   const LET=/[A-Za-zÀ-ú]{3}/;
-  const limpa=t=>t.replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
+  const limpa=t=>t.replace(/^§\s*/,'').replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
   const PRECO=/^(.*?)(?:^|[\s.:\-–—·…_=$])(?:R\s?\$\s*)?(\d{1,3}(?:\s?[.,]\s?\d{1,2})?)\s*[,.\-–]*\s*$/;
-  for(const bruta of linhas){
-    if(!bruta.trim())continue;
-    const segs=bruta.replace(/\t/g,'    ').split(/\s{3,}/).map(x=>x.trim()).filter(Boolean);
-    segs.forEach((seg0,k)=>{
-      const seg=seg0.replace(/(\d)[oO](?=\d|\b)/g,'$10').replace(/[oO](?=\d)/g,'0');
-      const m=seg.match(PRECO);
-      const p=m?nv(m[2].replace(/\s/g,'')):0;
-      let nome=m?limpa(m[1]):'';
-      if(m&&p>=0.5&&p<1000){
-        if(!LET.test(nome)&&pend[k]){nome=pend[k].t;if(pend[k].cat)cats[k]=pend[k].antes}
-        pend[k]=null;
-        if(LET.test(nome))out.push({n:nome,c:cats[k]||cats[0]||'Cardápio',p});
-      }else{
-        const t=limpa(seg);if(!LET.test(t))return;
-        const palavras=t.split(' ').length,semDig=!/\d/.test(t);
-        if(semDig&&palavras<=3&&t.length<=28){pend[k]={t,cat:true,antes:cats[k]};cats[k]=t.charAt(0).toUpperCase()+t.slice(1)}
-        else pend[k]={t,cat:false};
-        nomes.push({n:t,c:cats[k]||cats[0]||'Cardápio',p:0});
-      }
-    });
-  }
+  const segs=[]; // pedaços de texto com a coluna (k); "¦" = coluna vazia, conta mas não entra
+  String(txt||'').split(/\n/).forEach(l=>{if(!l.trim())return;l.replace(/\t/g,'    ').split(/\s{3,}/).map(x=>x.trim()).filter(x=>x).forEach((x,k)=>{if(x!=='¦')segs.push({k,raw:x,grande:/^§/.test(x)})})});
+  segs.forEach(sg=>{const r=sg.raw.replace(/^§\s*/,'').replace(/(\d)[oO](?=\d|\b)/g,'$10').replace(/[oO](?=\d)/g,'0');const m=r.match(PRECO);
+    sg.p=m?nv(m[2].replace(/\s/g,'')):0;sg.nome=m?limpa(m[1]):'';sg.t=limpa(r);
+    if(!(m&&sg.p>=0.5&&sg.p<1000)){sg.p=0;sg.nome=''}
+    sg.soPreco=sg.p>0&&!LET.test(sg.nome);sg.comPreco=sg.p>0&&LET.test(sg.nome);
+    const w=sg.t.split(' ').length;sg.desc=!sg.p&&(/,/.test(sg.t)||/^[a-zà-ú]/.test(sg.t)||w>6)});
+  const prox=(i,k)=>{for(let j=i+1;j<segs.length&&j<i+8;j++)if(segs[j].k===k)return segs[j];return null};
+  const out=[],sobra=[],cats=[],pend=[],ult=[];let ordem=0;
+  const novo=(n,k,p,d)=>{const it={n:titulo(n),c:cats[k]||cats[0]||'Cardápio',p,o:ordem++};if(d)it.d=d;out.push(it);ult[k]=it;return it};
+  segs.forEach((sg,i)=>{const k=sg.k;pend[k]=pend[k]||[];
+    if(sg.comPreco){if(pend[k].length){/* linhas soltas antes: descrição deste item? */const d=pend[k].filter(x=>x.desc).map(x=>x.t).join(' ');pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||'Cardápio',p:0}));novo(sg.nome,k,sg.p,d)}else novo(sg.nome,k,sg.p);pend[k]=[];return}
+    if(sg.soPreco){const P=pend[k];pend[k]=[];if(!P.length)return;const nm=P.find(x=>!x.desc)||P[0];novo(nm.t,k,sg.p,P.filter(x=>x!==nm).map(x=>x.t).join(' '));return}
+    if(!LET.test(sg.t))return;
+    const nx=prox(i,k),w=sg.t.split(' ').length,semDig=!/\d/.test(sg.t);
+    const eTitulo=semDig&&w<=5&&!(nx&&nx.soPreco)&&((CATKW.test(sg.t)&&!sg.desc)||(sg.grande&&!(nx&&nx.desc)));
+    if(eTitulo){pend[k].filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||'Cardápio',p:0}));cats[k]=titulo(sg.t);pend[k]=[];ult[k]=null;return}
+    if(sg.desc&&ult[k]&&!pend[k].length){ult[k].d=(ult[k].d?ult[k].d+' ':'')+sg.t;return}
+    pend[k].push(sg)});
+  pend.forEach((P,k)=>(P||[]).filter(x=>!x.desc).forEach(x=>sobra.push({n:titulo(x.t),c:cats[k]||'Cardápio',p:0})));
   const m=new Map();out.forEach(x=>m.set(x.n.toLowerCase(),x));
-  if(!m.size&&semPreco)nomes.filter(x=>x.n.split(' ').some(w=>w.length>=3)).slice(0,60).forEach(x=>m.set(x.n.toLowerCase(),x));
+  if(semPreco||!m.size){if(semPreco)sobra.forEach(x=>{if(!m.has(x.n.toLowerCase())&&x.n.split(' ').some(w=>w.length>=3))m.set(x.n.toLowerCase(),{...x,o:ordem++})})}
   return [...m.values()];
 }
 window.__lerCardapio=lerCardapio;
 
 /* ---------- cálculo ---------- */
 const ativos=()=>itens.filter(i=>i.on!==false);
-const categorias=()=>{const c=[];itens.forEach(i=>{const k=i.c||'Outros';if(!c.includes(k))c.push(k)});return c};
+const categorias=()=>{const m=new Map();itens.forEach(i=>{const k=i.c||'Outros',o=i.o??1e9;if(!m.has(k)||o<m.get(k))m.set(k,o)});return [...m.entries()].sort((a,b)=>a[1]-b[1]||a[0].localeCompare(b[0],'pt')).map(x=>x[0])};
+const porOrdem=(x,y)=>(x.o??1e9)-(y.o??1e9)||x.n.localeCompare(y.n,'pt');
 const totalCarrinho=()=>Object.entries(carrinho).reduce((s,[id,q])=>{const i=itens.find(x=>x.id===id);return s+(i?i.p*q:0)},0);
 const qtdCarrinho=()=>Object.values(carrinho).reduce((a,b)=>a+b,0);
 const daNoite=()=>vendas.filter(v=>v.noite===ver).sort((a,b)=>b.t-a.t);
@@ -252,12 +259,12 @@ function telaVender(){
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
   let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="${cat===c?'on':''}">${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
   if(editar){
-    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome e preço direto aqui. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
-    (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));if(!l.length)return;
-      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
+    (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
+      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:12px;color:var(--mut)">Grupo</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"><input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
-  (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt'));if(!l.length)return;
+  (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
     h+=`${cat?'':`<h2 style="margin:12px 2px 6px">${esc(c)}</h2>`}<div class="prod">${l.map(i=>`<button data-add="${i.id}">${esc(i.n)}<small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
   return h;
 }
@@ -278,7 +285,7 @@ function menuHTML(){
   const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
   const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
   return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
-  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>`).join('')).join('')}
+  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
   <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
 }
 function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
@@ -287,8 +294,8 @@ function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();retur
 // imagem do cardápio (para WhatsApp, Instagram, imprimir)
 function imagemCardapio(){
   const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c)),W=1080,lin=[];
-  C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).forEach(i=>lin.push({i}))});
-  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66),0)+140;
+  C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).forEach(i=>lin.push({i}))});
+  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66+(l.i.d?42:0)),0)+140;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
   const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.9);bg.addColorStop(0,'#5b21b6');bg.addColorStop(.45,'#2e1065');bg.addColorStop(1,'#12051f');g.fillStyle=bg;g.fillRect(0,0,W,H);
   const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
@@ -303,7 +310,8 @@ function imagemCardapio(){
     const i=l.i,pr=i.p?R(i.p):'—';g.font='800 38px '+F;const pw=g.measureText(pr).width;
     const nome=fit(i.n,W-200-pw,'600 38px '+F);g.fillStyle='#f5f3ff';g.font='600 38px '+F;g.fillText(nome,80,y+30);const nw=g.measureText(nome).width;
     g.fillStyle='rgba(245,243,255,.35)';for(let x=80+nw+16;x<W-80-pw-16;x+=14)g.fillRect(x,y+26,5,5);
-    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66});
+    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
+    if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-160,'italic 400 28px '+F);g.font='italic 400 28px '+F;g.fillText(d,80,y+18);y+=42}});
   g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
   return cv.toDataURL('image/png');
 }
@@ -454,16 +462,25 @@ async function paraBase64(arq,max){
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.9)}finally{(P.URL||URL).revokeObjectURL(url)}
 }
 function montarTexto(linhas){
-  const L=(linhas||[]).filter(l=>l&&l.t&&l.h>0).map(l=>({t:String(l.t),x:+l.x||0,h:+l.h,cy:(+l.y||0)+(+l.h)/2}));
+  const L=(linhas||[]).filter(l=>l&&l.t&&l.h>0).map(l=>({t:String(l.t),x:+l.x||0,w:+l.w||0,h:+l.h,cy:(+l.y||0)+(+l.h)/2}));
   if(!L.length)return '';
-  const hs=L.map(l=>l.h).sort((a,b)=>a-b),hm=hs[Math.floor(hs.length/2)]||10;
+  const SO_PRECO=t=>/^(?:R\s?\$\s*)?\d{1,3}(?:\s?[.,]\s?\d{1,2})?[,.\-]*$/.test(t.trim());
+  const hs=L.filter(l=>!SO_PRECO(l.t)).map(l=>l.h).sort((a,b)=>a-b),hm=hs[Math.floor(hs.length/2)]||10;
+  // colunas: maior vão entre os começos (x) das linhas de texto
+  const xs=L.filter(l=>!SO_PRECO(l.t)).map(l=>l.x).sort((a,b)=>a-b),larg=Math.max(...L.map(l=>l.x+l.w))||1;
+  // o corte fica logo antes de onde começa o texto da coluna da direita (os preços da coluna
+  // da esquerda ficam antes dele)
+  let corte=Infinity,maior=0;for(let i=1;i<xs.length;i++){const g=xs[i]-xs[i-1];if(g>maior){maior=g;corte=xs[i]-hm*.5}}
+  if(maior<larg*.22||xs.filter(x=>x>corte).length<3)corte=Infinity;
   L.sort((a,b)=>a.cy-b.cy);
   const rows=[];
   for(const l of L){const r=rows.length?rows[rows.length-1]:null;
     if(r&&Math.abs(r.cy-l.cy)<hm*.6){r.it.push(l);r.cy=r.it.reduce((s,x)=>s+x.cy,0)/r.it.length}else rows.push({cy:l.cy,it:[l]})}
-  const SO_PRECO=t=>/^(?:R\s?\$\s*)?\d{1,3}(?:\s?[.,]\s?\d{1,2})?[,.\-]*$/.test(t.trim());
-  return rows.map(r=>{r.it.sort((a,b)=>a.x-b.x);let s='';
-    r.it.forEach((l,k)=>{if(!k){s=l.t;return}const ant=r.it[k-1];s+=(SO_PRECO(l.t)&&!SO_PRECO(ant.t)?' ':'     ')+l.t});return s}).join('\n');
+  const junta=it=>{it.sort((a,b)=>a.x-b.x);let s='';it.forEach((l,k)=>{const t=(!SO_PRECO(l.t)&&l.h>=hm*1.8?'§ ':'')+l.t;if(!k){s=t;return}s+=(SO_PRECO(l.t)&&!SO_PRECO(it[k-1].t)?' ':'     ')+t});return s};
+  return rows.map(r=>{
+    if(corte===Infinity)return junta(r.it);
+    const a=r.it.filter(l=>l.x<corte),b=r.it.filter(l=>l.x>=corte);
+    return (a.length?junta(a):'¦')+(b.length?'     '+junta(b):'')}).join('\n');
 }
 window.__montarTexto=montarTexto;
 async function escanear(arq,prog){
@@ -492,7 +509,7 @@ async function lerFotos(arqs,guardar=true){
   leitura={lendo:true,msg:'📷 Escaneando o cardápio…'};aba='vender';editar=false;draw();
   telaScan(arqs[0],true);
   const msg=t=>{leitura.msg=t;const el=$('#scanMsg');if(el)el.textContent=t};
-  const lidos=[];let erro='',novos=0,atual=0,textoLido='',nativo=false;const t0=Date.now();
+  const lidos=[];let erro='',novos=0,atual=0,textoLido='',nativo=false;const t0=Date.now();const base=itens.reduce((m,i)=>Math.max(m,(i.o??0)+1),0);
   try{
     for(const [k,a] of arqs.entries()){
       const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+' · ':'';
@@ -502,7 +519,8 @@ async function lerFotos(arqs,guardar=true){
         let lista=lerCardapio(r.texto);
         if(!lista.length&&!r.nativo){msg(pre+'Escaneando de outro jeito…');const t2=(await window.parent.__barOCR(a,()=>{},1600,4)).texto,l2=lerCardapio(t2);if(l2.length){lista=l2;r.texto=t2}}
         if(!lista.length)lista=lerCardapio(r.texto,true);
-        textoLido+=(textoLido?'\n----\n':'')+r.texto;
+        textoLido+=(textoLido?'\n----\n':'')+r.texto;nomeDoBar(r.texto);
+        {const b0=lidos.length;lista.forEach(x=>x.o=b0+(x.o||0))}
         lidos.push(...lista);
       }catch(e){erro=(e&&e.message)||String(e)}
     }
@@ -510,7 +528,7 @@ async function lerFotos(arqs,guardar=true){
     const salvos=[];
     for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
       if(ja){atual++;continue}
-      salvos.push(db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()}).catch(e=>{erro=e.message||String(e)}));novos++}
+      const it={n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now(),o:base+(x.o||0)};if(x.d)it.d=x.d;salvos.push(db.collection('itens').add(it).catch(e=>{erro=e.message||String(e)}));novos++}
     await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
   }catch(e){erro=(e&&e.message)||String(e)}
   finally{
@@ -521,11 +539,13 @@ async function lerFotos(arqs,guardar=true){
   }
   if(guardar)arqs.forEach(a=>comprimir(a).then(img=>db.collection('fotos').add({img,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim()})).catch(()=>{}));
 }
+// nome do bar: primeira linha em letra bem maior que não é grupo (ex.: CLANDESTINO)
+function nomeDoBar(tx){if((cfg.nome||'').trim())return;const l=String(tx||'').split('\n').map(x=>x.split(/\s{3,}/)[0].trim()).find(x=>/^§/.test(x));if(!l)return;const t=l.replace(/^§\s*/,'').trim();if(!t||CATKW.test(t)||/\d/.test(t)||t.split(' ').length>4)return;cfg.nome=titulo(t);salvarCfg()}
 async function salvarLidos(lidos){
-  let novos=0,atual=0,erro='';const salvos=[];
+  let novos=0,atual=0,erro='';const salvos=[];const base=itens.reduce((m,i)=>Math.max(m,(i.o??0)+1),0);
   for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
     if(ja){atual++;continue}
-    salvos.push(db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()}).catch(e=>{erro=e.message||String(e)}));novos++}
+    const it={n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now(),o:base+(x.o||0)};if(x.d)it.d=x.d;salvos.push(db.collection('itens').add(it).catch(e=>{erro=e.message||String(e)}));novos++}
   await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
   return {novos,atual,erro};
 }
@@ -544,7 +564,7 @@ async function digitalizar(){
   let el=document.createElement('div');el.id='scan';el.className='scan';document.body.appendChild(el);
   el.innerHTML=`<div class="quadro"><img src="${pags[0].imagem}" alt=""><div class="linha"></div><i class="canto c1"></i><i class="canto c2"></i><i class="canto c3"></i><i class="canto c4"></i></div><b>✅ Cardápio digitalizado</b><p id="scanMsg">Montando o cardápio…</p>`;
   const lidos=[];let textoLido='';
-  pags.forEach(p=>{const tx=montarTexto(p.linhas)||p.texto||'';textoLido+=(textoLido?'\n----\n':'')+tx;let l=lerCardapio(tx);if(!l.length)l=lerCardapio(tx,true);lidos.push(...l)});
+  pags.forEach(p=>{const tx=montarTexto(p.linhas)||p.texto||'';nomeDoBar(tx);textoLido+=(textoLido?'\n----\n':'')+tx;let l=lerCardapio(tx);if(!l.length)l=lerCardapio(tx,true);const b0=lidos.length;l.forEach(x=>x.o=b0+(x.o||0));lidos.push(...l)});
   const {novos,atual,erro}=await salvarLidos(lidos);
   // guarda as páginas digitalizadas (já recortadas e nítidas) na nuvem do bar
   pags.forEach(p=>{const img=p.imagem;(img.length<700000?Promise.resolve(img):deDataUrl(img).then(comprimir)).then(im=>db.collection('fotos').add({img:im,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim(),digitalizada:true})).catch(()=>{})});
@@ -619,7 +639,9 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
   if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
   try{
-    if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):'Nome salvo'));return}
+    if(t.dataset.grupo!==undefined){const de=t.dataset.grupo,para=t.value.trim();if(!para||para===de)return;for(const i of itens.filter(x=>(x.c||'Outros')===de))await db.collection('itens').doc(i.id).set({...strip(i),c:para});if(cat===de)cat=para;toast('✅ Grupo agora se chama '+para);return}
+    if(t.dataset.ed==='d'){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const o={...strip(i)};const v=t.value.trim();if(v)o.d=v;else delete o.d;await db.collection('itens').doc(i.id).set(o);toast('✅ Descrição salva');return}
+    if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):t.dataset.ed==='c'?i.n+' → '+v:'Nome salvo'));return}
     if(!dono)return;
     if(t.dataset.mq!==undefined){cfg.maquinas[+t.dataset.mq].n=t.value.trim()||'Maquininha';await salvarCfg()}
     if(t.dataset.ct!==undefined){cfg.contas[+t.dataset.ct][t.dataset.cf]=t.value.trim();await salvarCfg()}

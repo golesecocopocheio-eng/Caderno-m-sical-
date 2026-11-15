@@ -218,7 +218,8 @@
     const copiar = pai ? (v) => (v === undefined ? v : window.parent.structuredClone(v)) : (v) => v;
     const colNome = (ref) => ref.parent.id.slice(APP.length + 1);
     const hist = (ref, op, dados) => {
-      const e = { app: APP, col: colNome(ref), id: ref.id, op, dados: JSON.stringify(dados ?? null), quem: quem(), uid: user.uid, t: Date.now() };
+      let j = JSON.stringify(dados ?? null); if (j && j.length > 40000) j = JSON.stringify('(registro grande: foto)'); // fotos não vão para o histórico
+      const e = { app: APP, col: colNome(ref), id: ref.id, op, dados: j, quem: quem(), uid: user.uid, t: Date.now() };
       bar.collection('historico').add(copiar(e)).catch(() => {});
     };
     const depois = (ref, op) => ref.get().then((s) => hist(ref, op, s.exists ? s.data() : null)).catch(() => {});
@@ -278,7 +279,7 @@
     const coll = (name) => (data[name] = data[name] || {});
     const clone = (o) => JSON.parse(JSON.stringify(o));
     const APPL = KEY.slice('app-bar-db:'.length).replace(/\.html?$/, '');
-    const registrar = (c, id, op, dados) => histLocal({ app: APPL, col: c, id, op, dados: JSON.stringify(dados ?? null), quem: quem(), t: Date.now() });
+    const registrar = (c, id, op, dados) => histLocal({ app: APPL, col: c, id, op, dados: (() => { const j = JSON.stringify(dados ?? null); return j && j.length > 40000 ? JSON.stringify('(registro grande: foto)') : j; })(), quem: quem(), t: Date.now() });
     const docSnap = (c, id) => {
       const v = (data[c] || {})[id];
       return { id, exists: v !== undefined, data: () => (v === undefined ? undefined : clone(v)) };

@@ -95,7 +95,10 @@
     const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
     const g = c.getContext('2d'); g.drawImage(img, 0, 0, c.width, c.height);
     const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
-    for (let i = 0; i < p.length; i += 4) { const y = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]; const v = y > 165 ? 255 : y < 90 ? 0 : y; p[i] = p[i + 1] = p[i + 2] = v; }
+    // fundo escuro com letra clara (comum em cardápio): inverte para o leitor
+    let soma = 0; for (let i = 0; i < p.length; i += 16) soma += 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+    const escuro = soma / (p.length / 16) < 110;
+    for (let i = 0; i < p.length; i += 4) { let y = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]; if (escuro) y = 255 - y; const v = y > 165 ? 255 : y < 90 ? 0 : y; p[i] = p[i + 1] = p[i + 2] = v; }
     g.putImageData(d, 0, 0);
     const t = document.createElement('canvas'), kt = 160 / Math.max(c.width, c.height); t.width = Math.round(c.width * kt); t.height = Math.round(c.height * kt);
     t.getContext('2d').drawImage(img, 0, 0, t.width, t.height);
@@ -277,12 +280,13 @@
   window.__barFotoAbrir = () => { if (!estado.fotos.length) $('#ftCam', painel).click(); };
   window.__barFotoLer = lerComprovante; // usado nos testes
   // Leitura de foto compartilhada com a aba 💲 Preços (notas de compra)
-  window.__barOCR = async (arquivo, aoProgredir, max) => {
+  window.__barOCR = async (arquivo, aoProgredir, max, psm) => {
     const { canvas, miniatura } = await prepararImagem(arquivo, max);
     progresso = aoProgredir || (() => {});
     const w = await obterWorker();
-    const r = await w.recognize(canvas);
-    return { texto: r.data.text, mini: miniatura };
+    if (psm) await w.setParameters({ tessedit_pageseg_mode: String(psm) });
+    try { const r = await w.recognize(canvas); return { texto: r.data.text, mini: miniatura }; }
+    finally { if (psm) await w.setParameters({ tessedit_pageseg_mode: '6' }); }
   };
   trocar();
 })();

@@ -100,34 +100,38 @@ function pixCodigo(conta,valor){
 window.__pixCodigo=pixCodigo;
 
 /* ---------- Leitura do cardápio pela foto ---------- */
-function lerCardapio(txt){
-  const linhas=String(txt||'').split(/\n/).map(l=>l.replace(/[|_~«»"“”]+/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
-  const out=[];let categoria='Cardápio',pendente='';
-  const LETRAS=/[A-Za-zÀ-ú]{2}/;
-  // preço: "25,00", "R$ 25,00", "R$25", "25.90"; inteiro só com R$ antes
-  const PRECO=/(?:R\s?\$\s*(\d{1,4}(?:[.,]\d{1,2})?)|(\d{1,4}[.,]\d{2}))(?![\d])/g;
-  const limpaNome=t=>t.replace(/[.\-–—·…:=*•]+\s*$/,'').replace(/^[\s.\-–—·…:=*•\d]+(?=[A-Za-zÀ-ú])/,'').replace(/\s*R\s?\$?\s*$/,'').trim();
-  for(const l of linhas){
-    const ms=[...l.matchAll(PRECO)];
-    if(ms.length){
-      let ini=0;
-      ms.forEach((m,k)=>{
-        let nome=limpaNome(l.slice(ini,m.index));ini=m.index+m[0].length;
-        if(!LETRAS.test(nome)&&pendente&&k===0)nome=pendente;
-        else if(pendente&&k===0&&nome.length<4)nome=pendente+' '+nome;
-        const p=nv(m[1]||m[2]);
-        if(LETRAS.test(nome)&&p>0&&p<5000)out.push({n:nome,c:categoria,p});
-      });
-      pendente='';
-    }else if(/[A-Za-zÀ-ú]{3}/.test(l)&&l.length<=48){
-      const letras=l.replace(/[^A-Za-zÀ-ú]/g,'');
-      const maiusc=letras&&letras===letras.toUpperCase();
-      if(maiusc&&letras.length>=3&&l.split(' ').length<=4){categoria=l.replace(/[^\wÀ-ú &/-]/g,'').trim();pendente=''}
-      else pendente=limpaNome(l);
-    }
+function lerCardapio(txt,semPreco){
+  // Cada linha é dividida em colunas (espaço grande entre elas). Em cada pedaço, o número do
+  // fim é o preço: "Caipirinha 25", "Gin ..... R$ 32,00", "Mojito 28,90". Título sem preço
+  // (ex.: "Drinks") vira a categoria daquela coluna.
+  const linhas=String(txt||'').split(/\n/);
+  const out=[],nomes=[];const cats=[];let pend=[];
+  const LET=/[A-Za-zÀ-ú]{3}/;
+  const limpa=t=>t.replace(/[|_~«»"“”!¡?*•·…]+/g,' ').replace(/[.\-–—:=]{2,}/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-–—:=\d]+(?=[A-Za-zÀ-ú])/,'').replace(/[\s.\-–—:=,]+$/,'').trim();
+  const PRECO=/^(.*?)(?:^|[\s.:\-–—·…_=$])(?:R\s?\$\s*)?(\d{1,3}(?:\s?[.,]\s?\d{1,2})?)\s*[,.\-–]*\s*$/;
+  for(const bruta of linhas){
+    if(!bruta.trim())continue;
+    const segs=bruta.replace(/\t/g,'    ').split(/\s{3,}/).map(x=>x.trim()).filter(Boolean);
+    segs.forEach((seg0,k)=>{
+      const seg=seg0.replace(/(\d)[oO](?=\d|\b)/g,'$10').replace(/[oO](?=\d)/g,'0');
+      const m=seg.match(PRECO);
+      const p=m?nv(m[2].replace(/\s/g,'')):0;
+      let nome=m?limpa(m[1]):'';
+      if(m&&p>=0.5&&p<1000){
+        if(!LET.test(nome)&&pend[k]){nome=pend[k].t;if(pend[k].cat)cats[k]=pend[k].antes}
+        pend[k]=null;
+        if(LET.test(nome))out.push({n:nome,c:cats[k]||cats[0]||'Cardápio',p});
+      }else{
+        const t=limpa(seg);if(!LET.test(t))return;
+        const palavras=t.split(' ').length,semDig=!/\d/.test(t);
+        if(semDig&&palavras<=3&&t.length<=28){pend[k]={t,cat:true,antes:cats[k]};cats[k]=t.charAt(0).toUpperCase()+t.slice(1)}
+        else pend[k]={t,cat:false};
+        nomes.push({n:t,c:cats[k]||cats[0]||'Cardápio',p:0});
+      }
+    });
   }
-  // tira repetidos (mesmo nome): fica o último preço lido
   const m=new Map();out.forEach(x=>m.set(x.n.toLowerCase(),x));
+  if(!m.size&&semPreco)nomes.filter(x=>x.n.split(' ').some(w=>w.length>=3)).slice(0,60).forEach(x=>m.set(x.n.toLowerCase(),x));
   return [...m.values()];
 }
 window.__lerCardapio=lerCardapio;
@@ -226,7 +230,7 @@ function telaVender(){
   if(editar){
     h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome e preço direto aqui. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));if(!l.length)return;
-      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt'));if(!l.length)return;
@@ -242,8 +246,8 @@ function desenharCarrinho(){
 }
 function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Tire a foto do cardápio impresso (bem reto e com luz). O app lê nomes, preços e categorias e <b>já monta o cardápio de venda</b> sozinho. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
     <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
-    <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`}
-const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p></div>`:'';
+    <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p>${leitura&&leitura.texto&&!lendo?`<details><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`}
+const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p>${leitura.texto?`<details style="margin-top:8px"><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`:'';
 function telaCardapio(){
   let h=fotoCard();
   if(fotos.length)h+=`<div class="card"><h2>🖼️ Fotos do cardápio (${fotos.length})</h2><p class="sub">Guardadas na nuvem do bar (conta do Bar Conect), não no seu celular.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[...fotos].sort((a,b)=>b.t-a.t).map(f=>`<button data-fv="${f.id}" style="border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)"><img src="${f.img}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div></div>`;
@@ -381,15 +385,17 @@ async function lerFotos(arqs,guardar=true){
   const P=window.parent,ocr=P&&P!==window&&P.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
   leitura={lendo:true,msg:'📷 Foto recebida. Lendo o cardápio… (a primeira vez demora um pouco)'};aba='vender';editar=false;draw();
   const msg=t=>{leitura.msg=t;['#fotoMsg','#fotoMsg2'].forEach(s=>{const el=$(s);if(el)el.textContent=t})};
-  const lidos=[];let erro='',novos=0,atual=0;
+  const lidos=[];let erro='',novos=0,atual=0,textoLido='';
   try{
     for(const [k,a] of arqs.entries()){
       const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+': ':'';
       try{
         // mesma leitura das abas Foto e Preços (que funcionam no celular): 1800 px, modo 6
         const prog=m=>{if(m.status==='recognizing text')msg(pre+'lendo o cardápio… '+Math.round(m.progress*100)+'%')};
-        let lista=lerCardapio((await ocr(a,prog,1800)).texto);
-        if(lista.length<4){msg(pre+'lendo de outro jeito…');const l2=lerCardapio((await ocr(a,prog,1800,4)).texto);if(l2.length>lista.length)lista=l2}
+        let tx=(await ocr(a,prog,1800)).texto,lista=lerCardapio(tx);
+        if(lista.length<4){msg(pre+'lendo de outro jeito…');const t2=(await ocr(a,prog,1800,4)).texto,l2=lerCardapio(t2);if(l2.length>lista.length){lista=l2;tx=t2}}
+        if(!lista.length)lista=lerCardapio(tx,true); // achou nomes mas não preços: cria com preço 0 para completar
+        textoLido+=(textoLido?'\n----\n':'')+tx;
         lidos.push(...lista);
       }catch(e){erro=(e&&e.message)||String(e)}
     }
@@ -401,7 +407,8 @@ async function lerFotos(arqs,guardar=true){
     await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,4000))]);
   }catch(e){erro=(e&&e.message)||String(e)}
   finally{
-    leitura={lendo:false,msg:lidos.length?`✅ Cardápio digitalizado: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}. Confira e ajuste os valores aqui embaixo; depois toque em ✅ Pronto para vender.`
+    const semP=lidos.filter(x=>!x.p).length;
+    leitura={lendo:false,texto:textoLido,msg:lidos.length?`✅ Cardápio digitalizado: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}.${semP?' '+semP+' ficaram sem preço (R$ 0,00): preencha.':''} Confira e ajuste aqui embaixo; depois toque em ✅ Pronto para vender.`
       :'❌ Não consegui achar itens com preço nessa foto'+(erro?' (erro: '+erro+')':'')+'. Tente de novo mais perto, bem reta e sem reflexo, ou adicione à mão em ✏️ Editar.'};
     aba='vender';editar=lidos.length>0;draw();
   }

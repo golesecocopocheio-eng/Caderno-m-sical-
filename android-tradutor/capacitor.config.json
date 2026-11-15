@@ -1,9 +1,9 @@
 {
   "appId": "br.tradutor.aovivo",
-  "appName": "Tradutor",
+  "appName": "Clã Speak",
   "webDir": "www",
   "android": {
     "allowMixedContent": false
   },
-  "backgroundColor": "#0f766e"
+  "backgroundColor": "#6d28d9"
 }

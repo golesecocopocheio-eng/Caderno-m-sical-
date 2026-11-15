@@ -1,4 +1,4 @@
-name: Gerar APK do Tradutor
+name: Gerar APK do Clã Speak (tradutor)
 
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
         run: npx cap add android
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#0f766e' --splashBackgroundColor '#0f766e' --splashBackgroundColorDark '#0f766e'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#6d28d9' --splashBackgroundColor '#6d28d9' --splashBackgroundColorDark '#6d28d9'
 
       - name: Definir a versão do app
         run: |
@@ -60,27 +60,27 @@ jobs:
         run: cd android && ./gradlew assembleDebug --no-daemon
 
       - name: Renomear
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk ../Tradutor.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ../ClaSpeak.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Tradutor-apk
-          path: Tradutor.apk
+          name: ClaSpeak-apk
+          path: ClaSpeak.apk
 
       - name: Publicar para download
         uses: softprops/action-gh-release@v2
         with:
           tag_name: tradutor-apk-${{ github.run_number }}
-          name: Tradutor ao Vivo (Android) · versão 1.${{ github.run_number }}
+          name: Clã Speak (Android) · versão 1.${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           make_latest: false
-          files: Tradutor.apk
+          files: ClaSpeak.apk
           body: |
-            ## 🌐 Tradutor ao Vivo · versão 1.${{ github.run_number }}
+            ## 🐱 Clã Speak · versão 1.${{ github.run_number }}
             Tradução de voz em tempo real, entre celulares (sala) ou frente a frente.
 
             ### 📥 Como instalar
-            1. No celular Android, toque em **Tradutor.apk** aqui embaixo (abra no Chrome).
+            1. No celular Android, toque em **ClaSpeak.apk** aqui embaixo (abra no Chrome).
             2. Toque na notificação do download e em **Instalar** / **Atualizar**.
             3. Se o Android pedir, permita **instalar apps desconhecidos**.
             4. Na primeira vez que tocar no 🎤, permita o **microfone**.

@@ -44,6 +44,90 @@
   }
   const quem = () => nome() || 'Este aparelho';
 
+
+  /* ---------------- Realtime Database com cara de Firestore ----------------
+   * O Firestore pede cartão em alguns projetos; o Realtime Database é grátis sem cartão.
+   * Este adaptador oferece as mesmas funções que o app usa do Firestore (collection, doc,
+   * where, orderBy, limit, get, set, update, delete, add, onSnapshot, batch).
+   * Cada documento fica em <caminho>/_d como texto JSON (assim nada se perde), e os campos
+   * "noite" e "t" ficam ao lado para as buscas rápidas no servidor. */
+  function fsDoRtdb(rdb) {
+    const IDX = ['noite', 't'];
+    const ler = (v) => { try { return v && typeof v._d === 'string' ? JSON.parse(v._d) : undefined; } catch (e) { return undefined; } };
+    const gravar = (dados) => {
+      const o = { _d: JSON.stringify(dados ?? {}) };
+      IDX.forEach((k) => { const x = dados && dados[k]; o[k] = (typeof x === 'string' || typeof x === 'number') ? x : null; });
+      return o;
+    };
+    const docSnap = (id, dados) => ({ id, exists: dados !== undefined, data: () => (dados === undefined ? undefined : JSON.parse(JSON.stringify(dados))) });
+    const qSnap = (lista) => ({ docs: lista, size: lista.length, empty: !lista.length, forEach: (f) => lista.forEach(f) });
+    const fs = {};
+    function docRef(colPath, colId, id) {
+      const path = colPath + '/' + id;
+      const ref = rdb.ref(path);
+      const d = {
+        id, path, firestore: fs, parent: { id: colId, path: colPath },
+        collection: (n) => colRef(path + '/' + n, n),
+        get: async () => docSnap(id, ler((await ref.once('value')).val())),
+        set: async (v, o) => {
+          let dados = JSON.parse(JSON.stringify(v ?? {}));
+          if (o && o.merge) { const atual = ler((await ref.once('value')).val()); if (atual) dados = Object.assign(atual, dados); }
+          await ref.update(gravar(dados));
+        },
+        update: async (v) => { const atual = ler((await ref.once('value')).val()) || {}; await ref.update(gravar(Object.assign(atual, JSON.parse(JSON.stringify(v ?? {}))))); },
+        delete: () => ref.remove(),
+        onSnapshot: (cb, err) => {
+          const h = (s) => cb(docSnap(id, ler(s.val())));
+          ref.on('value', h, (e) => err && err(e));
+          return () => ref.off('value', h);
+        },
+      };
+      return d;
+    }
+    function colRef(colPath, colId, filtros = [], ordem = null, lim = null) {
+      const base = rdb.ref(colPath);
+      const montar = () => {
+        let q = base;
+        const f = filtros.find(([c, op]) => op === '==' && IDX.includes(c));
+        if (f) q = q.orderByChild(f[0]).equalTo(f[2]);
+        else if (ordem && IDX.includes(ordem[0]) && lim) q = ordem[1] === 'desc' ? q.orderByChild(ordem[0]).limitToLast(lim) : q.orderByChild(ordem[0]).limitToFirst(lim);
+        return q;
+      };
+      const comparar = (a, op, b) => op === '==' ? a === b : op === '!=' ? a !== b : op === '<' ? a < b : op === '<=' ? a <= b : op === '>' ? a > b : op === '>=' ? a >= b : op === 'in' ? (b || []).includes(a) : true;
+      const resultado = (val) => {
+        let lista = [];
+        Object.entries(val || {}).forEach(([id, v]) => { const dados = ler(v); if (dados !== undefined) lista.push([id, dados]); });
+        lista = lista.filter(([, x]) => filtros.every(([c, op, b]) => comparar(x[c], op, b)));
+        if (ordem) { const [c, dir] = ordem; lista.sort((a, b) => { const p = a[1][c], q = b[1][c]; const r = p < q ? -1 : p > q ? 1 : 0; return dir === 'desc' ? -r : r; }); }
+        if (lim) lista = lista.slice(0, lim);
+        return qSnap(lista.map(([id, x]) => docSnap(id, x)));
+      };
+      return {
+        id: colId, path: colPath,
+        doc: (id) => docRef(colPath, colId, id || base.push().key),
+        add: async (v) => { const r = docRef(colPath, colId, base.push().key); await r.set(v); return r; },
+        where: (c, op, v) => colRef(colPath, colId, [...filtros, [c, op, v]], ordem, lim),
+        orderBy: (c, dir) => colRef(colPath, colId, filtros, [c, dir || 'asc'], lim),
+        limit: (n) => colRef(colPath, colId, filtros, ordem, n),
+        get: async () => resultado((await montar().once('value')).val()),
+        onSnapshot: (cb, err) => {
+          const q = montar(), h = (s) => cb(resultado(s.val()));
+          q.on('value', h, (e) => err && err(e));
+          return () => q.off('value', h);
+        },
+      };
+    }
+    fs.collection = (n) => colRef(n, n);
+    fs.batch = () => {
+      const mudancas = {};
+      return {
+        set: (r, v) => { const g = gravar(JSON.parse(JSON.stringify(v ?? {}))); Object.entries(g).forEach(([k, x]) => { mudancas[r.path + '/' + k] = x; }); },
+        commit: () => rdb.ref().update(mudancas),
+      };
+    };
+    return fs;
+  }
+
   /* ---------------- Modo nuvem (Firebase) ---------------- */
   // A conexão (login e dono do bar) é feita uma única vez, na tela principal do app,
   // e as abas (Caixa, Portaria, Estoque) usam essa mesma conexão. Assim o aparelho
@@ -57,19 +141,28 @@
       if (!cfg || !codigo()) return null;
       await loadScript('vendor/firebase-app-compat.js');
       await loadScript('vendor/firebase-auth-compat.js');
-      await loadScript('vendor/firebase-firestore-compat.js');
+      // Com databaseURL usa o Realtime Database (grátis, sem cartão); sem ele, o Firestore.
+      const rt = !!cfg.databaseURL;
+      await loadScript(rt ? 'vendor/firebase-database-compat.js' : 'vendor/firebase-firestore-compat.js');
       const fb = window.firebase;
       const app = fb.apps.length ? fb.app() : fb.initializeApp(cfg);
       const auth = app.auth();
-      const fs = app.firestore();
-      const emu = localStorage.getItem('bar-fb-emulador'); // só para testes
-      if (emu) {
-        const [host, fsPort, authPort] = emu.split(':');
-        fs.useEmulator(host, Number(fsPort));
-        auth.useEmulator('http://' + host + ':' + authPort, { disableWarnings: true });
+      const emu = localStorage.getItem('bar-fb-emulador'); // só para testes: host:portaBanco:portaAuth
+      let fs;
+      if (rt) {
+        const rdb = app.database();
+        if (emu) { const [host, dbPort, authPort] = emu.split(':'); rdb.useEmulator(host, Number(dbPort)); auth.useEmulator('http://' + host + ':' + authPort, { disableWarnings: true }); }
+        fs = fsDoRtdb(rdb);
+      } else {
+        fs = app.firestore();
+        if (emu) {
+          const [host, fsPort, authPort] = emu.split(':');
+          fs.useEmulator(host, Number(fsPort));
+          auth.useEmulator('http://' + host + ':' + authPort, { disableWarnings: true });
+        }
+        fs.settings({ ignoreUndefinedProperties: true, merge: true });
+        try { await fs.enablePersistence({ synchronizeTabs: true }); } catch (e) { /* sem cache offline neste navegador */ }
       }
-      fs.settings({ ignoreUndefinedProperties: true, merge: true });
-      try { await fs.enablePersistence({ synchronizeTabs: true }); } catch (e) { /* sem cache offline neste navegador */ }
 
       const user = await new Promise((ok) => {
         const off = auth.onAuthStateChanged((u) => {
@@ -87,7 +180,27 @@
         try { const snap = await bar.get(); info = snap.exists ? snap.data() : null; } catch (e2) {}
       }
       if (nome()) bar.collection('pessoas').doc(user.uid).set({ nome: nome(), t: Date.now() }).catch(() => {});
-      return { bar, user, dono: !!info && info.dono === user.uid };
+      const dono = !!info && info.dono === user.uid;
+      // Uma vez por bar: sobe para a nuvem o que a Portaria e o Estoque já tinham guardado só
+      // neste celular. Não apaga nada; registros com o mesmo id são substituídos. Valores e
+      // configurações só sobem do celular do dono.
+      const MIG = 'bar-migrado:' + codigo();
+      if (!localStorage.getItem(MIG)) {
+        try {
+          let lote = fs.batch(); let n = 0;
+          for (const app of ['portaria', 'estoque']) {
+            let local = {};
+            try { local = JSON.parse(localStorage.getItem('app-bar-db:' + app + '.html')) || {}; } catch (e) {}
+            for (const [col, docs] of Object.entries(local)) {
+              if (!dono && (col === 'config' || col === 'meta' || col === 'price')) continue;
+              for (const [id, v] of Object.entries(docs || {})) { lote.set(bar.collection(app + '_' + col).doc(id), v); if (++n === 400) { await lote.commit(); lote = fs.batch(); n = 0; } }
+            }
+          }
+          if (n) await lote.commit();
+          localStorage.setItem(MIG, String(Date.now()));
+        } catch (e) { /* tenta de novo na próxima abertura */ }
+      }
+      return { bar, user, dono };
     })();
     return core;
   }

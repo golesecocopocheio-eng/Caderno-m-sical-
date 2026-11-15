@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "bares": {
+      "$codigo": {
+        ".read": "auth != null",
+        "_d": { ".write": "auth != null && !data.exists()" },
+        "noite": { ".write": "auth != null && !newData.exists()" },
+        "t": { ".write": "auth != null && !newData.exists()" },
+        "historico": {
+          ".indexOn": ["t"],
+          "$registro": { ".write": "auth != null && !data.exists()" }
+        },
+        "$colecao": {
+          ".write": "auth != null",
+          ".indexOn": ["noite", "t"]
+        }
+      }
+    }
+  }
+}

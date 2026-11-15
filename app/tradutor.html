@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clã Speak</title>
-<meta name="theme-color" content="#0b0b0b">
+<meta name="theme-color" content="#4c1d95">
 <link rel="manifest" href="tradutor.webmanifest">
-<link rel="icon" href="icons/tradutor.svg">
-<link rel="apple-touch-icon" href="icons/tradutor.svg">
+<link rel="icon" href="icons/tradutor-192.png">
+<link rel="apple-touch-icon" href="icons/tradutor-512.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
-:root{--c:#facc15;--c2:#eab308;--bg:#f5f5f4;--card:#fff;--tx:#0b0b0b;--mu:#57534e;--eu:#fef9c3}
+:root{--c:#facc15;--c2:#eab308;--bg:#f5f3ff;--card:#fff;--tx:#0b0b0b;--mu:#57534e;--eu:#fef9c3}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
 button,select,input{font:inherit}
@@ -19,7 +19,7 @@ button.sec{background:#e2e8f0;color:var(--tx)}
 button:disabled{opacity:.5}
 select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#fff}
 label{display:block;font-size:.85rem;color:var(--mu);margin:12px 0 4px}
-header{background:#0b0b0b;border-bottom:3px solid #facc15;color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;display:flex;align-items:center;gap:10px}
+header{background:linear-gradient(135deg,#6d28d9,#3b0764);border-bottom:4px solid #facc15;color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;display:flex;align-items:center;gap:10px}
 header h1{font-size:1.1rem;margin:0;flex:1}
 header button{background:rgba(255,255,255,.14);color:#fff;padding:8px 12px;font-size:.9rem}
 .tela{display:none;height:100%;flex-direction:column}
@@ -39,7 +39,7 @@ header button{background:rgba(255,255,255,.14);color:#fff;padding:8px 12px;font-
 .msg.vivo{opacity:.75;border:1px dashed var(--c2)}
 .msg button.ouvir{background:none;color:#a16207;padding:2px 6px;font-size:.85rem}
 #pessoas{font-size:.8rem;color:#fde68a}
-.marca{color:#facc15;font-weight:900;letter-spacing:-.5px;font-size:1.35rem}
+.marca{color:#facc15;font-weight:900;letter-spacing:-.5px;font-size:1.35rem;display:flex;align-items:center;gap:10px}.marca img{width:40px;height:40px;border-radius:50%;box-shadow:0 0 0 3px #facc15}
 .barra{padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:#fff;border-top:1px solid #e2e8f0;display:flex;gap:8px;align-items:center}
 .barra input{flex:1}
 .mic{width:64px;height:64px;border-radius:50%;font-size:1.6rem;padding:0;flex:none}
@@ -56,7 +56,7 @@ header button{background:rgba(255,255,255,.14);color:#fff;padding:8px 12px;font-
 .lado .texto .p{color:var(--mu);font-size:.95rem}
 .lado .ctl{display:flex;gap:8px;align-items:center}
 .lado .ctl select{flex:1}
-.meio{display:flex;justify-content:center;gap:8px;padding:6px;background:#0b0b0b;border-top:3px solid #facc15;border-bottom:3px solid #facc15}
+.meio{display:flex;justify-content:center;gap:8px;padding:6px;background:linear-gradient(90deg,#6d28d9,#3b0764);border-top:3px solid #facc15;border-bottom:3px solid #facc15}
 .meio button{background:rgba(255,255,255,.14);color:#fff;padding:6px 12px;font-size:.85rem}
 </style>
 </head>
@@ -64,7 +64,7 @@ header button{background:rgba(255,255,255,.14);color:#fff;padding:8px 12px;font-
 
 <!-- Tela inicial -->
 <section id="inicio" class="tela on">
-  <header><h1 class="marca">Clã Speak</h1></header>
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Clã Speak</h1></header>
   <div class="box" style="overflow-y:auto">
     <div class="card">
       <label for="nome">Seu nome</label>

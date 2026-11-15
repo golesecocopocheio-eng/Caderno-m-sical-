@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tradutor ao Vivo</title>
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="tradutor.webmanifest">
+<link rel="icon" href="icons/tradutor.svg">
+<link rel="apple-touch-icon" href="icons/tradutor.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{--c:#0f766e;--c2:#14b8a6;--bg:#f0fdfa;--card:#fff;--tx:#0f172a;--mu:#64748b;--eu:#ccfbf1}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+button,select,input{font:inherit}
+button{cursor:pointer;border:0;border-radius:12px;padding:12px 16px;background:var(--c);color:#fff;font-weight:600}
+button.sec{background:#e2e8f0;color:var(--tx)}
+button:disabled{opacity:.5}
+select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#fff}
+label{display:block;font-size:.85rem;color:var(--mu);margin:12px 0 4px}
+header{background:var(--c);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;display:flex;align-items:center;gap:10px}
+header h1{font-size:1.1rem;margin:0;flex:1}
+header button{background:rgba(255,255,255,.18);padding:8px 12px;font-size:.9rem}
+.tela{display:none;height:100%;flex-direction:column}
+.tela.on{display:flex}
+.box{max-width:520px;margin:0 auto;padding:16px;width:100%}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.aviso{font-size:.85rem;color:#92400e;background:#fef3c7;border-radius:10px;padding:10px;margin-top:10px}
+.mu{color:var(--mu);font-size:.85rem}
+/* Sala */
+#msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.msg.eu{align-self:flex-end;background:var(--eu)}
+.msg .quem{font-size:.75rem;color:var(--mu);margin-bottom:2px}
+.msg .tr{font-size:1.15rem;line-height:1.35}
+.msg .orig{font-size:.85rem;color:var(--mu);margin-top:4px;font-style:italic}
+.msg.vivo{opacity:.75;border:1px dashed var(--c2)}
+.msg button.ouvir{background:none;color:var(--c);padding:2px 6px;font-size:.85rem}
+#pessoas{font-size:.8rem;color:#ccfbf1}
+.barra{padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:#fff;border-top:1px solid #e2e8f0;display:flex;gap:8px;align-items:center}
+.barra input{flex:1}
+.mic{width:64px;height:64px;border-radius:50%;font-size:1.6rem;padding:0;flex:none}
+.mic.on{background:#dc2626;animation:pulsa 1.2s infinite}
+@keyframes pulsa{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}100%{box-shadow:0 0 0 16px rgba(220,38,38,0)}}
+#qrBox{text-align:center}
+#qrBox img{width:220px;height:220px;image-rendering:pixelated}
+/* Frente a frente */
+#f2f{display:none;height:100%;flex-direction:column}
+#f2f.on{display:flex}
+.lado{flex:1;display:flex;flex-direction:column;padding:12px;gap:8px;min-height:0}
+.lado.cima{transform:rotate(180deg);background:#ecfeff}
+.lado .texto{flex:1;overflow-y:auto;background:#fff;border-radius:14px;padding:12px;font-size:1.35rem;line-height:1.4}
+.lado .texto .p{color:var(--mu);font-size:.95rem}
+.lado .ctl{display:flex;gap:8px;align-items:center}
+.lado .ctl select{flex:1}
+.meio{display:flex;justify-content:center;gap:8px;padding:6px;background:var(--c)}
+.meio button{background:rgba(255,255,255,.2);padding:6px 12px;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<!-- Tela inicial -->
+<section id="inicio" class="tela on">
+  <header><h1>🌐 Tradutor ao Vivo</h1></header>
+  <div class="box" style="overflow-y:auto">
+    <div class="card">
+      <label for="nome">Seu nome</label>
+      <input id="nome" placeholder="Ex.: Maria" maxlength="30">
+      <label for="lingua">Seu idioma (você fala e lê nele)</label>
+      <select id="lingua"></select>
+    </div>
+    <div class="card">
+      <b>Sala remota</b>
+      <p class="mu">Cada pessoa usa o próprio celular, de qualquer lugar. Você fala no seu idioma e os outros leem (e ouvem) no idioma deles, na hora.</p>
+      <label for="sala">Código da sala</label>
+      <div class="row"><input id="sala" placeholder="Ex.: K7P2QX" maxlength="12" style="text-transform:uppercase"><button class="sec" id="novaSala" style="flex:none">Nova</button></div>
+      <button id="entrar" style="width:100%;margin-top:12px">Entrar na sala</button>
+      <div id="semNuvem" class="aviso" hidden>A nuvem não está configurada (firebase-config.js). A sala só funciona entre abas deste aparelho.</div>
+    </div>
+    <div class="card">
+      <b>Frente a frente</b>
+      <p class="mu">Um celular só, na mesa entre duas pessoas: a tela se divide e cada lado fala e lê no seu idioma.</p>
+      <button id="abrirF2f" class="sec" style="width:100%">Abrir modo frente a frente</button>
+    </div>
+    <div id="semVoz" class="aviso" hidden>Este navegador não reconhece voz. Você ainda pode digitar. Para falar, use o Chrome (Android) ou o Safari (iPhone).</div>
+  </div>
+</section>
+
+<!-- Sala -->
+<section id="salaTela" class="tela">
+  <header>
+    <div style="flex:1"><h1>Sala <span id="salaCod"></span></h1><div id="pessoas"></div></div>
+    <button id="btVoz" title="Ler em voz alta">🔊</button>
+    <button id="btConvidar">Convidar</button>
+    <button id="btSair">Sair</button>
+  </header>
+  <div id="convite" class="box" hidden>
+    <div class="card" id="qrBox">
+      <div id="qrImg"></div>
+      <p class="mu" id="qrLink" style="word-break:break-all"></p>
+      <div class="row"><button id="btCopiar">Copiar link</button><button class="sec" id="btCompart">Compartilhar</button></div>
+    </div>
+  </div>
+  <div id="msgs"></div>
+  <div class="barra">
+    <input id="digitar" placeholder="Fale no microfone ou digite…" enterkeyhint="send">
+    <button class="mic" id="mic" title="Falar">🎤</button>
+  </div>
+</section>
+
+<!-- Frente a frente -->
+<section id="f2f">
+  <div class="lado cima" data-lado="b">
+    <div class="texto"></div>
+    <div class="ctl"><select></select><button class="mic">🎤</button></div>
+  </div>
+  <div class="meio"><button id="f2fVoz">🔊 Voz: ligada</button><button id="f2fLimpar">Limpar</button><button id="f2fSair">Sair</button></div>
+  <div class="lado" data-lado="a">
+    <div class="texto"></div>
+    <div class="ctl"><select></select><button class="mic">🎤</button></div>
+  </div>
+</section>
+
+<script src="firebase-config.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="tradutor.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "id": "./tradutor.html",
+  "name": "Tradutor ao Vivo",
+  "short_name": "Tradutor",
+  "description": "Tradução de voz em tempo real entre celulares ou frente a frente",
+  "start_url": "./tradutor.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f766e",
+  "theme_color": "#0f766e",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icons/tradutor.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

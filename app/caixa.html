@@ -449,6 +449,8 @@ const reparseFichas=()=>COCK.forEach(c=>{c.l=c.i.map(parseI)});reparseFichas();
 const salvarFichas=()=>{meta.fichas=COCK.map(c=>({n:c.n,i:c.i,p:c.p||''}));reparseFichas();persist()};
 window.__cxFichasPadrao=()=>{COCK.splice(0,COCK.length,...COCK_PADRAO.map(c=>({n:c.n,i:[...c.i],p:c.p})));delete meta.fichas;reparseFichas();persist();fichas()};
 window.__cxAbrirFichas=()=>fichas();
+/* Fichas técnicas para a aba Cardápio: nome, ingredientes (sem a quantidade) e custo */
+window.__cxFichasLista=()=>COCK.map(c=>({n:c.n,ing:c.i.map(t=>{const m=String(t).match(/^([\d.,½¼¾]+\s*(?:ml|g|kg|l|dash(?:es)?|gotas?|folhas?|fatias?|ponteiros?|peda[çc]os?|punhados?|buqu[eê]s?|colher(?:es)?(?:\s+de\s+\w+)?|unidades?|un)?)\s+(?:de\s+)?(.+)$/i);return (m?m[2]:String(t)).trim()}).filter(Boolean),custo:(()=>{try{return costOf(c).t}catch(e){return 0}})()}));
 /* relatório do dia igual ao do lançamento, com valores ainda não gravados (aba Foto) */
 window.__cxRelatorio=(k,extra)=>{const tinha=Object.prototype.hasOwnProperty.call(days,k),old=days[k];days[k]=Object.assign({},old||{},extra||{});try{return text(k)}finally{if(tinha)days[k]=old;else delete days[k]}};
 window.__cxIngredientes=()=>{const o={};COCK.forEach(c=>c.l.forEach(x=>{if(!o[x.k]||x.u==='ml')o[x.k]=x.u}));return o};

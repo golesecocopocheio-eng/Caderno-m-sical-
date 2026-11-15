@@ -267,7 +267,7 @@ function telaVender(){
   if(editar){
     h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:12px;color:var(--mut)">Grupo</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"><input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:12px;color:var(--mut)">Grupo</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
@@ -283,6 +283,7 @@ function desenharCarrinho(){
 }
 function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Aponte para o cardápio impresso (bem reto e com luz). O app <b>escaneia</b> nomes, preços e categorias e <b>monta o cardápio de venda</b> na hora. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
     <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Escanear cardápio</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
+    <button class="btn sec" id="fichasBtn" style="margin-top:8px">🍸 Puxar os drinks da Ficha técnica</button>
     <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p>${leitura&&leitura.texto&&!lendo?`<details><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`}
 const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p>${leitura.texto?`<details style="margin-top:8px"><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`:'';
 const nomeBar=()=>(cfg.nome||'').trim()||'Bar Conect';
@@ -551,6 +552,20 @@ async function lerFotos(arqs,guardar=true){
 }
 // nome do bar: primeira linha em letra bem maior que não é grupo (ex.: CLANDESTINO)
 function nomeDoBar(tx){if((cfg.nome||'').trim())return;const l=String(tx||'').split('\n').map(x=>x.split(/\s{3,}/)[0].trim()).find(x=>/^§/.test(x));if(!l)return;const t=l.replace(/^§\s*/,'').trim();if(!t||CATKW.test(t)||/\d/.test(t)||t.split(' ').length>4)return;cfg.nome=titulo(t);salvarCfg()}
+// 🍸 Puxar os drinks da Ficha técnica (aba Caixa): nome + ingredientes em "Drinks Autorais"
+async function puxarFichas(){
+  let lista=null;try{const f=window.parent.document.getElementById('f-caixa');lista=f&&f.contentWindow.__cxFichasLista&&f.contentWindow.__cxFichasLista()}catch(e){}
+  if(!lista||!lista.length){toast('Não achei fichas técnicas. Abra a aba Caixa → Ficha técnica uma vez e tente de novo.');return}
+  const base=itens.reduce((m,i)=>Math.max(m,(i.o??0)+1),0),salvos=[];let novos=0,atual=0;
+  lista.forEach((f,k)=>{const nome=String(f.n||'').trim();if(!nome)return;const d=(f.ing||[]).join(', ').toLowerCase();
+    const ja=itens.find(i=>i.n.toLowerCase()===nome.toLowerCase());
+    if(ja){atual++;const up={};if(d&&!ja.d)up.d=d;if(!ja.c||/^(card[aá]pio|outros)$/i.test(ja.c))up.c='Drinks Autorais';if(Object.keys(up).length)salvos.push(db.collection('itens').doc(ja.id).set({...strip(ja),...up}).catch(()=>{}));return}
+    const it={n:nome,c:'Drinks Autorais',p:0,on:true,t:Date.now(),o:base+k,ficha:true};if(d)it.d=d;if(f.custo)it.custo=Math.round(f.custo*100)/100;
+    salvos.push(db.collection('itens').add(it).catch(()=>{}));novos++});
+  await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
+  leitura={lendo:false,msg:`🍸 Ficha técnica: ${lista.length} drinks. ${novos} novos em Drinks Autorais${atual?', '+atual+' já estavam (mantive o preço)':''}.${novos?' Preencha o preço dos novos (estão com R$ 0,00) e toque em ✅ Pronto.':''}`};
+  aba='vender';editar=true;draw();
+}
 let substituir=false; // 🔄 Atualizar pela foto: o cardápio novo substitui o antigo
 async function salvarLidos(lidos){
   let novos=0,atual=0,erro='';const salvos=[];
@@ -616,6 +631,7 @@ document.addEventListener('click',async ev=>{
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
   if(d.foto==='cam'&&scannerNativo()){digitalizar();return}
   if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
+  if(b.id==='fichasBtn'){puxarFichas();return}
   if(b.id==='editarBtn'){editar=!editar;aba='vender';draw();return}
   if(b.id==='clienteBtn'){mostrarCliente(true);return}
   if(b.id==='clienteFechar'){mostrarCliente(false);return}

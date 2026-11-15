@@ -1,6 +1,29 @@
 # Caderno-m-sical-
 Cardeno músical
 
+## Tradutor ao Vivo (`app/tradutor.html`)
+
+Aplicativo de tradução de voz em tempo real. Você fala no seu idioma e a outra pessoa lê
+(e ouve) no idioma dela, enquanto você ainda está falando. Pode ser instalado na tela inicial
+como app próprio ("Tradutor"). Arquivos: `app/tradutor.html`, `app/tradutor.js`,
+`app/tradutor.webmanifest`, `app/icons/tradutor.svg`.
+
+- **Sala remota:** cada pessoa usa o próprio celular, de qualquer lugar. Crie uma sala (código de
+  6 letras) e toque em **Convidar** para mandar o link ou mostrar o QR Code. Cada um escolhe o seu
+  idioma; as falas aparecem traduzidas para cada participante, com o original embaixo, e a fala
+  "ao vivo" (antes de terminar a frase) também aparece traduzida. 🔊 liga/desliga a leitura em voz.
+- **Frente a frente:** um celular só, na mesa entre duas pessoas. A tela se divide (a parte de cima
+  fica de cabeça para baixo); cada lado tem seu idioma e seu microfone.
+- Dá para digitar em vez de falar.
+- 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
+
+Como funciona: o reconhecimento de voz e a leitura em voz alta são do próprio navegador (Chrome no
+Android, Safari no iPhone; precisa de internet). A tradução usa o Google Tradutor gratuito, sem chave
+(com reservas). A sala usa o mesmo Firebase do app do bar (`app/firebase-config.js`), na coleção
+`salas`. **Antes de usar a sala entre celulares, publique de novo o `firestore.rules`** no Console do
+Firebase (Firestore Database → Regras → Publicar): ele ganhou a regra das salas. Sem o Firebase, a
+sala funciona só entre abas do mesmo aparelho; o modo frente a frente não precisa dele.
+
 ## Bar Conect · Caixa, Portaria e Estoque (aplicativo)
 
 Logo: taça de coquetel dourada com palito e azeitona, ondas de conexão e o nome BAR CONECT ·

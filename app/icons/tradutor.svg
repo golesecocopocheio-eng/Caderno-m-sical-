@@ -1,69 +1,81 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="fundo" cx=".5" cy=".46" r=".72">
+    <radialGradient id="fundo" cx=".5" cy=".4" r=".75">
       <stop offset="0" stop-color="#8b5cf6"/><stop offset=".5" stop-color="#6d28d9"/><stop offset="1" stop-color="#2e1065"/>
     </radialGradient>
     <radialGradient id="aura" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="#c4b5fd" stop-opacity=".75"/><stop offset="1" stop-color="#c4b5fd" stop-opacity="0"/>
+      <stop offset="0" stop-color="#c4b5fd" stop-opacity=".8"/><stop offset="1" stop-color="#c4b5fd" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="ouro" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#fef3c7"/><stop offset=".35" stop-color="#fbbf24"/><stop offset=".7" stop-color="#d97706"/><stop offset="1" stop-color="#fde68a"/>
     </linearGradient>
-    <radialGradient id="olho" cx=".5" cy=".72" r=".75">
-      <stop offset="0" stop-color="#fef08a"/><stop offset=".55" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/>
+    <linearGradient id="ouroTexto" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fef3c7"/><stop offset=".45" stop-color="#fcd34d"/><stop offset="1" stop-color="#d97706"/>
+    </linearGradient>
+    <radialGradient id="olho" cx=".5" cy=".75" r=".8">
+      <stop offset="0" stop-color="#fef9c3"/><stop offset=".45" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/>
     </radialGradient>
     <linearGradient id="pelo" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1c1528"/><stop offset="1" stop-color="#07060b"/>
+      <stop offset="0" stop-color="#231a33"/><stop offset="1" stop-color="#07060b"/>
     </linearGradient>
     <linearGradient id="orelha" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#2e1065"/>
+      <stop offset="0" stop-color="#a855f7"/><stop offset="1" stop-color="#3b0764"/>
     </linearGradient>
+    <radialGradient id="rubor" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#f472b6" stop-opacity=".75"/><stop offset="1" stop-color="#f472b6" stop-opacity="0"/>
+    </radialGradient>
+    <path id="brilho" d="M0 -1 Q.12 -.12 1 0 Q.12 .12 0 1 Q-.12 .12 -1 0 Q-.12 -.12 0 -1 Z"/>
   </defs>
   <rect class="fundo" width="512" height="512" rx="112" fill="url(#fundo)"/>
-  <circle class="fundo" cx="256" cy="262" r="210" fill="url(#aura)"/>
-  <circle cx="256" cy="262" r="200" fill="none" stroke="url(#ouro)" stroke-width="7"/>
-  <circle cx="256" cy="262" r="186" fill="none" stroke="url(#ouro)" stroke-width="2" opacity=".6"/>
-  <!-- brilhos -->
-  <g fill="url(#ouro)">
-    <path d="M428 104 Q432 128 456 132 Q432 136 428 160 Q424 136 400 132 Q424 128 428 104 Z"/>
-    <path d="M84 140 Q86 154 100 156 Q86 158 84 172 Q82 158 68 156 Q82 154 84 140 Z"/>
-    <path d="M446 372 Q448 383 459 385 Q448 387 446 398 Q444 387 433 385 Q444 383 446 372 Z"/>
+
+  <g class="logo" transform="translate(256 214) scale(.78) translate(-256 -262)">
+    <circle cx="256" cy="262" r="220" fill="url(#aura)"/>
+    <circle cx="256" cy="262" r="204" fill="none" stroke="url(#ouro)" stroke-width="8"/>
+    <circle cx="256" cy="262" r="189" fill="none" stroke="url(#ouro)" stroke-width="2.5" opacity=".6"/>
+    <!-- cabeça redonda com orelhas -->
+    <path d="M112 298 C102 238 120 202 144 180 L138 102 Q138 86 152 93 L216 138 Q256 126 296 138 L360 93 Q374 86 374 102 L368 180 C392 202 410 238 400 298 C390 378 328 414 256 414 C184 414 122 378 112 298 Z"
+          fill="url(#pelo)" stroke="#c4b5fd" stroke-width="4" stroke-linejoin="round" stroke-opacity=".75"/>
+    <path d="M156 168 L152 116 L200 146 Z" fill="url(#orelha)" stroke-linejoin="round" stroke="#a855f7" stroke-width="6"/>
+    <path d="M356 168 L360 116 L312 146 Z" fill="url(#orelha)" stroke-linejoin="round" stroke="#a855f7" stroke-width="6"/>
+    <!-- listras sutis -->
+    <g stroke="#2f2545" stroke-width="9" stroke-linecap="round">
+      <path d="M256 156 L256 186 M230 162 L235 184 M282 162 L277 184"/>
+      <path d="M116 262 L146 268 M116 290 L142 293 M396 262 L366 268 M396 290 L370 293"/>
+    </g>
+    <!-- olhos grandes de anime -->
+    <path d="M140 292 Q144 236 196 234 Q246 236 250 292 Q246 346 196 348 Q144 346 140 292 Z" fill="url(#olho)"/>
+    <path d="M372 292 Q368 236 316 234 Q266 236 262 292 Q266 346 316 348 Q368 346 372 292 Z" fill="url(#olho)"/>
+    <ellipse cx="198" cy="294" rx="11" ry="38" fill="#07060b"/>
+    <ellipse cx="314" cy="294" rx="11" ry="38" fill="#07060b"/>
+    <path d="M136 282 Q142 228 196 226 Q250 228 256 282" fill="none" stroke="#07060b" stroke-width="9" stroke-linecap="round"/>
+    <path d="M376 282 Q370 228 316 226 Q262 228 256 282" fill="none" stroke="#07060b" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="178" cy="268" r="13" fill="#fff"/><circle cx="294" cy="268" r="13" fill="#fff"/>
+    <use href="#brilho" transform="translate(222 320) scale(9)" fill="#fff"/>
+    <use href="#brilho" transform="translate(338 320) scale(9)" fill="#fff"/>
+    <!-- bochechas -->
+    <ellipse cx="152" cy="350" rx="30" ry="15" fill="url(#rubor)"/>
+    <ellipse cx="360" cy="350" rx="30" ry="15" fill="url(#rubor)"/>
+    <!-- nariz, boca e dentinho -->
+    <path d="M246 344 L266 344 L256 355 Z" fill="#f9a8d4" stroke="#f9a8d4" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M256 355 Q256 371 242 371 Q231 369 231 359 M256 355 Q256 371 270 371 Q281 369 281 359" fill="none" stroke="#c4b5fd" stroke-width="5" stroke-linecap="round"/>
+    <path d="M263 370 L268 382 L273 368 Z" fill="#fff"/>
+    <!-- bigodes -->
+    <g stroke="#ede9fe" stroke-width="3.5" stroke-linecap="round" opacity=".85">
+      <path d="M150 334 L80 322 M150 348 L84 356 M362 334 L432 322 M362 348 L428 356"/>
+    </g>
+    <!-- coleira e medalha -->
+    <path d="M182 396 Q256 432 330 396" fill="none" stroke="#2e1065" stroke-width="22" stroke-linecap="round"/>
+    <path d="M182 396 Q256 432 330 396" fill="none" stroke="url(#ouro)" stroke-width="14" stroke-linecap="round"/>
+    <path d="M228 410 h56 a17 17 0 0 1 17 17 v20 a17 17 0 0 1 -17 17 h-20 l-11 11 v-11 h-25 a17 17 0 0 1 -17 -17 v-20 a17 17 0 0 1 17 -17 z" fill="url(#ouro)" stroke="#92400e" stroke-width="2"/>
+    <circle cx="242" cy="437" r="5" fill="#4c1d95"/><circle cx="256" cy="437" r="5" fill="#4c1d95"/><circle cx="270" cy="437" r="5" fill="#4c1d95"/>
+    <!-- brilhos -->
+    <g fill="url(#ouro)">
+      <use href="#brilho" transform="translate(430 120) scale(28)"/>
+      <use href="#brilho" transform="translate(80 150) scale(16)"/>
+    </g>
   </g>
-  <!-- cabeça -->
-  <path d="M122 296 C112 244 120 204 142 176 L134 94 Q133 80 146 86 L214 136 Q256 122 298 136 L366 86 Q379 80 378 94 L370 176 C392 204 400 244 390 296 C378 380 322 410 256 410 C190 410 134 380 122 296 Z"
-        fill="url(#pelo)" stroke="#a78bfa" stroke-width="4" stroke-linejoin="round" stroke-opacity=".7"/>
-  <!-- dentro das orelhas -->
-  <path d="M154 166 L150 112 L198 144 Z" fill="url(#orelha)" stroke="#a78bfa" stroke-width="2" stroke-opacity=".5" stroke-linejoin="round"/>
-  <path d="M358 166 L362 112 L314 144 Z" fill="url(#orelha)" stroke="#a78bfa" stroke-width="2" stroke-opacity=".5" stroke-linejoin="round"/>
-  <!-- listras sutis -->
-  <g stroke="#2a2140" stroke-width="9" stroke-linecap="round">
-    <path d="M256 158 L256 194 M228 164 L234 190 M284 164 L278 190"/>
-    <path d="M126 258 L158 266 M124 288 L154 292 M386 258 L354 266 M388 288 L358 292"/>
-  </g>
-  <!-- olhos -->
-  <g>
-    <path d="M150 290 Q156 246 200 244 Q240 246 244 290 Q238 336 198 338 Q156 334 150 290 Z" fill="url(#olho)"/>
-    <path d="M362 290 Q356 246 312 244 Q272 246 268 290 Q274 336 314 338 Q356 334 362 290 Z" fill="url(#olho)"/>
-    <ellipse cx="198" cy="292" rx="10" ry="34" fill="#07060b"/>
-    <ellipse cx="314" cy="292" rx="10" ry="34" fill="#07060b"/>
-    <circle cx="182" cy="270" r="11" fill="#fff"/><circle cx="214" cy="312" r="5" fill="#fff"/>
-    <circle cx="298" cy="270" r="11" fill="#fff"/><circle cx="330" cy="312" r="5" fill="#fff"/>
-    <path d="M146 284 Q152 240 200 238 Q244 240 248 284" fill="none" stroke="#07060b" stroke-width="8" stroke-linecap="round"/>
-    <path d="M366 284 Q360 240 312 238 Q268 240 264 284" fill="none" stroke="#07060b" stroke-width="8" stroke-linecap="round"/>
-  </g>
-  <!-- nariz e boca -->
-  <path d="M245 346 L267 346 L256 358 Z" fill="#f0abfc" stroke="#f0abfc" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M256 358 Q256 374 241 374 Q230 372 230 362 M256 358 Q256 374 271 374 Q282 372 282 362" fill="none" stroke="#a78bfa" stroke-width="5" stroke-linecap="round"/>
-  <!-- bigodes -->
-  <g stroke="#ddd6fe" stroke-width="3.5" stroke-linecap="round" opacity=".85">
-    <path d="M160 340 L88 328 M160 354 L92 362 M352 340 L424 328 M352 354 L420 362"/>
-  </g>
-  <!-- coleira -->
-  <path d="M186 394 Q256 430 326 394" fill="none" stroke="#2e1065" stroke-width="22" stroke-linecap="round"/>
-  <path d="M186 394 Q256 430 326 394" fill="none" stroke="url(#ouro)" stroke-width="14" stroke-linecap="round"/>
-  <!-- medalha: balão de fala -->
-  <g>
-    <g transform="translate(0 -2)"><path d="M226 410 h60 a18 18 0 0 1 18 18 v22 a18 18 0 0 1 -18 18 h-22 l-12 12 v-12 h-26 a18 18 0 0 1 -18 -18 v-22 a18 18 0 0 1 18 -18 z" fill="url(#ouro)" stroke="#92400e" stroke-width="2"/>
-    <circle cx="240" cy="439" r="5" fill="#4c1d95"/><circle cx="256" cy="439" r="5" fill="#4c1d95"/><circle cx="272" cy="439" r="5" fill="#4c1d95"/></g>
-  </g>
+
+  <!-- nome -->
+  <text class="nome" x="256" y="474" text-anchor="middle" font-family="'Poppins','Montserrat','Segoe UI',system-ui,sans-serif" font-weight="800" font-size="62" letter-spacing="1"
+        fill="url(#ouroTexto)" stroke="#1e0838" stroke-width="2" paint-order="stroke">Clã Speak</text>
 </svg>

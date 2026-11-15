@@ -408,7 +408,7 @@
    * Junta Caixa, Portaria e Estoque no mesmo formato que __barImportar aceita.
    * O Caixa vem do próprio celular (é onde ele grava primeiro); Portaria e Estoque vêm
    * do Firebase, se estiver ligado, ou do banco deste aparelho. */
-  const COLECOES = { portaria: ['entradas', 'log', 'config'], estoque: ['items', 'mov', 'meta', 'price', 'pg'] };
+  const COLECOES = { portaria: ['entradas', 'log', 'config'], estoque: ['items', 'mov', 'meta', 'price', 'pg'], cardapio: ['itens', 'vendas', 'config'] };
   window.__barExportar = async function () {
     const apps = {};
     const t = Date.now();

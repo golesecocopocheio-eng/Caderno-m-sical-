@@ -325,7 +325,7 @@ document.addEventListener("click",async ev=>{
     if(o.tipo==='portaria-backup'||o.entradas||o.log||o.config)apps.portaria={entradas:o.entradas||{},log:o.log||{},config:o.config||{}};
     return Object.keys(apps).length?apps:null;
   }
-  const NOMES={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque'};
+  const NOMES={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio'};
   const contar=cols=>Object.values(cols||{}).reduce((a,d)=>a+Object.keys(d||{}).length,0);
   // Restauração em duas etapas (usada aqui e pela aba Backup do app): preparar mostra o que vai
   // acontecer; executar grava. Só o dono restaura.

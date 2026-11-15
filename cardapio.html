@@ -15,7 +15,7 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px;margin-bottom:12px}
 .row{display:flex;gap:8px;align-items:center}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:4px;margin:8px 0 12px}
-.tabs button{border:0;background:none;color:var(--tx);padding:9px 2px;border-radius:10px;font-size:13px;font-weight:600;line-height:1.2}
+.tabs button{border:0;background:none;color:var(--tx);padding:7px 2px;border-radius:10px;font-size:13px;font-weight:600;line-height:1.2;display:flex;flex-direction:column;align-items:center;gap:3px}.tabs button span{font-size:18px;line-height:1}
 .tabs button.on{background:var(--ac);color:var(--on)}
 .cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
 .cats button{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:99px;padding:7px 12px;font-size:13.5px}
@@ -141,7 +141,7 @@ const nomeVia=id=>{const m=cfg.maquinas.find(x=>x.id===id);if(m)return m.n;const
 /* ---------- desenho ---------- */
 function draw(){
   const a=document.activeElement;if(a&&a.dataset&&a.dataset.k&&!folha)return;
-  let h=`<h1>🍽️ Cardápio e vendas</h1><div class="tabs">${[['vender','🛒 Vender'],['cardapio','📋 Cardápio'],['vendas','📊 Vendas'],['pag','💳 Receber']].map(([k,n])=>`<button data-aba="${k}" class="${aba===k?'on':''}">${n}</button>`).join('')}</div>`;
+  let h=`<h1>🍽️ Cardápio e vendas</h1><div class="tabs">${[['vender','🛒','Vender'],['cardapio','📋','Cardápio'],['vendas','📊','Vendas'],['pag','💳','Receber']].map(([k,e,n])=>`<button data-aba="${k}" class="${aba===k?'on':''}"><span>${e}</span>${n}</button>`).join('')}</div>`;
   if(aba==='vender')h+=telaVender();
   else if(aba==='cardapio')h+=telaCardapio();
   else if(aba==='vendas')h+=telaVendas();
@@ -150,7 +150,7 @@ function draw(){
   desenharCarrinho();
 }
 function telaVender(){
-  const A=ativos();if(!A.length)return `<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Vá em <b>📋 Cardápio</b> e tire uma foto do seu cardápio (ou adicione os itens).</p><button class="btn" data-aba="cardapio">📋 Montar o cardápio</button></div>`;
+  const A=ativos();if(!A.length)return (podeMontar()?fotoCard():'')+`<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Tire uma foto do cardápio impresso acima, ou adicione os itens à mão.</p><button class="btn sec" data-aba="cardapio">✍️ Adicionar itens à mão</button></div>`;
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
   let h=`<div class="cats"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="${cat===c?'on':''}">${esc(c)}</button>`).join('')}</div>`;
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt'));if(!l.length)return;
@@ -164,18 +164,20 @@ function desenharCarrinho(){
   const linhas=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?`<div class="it"><span>${esc(i.n)}<small>${R(i.p)} cada</small></span><span class="q"><button data-menos="${id}">−</button><b>${q}</b><button data-mais="${id}">+</button></span><b style="min-width:76px;text-align:right">${R(i.p*q)}</b></div>`:''}).join('');
   el.innerHTML=`<div class="in"><details id="carDet"${carAberto?' open':''}><summary class="row" style="justify-content:space-between;list-style:none;cursor:pointer"><span>🛒 <b>${n}</b> ${n>1?'itens':'item'} · <span class="link">ver</span></span><span class="big">${R(totalCarrinho())}</span></summary><div style="max-height:34vh;overflow:auto;margin-top:6px">${linhas}</div><button class="btn sec" id="limpar" style="margin-top:6px">Limpar</button></details><button class="btn ok" id="cobrar">Cobrar ${R(totalCarrinho())}</button></div>`;
 }
+const podeMontar=()=>dono||!itens.length;
+function fotoCard(){return `<div class="card"><h2>📷 Montar pela foto do cardápio</h2><p class="sub">Tire uma foto bem reta e com luz do cardápio impresso (ou escolha da galeria). O app lê nomes e preços e monta o cardápio digital. Você confere antes de salvar.</p>
+    <div class="row"><label class="foto" style="flex:1;margin:0">📷 Tirar foto<input type="file" id="fotoCam" accept="image/*" capture="environment" hidden></label><label class="foto" style="flex:1;margin:0;background:#4c1d95;color:#fff">🖼️ Galeria<input type="file" id="fotoGal" accept="image/*" multiple hidden></label></div>
+    <p class="msg" id="fotoMsg">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`}
 function telaCardapio(){
   let h='';
-  if(dono)h+=`<div class="card"><h2>📷 Montar pela foto do cardápio</h2><p class="sub">Tire uma foto bem reta e com luz do cardápio impresso (ou escolha da galeria). O app lê nomes e preços e monta o cardápio digital. Você confere antes de salvar.</p>
-    <div class="row"><label class="foto" style="flex:1;margin:0">📷 Tirar foto<input type="file" id="fotoCam" accept="image/*" capture="environment" hidden></label><label class="foto" style="flex:1;margin:0;background:#4c1d95;color:#fff">🖼️ Galeria<input type="file" id="fotoGal" accept="image/*" multiple hidden></label></div>
-    <p class="msg" id="fotoMsg">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`;
+  if(podeMontar())h+=fotoCard();else h+=`<p class="sub">📷 A foto do cardápio e as mudanças nos itens ficam com o <b>dono do bar</b>.</p>`;
   if(leitura&&leitura.itens&&leitura.itens.length){
     h+=`<div class="card prev"><h2>Confira o que foi lido (${leitura.itens.length})</h2><p class="sub">Corrija nome, categoria e preço. Desmarque o que não for item.</p>${leitura.itens.map((x,k)=>`<div class="it" style="align-items:flex-start"><input type="checkbox" data-lk="ok" data-li="${k}" ${x.ok?'checked':''} style="width:22px;height:22px;margin-top:8px"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="ln" data-lk="n" data-li="${k}" value="${esc(x.n)}"><input data-k="lp" data-lk="p" data-li="${k}" value="${campo(x.p)}" inputmode="decimal" style="text-align:right"><input data-k="lc" data-lk="c" data-li="${k}" value="${esc(x.c)}" style="grid-column:1/3;font-size:13px;color:var(--mut)"></div></div>`).join('')}
     <button class="btn ok" id="lerSalvar">✅ Adicionar ${leitura.itens.filter(x=>x.ok).length} itens ao cardápio</button><button class="btn sec" id="lerDescartar">Descartar leitura</button></div>`;
   }
   const C=categorias();
-  h+=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">📋 Cardápio (${itens.length})</h2>${dono?'<button class="link" id="novoBtn">+ Item</button>':''}</div>`;
-  if(dono)h+=`<div id="novoBox" hidden><div style="display:grid;grid-template-columns:1fr 100px;gap:6px;margin-top:8px"><input data-k="nn" id="nn" placeholder="Nome do item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria (ex.: Drinks)" style="grid-column:1/3"></div><datalist id="catsL">${C.map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">Salvar item</button></div>`;
+  h+=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">📋 Cardápio (${itens.length})</h2>${podeMontar()?'<button class="link" id="novoBtn">+ Item</button>':''}</div>`;
+  if(podeMontar())h+=`<div id="novoBox" hidden><div style="display:grid;grid-template-columns:1fr 100px;gap:6px;margin-top:8px"><input data-k="nn" id="nn" placeholder="Nome do item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria (ex.: Drinks)" style="grid-column:1/3"></div><datalist id="catsL">${C.map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">Salvar item</button></div>`;
   if(!itens.length)h+='<p class="sub" style="margin-top:8px">Nenhum item ainda.</p>';
   C.forEach(c=>{const l=itens.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));
     h+=`<h2 style="margin:14px 0 2px">${esc(c)} <span class="chip">${l.length}</span></h2>`+l.map(i=>dono?`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`
@@ -272,7 +274,7 @@ async function copiar(t){try{await navigator.clipboard.writeText(t);toast('✅ C
 async function lerFotos(e){
   const arqs=[...(e.target.files||[])];e.target.value='';if(!arqs.length)return;
   const ocr=window.parent&&window.parent.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
-  leitura={itens:(leitura&&leitura.itens)||[],msg:'Lendo a foto… (a primeira vez demora um pouco)'};draw();
+  leitura={itens:(leitura&&leitura.itens)||[],msg:'Lendo a foto… (a primeira vez demora um pouco)'};aba='cardapio';draw();
   for(const [k,a] of arqs.entries()){
     try{const r=await ocr(a,m=>{if(m.status==='recognizing text'){const el=$('#fotoMsg');if(el)el.textContent='Lendo a foto '+(k+1)+'/'+arqs.length+'… '+Math.round(m.progress*100)+'%'}},2200);
       const novos=lerCardapio(r.texto);leitura.itens.push(...novos)}
@@ -310,15 +312,16 @@ document.addEventListener('click',async ev=>{
   if(b.id==='relBtn'){copiar(relatorio());return}
   if(b.id==='caixaBtn'){aplicarCaixa();return}
   if(b.id==='copiarCard'){const T=['*CARDÁPIO*'];categorias().forEach(c=>{const l=ativos().filter(i=>(i.c||'Outros')===c);if(!l.length)return;T.push('','*'+c.toUpperCase()+'*');l.forEach(i=>T.push(i.n+' — '+R(i.p)))});copiar(T.join('\n'));return}
-  if(!dono)return;
+  if(!podeMontar())return;
   try{
     if(b.id==='novoBtn'){$('#novoBox').hidden=!$('#novoBox').hidden;if(!$('#novoBox').hidden)$('#nn').focus();return}
     if(b.id==='novoOk'){const n=$('#nn').value.trim(),p=nv($('#np').value),c=$('#nc').value.trim()||'Outros';if(!n||!p){toast('Preencha nome e preço');return}await db.collection('itens').add({n,c,p,on:true,t:Date.now()});toast('✅ '+n+' adicionado');return}
+    if(b.id==='lerSalvar'){b.disabled=true;await salvarLeitura();return}
+    if(b.id==='lerDescartar'){leitura=null;draw();return}
+    if(!dono)return;
     if(d.on){const i=itens.find(x=>x.id===d.on);if(i)await db.collection('itens').doc(i.id).set({...strip(i),on:i.on===false});return}
     if(d.del){if(b.dataset.s){await db.collection('itens').doc(d.del).delete();delete carrinho[d.del]}else{b.dataset.s=1;b.textContent='Apagar?';setTimeout(()=>{b.dataset.s='';b.textContent='✕'},2500)}return}
     if(d.vdel){if(b.dataset.s)await db.collection('vendas').doc(d.vdel).delete();else{b.dataset.s=1;b.textContent='Apagar?';setTimeout(()=>{b.dataset.s='';b.textContent='✕'},2500)}return}
-    if(b.id==='lerSalvar'){b.disabled=true;await salvarLeitura();return}
-    if(b.id==='lerDescartar'){leitura=null;draw();return}
     if(b.id==='mqNova'){cfg.maquinas.push({id:'m'+Date.now().toString(36),n:'Nova maquininha'});await salvarCfg();return}
     if(d.mqdel!==undefined){cfg.maquinas.splice(+d.mqdel,1);await salvarCfg();return}
     if(b.id==='ctNova'){cfg.contas.push({id:'c'+Date.now().toString(36),n:'Nova conta',tipo:'',chave:'',nome:'',cidade:''});await salvarCfg();return}

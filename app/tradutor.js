@@ -1,4 +1,4 @@
-/* Tradutor ao Vivo: fala → texto → tradução → voz, entre celulares (sala) ou num celular só (frente a frente).
+/* Clã Speak (Tradutor ao Vivo): fala → texto → tradução → voz, entre celulares (sala) ou num celular só (frente a frente).
  * Reconhecimento e leitura em voz: Web Speech API do navegador (Chrome no Android, Safari no iPhone).
  * Tradução: serviço gratuito do Google Tradutor (sem chave), com o MyMemory como reserva.
  * Sala remota: Firestore do projeto (firebase-config.js), em salas/{codigo}. Sem Firebase, só entre abas. */
@@ -372,8 +372,8 @@
     const box = $('#convite'); box.hidden = !box.hidden;
     if (box.hidden) return;
     if (NATIVO) { // no APK não há link (o app roda em https://localhost): convida pelo código
-      $('#qrImg').innerHTML = '<div style="font-size:2.6rem;font-weight:800;letter-spacing:.2em;color:#0f766e">' + esc($('#salaCod').textContent) + '</div>';
-      $('#qrLink').textContent = 'Peça para a outra pessoa abrir o app Tradutor e entrar na sala com este código.';
+      $('#qrImg').innerHTML = '<div style="font-size:2.6rem;font-weight:800;letter-spacing:.2em;color:#6d28d9">' + esc($('#salaCod').textContent) + '</div>';
+      $('#qrLink').textContent = 'Peça para a outra pessoa abrir o app Clã Speak e entrar na sala com este código.';
       $('#btCopiar').textContent = 'Copiar código';
       return;
     }
@@ -384,8 +384,8 @@
   const copiado = (txt, volta) => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = volta; }, 1500); };
   $('#btCompart').onclick = () => {
     const Sh = plugin('Share');
-    if (Sh) return Sh.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala do Tradutor ao Vivo. Código: ' + $('#salaCod').textContent, dialogTitle: 'Convidar para a sala' }).catch(() => {});
-    if (navigator.share) return navigator.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala de tradução: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {});
+    if (Sh) return Sh.share({ title: 'Clã Speak', text: 'Entre na minha sala do Clã Speak. Código: ' + $('#salaCod').textContent, dialogTitle: 'Convidar para a sala' }).catch(() => {});
+    if (navigator.share) return navigator.share({ title: 'Clã Speak', text: 'Entre na minha sala do Clã Speak: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {});
     $('#btCopiar').onclick();
   };
   $('#btCopiar').onclick = () => NATIVO

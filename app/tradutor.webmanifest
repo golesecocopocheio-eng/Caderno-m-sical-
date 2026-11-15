@@ -1,14 +1,14 @@
 {
   "id": "./tradutor.html",
-  "name": "Tradutor ao Vivo",
-  "short_name": "Tradutor",
+  "name": "Clã Speak",
+  "short_name": "Clã Speak",
   "description": "Tradução de voz em tempo real entre celulares ou frente a frente",
   "start_url": "./tradutor.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f766e",
-  "theme_color": "#0f766e",
+  "background_color": "#6d28d9",
+  "theme_color": "#6d28d9",
   "lang": "pt-BR",
   "icons": [
     { "src": "icons/tradutor.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }

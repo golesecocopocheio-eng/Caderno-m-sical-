@@ -1,11 +1,11 @@
 # Caderno-m-sical-
 Cardeno músical
 
-## Tradutor ao Vivo (`app/tradutor.html`)
+## Clã Speak · Tradutor ao Vivo (`app/tradutor.html`)
 
 Aplicativo de tradução de voz em tempo real. Você fala no seu idioma e a outra pessoa lê
 (e ouve) no idioma dela, enquanto você ainda está falando. Pode ser instalado na tela inicial
-como app próprio ("Tradutor"). Arquivos: `app/tradutor.html`, `app/tradutor.js`,
+como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.js`,
 `app/tradutor.webmanifest`, `app/icons/tradutor.svg`.
 
 - **Sala remota:** cada pessoa usa o próprio celular, de qualquer lugar. Crie uma sala (código de
@@ -16,8 +16,8 @@ como app próprio ("Tradutor"). Arquivos: `app/tradutor.html`, `app/tradutor.js`
   fica de cabeça para baixo); cada lado tem seu idioma e seu microfone.
 - Dá para digitar em vez de falar.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
-- **APK Android próprio ("Tradutor"):** o workflow `.github/workflows/apk-tradutor.yml` gera o
-  `Tradutor.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
+- **APK Android próprio ("Clã Speak", ícone do gatinho listrado):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+  `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
   `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
   em voz alta), e o convite para a sala é pelo código.
 

@@ -372,7 +372,7 @@
     const box = $('#convite'); box.hidden = !box.hidden;
     if (box.hidden) return;
     if (NATIVO) { // no APK não há link (o app roda em https://localhost): convida pelo código
-      $('#qrImg').innerHTML = '<div style="font-size:2.6rem;font-weight:800;letter-spacing:.2em;color:#0b0b0b">' + esc($('#salaCod').textContent) + '</div>';
+      $('#qrImg').innerHTML = '<div style="font-size:2.6rem;font-weight:800;letter-spacing:.2em;color:#6d28d9">' + esc($('#salaCod').textContent) + '</div>';
       $('#qrLink').textContent = 'Peça para a outra pessoa abrir o app Clã Speak e entrar na sala com este código.';
       $('#btCopiar').textContent = 'Copiar código';
       return;

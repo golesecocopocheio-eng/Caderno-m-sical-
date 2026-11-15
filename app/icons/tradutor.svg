@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect class="fundo" width="512" height="512" rx="112" fill="#0b0b0b"/>
-  <g font-family="Inter,Montserrat,Poppins,'Segoe UI',system-ui,sans-serif" font-weight="900" text-anchor="middle" fill="#facc15">
-    <text x="256" y="222" font-size="150" letter-spacing="-4">Clã</text>
-    <text x="256" y="352" font-size="122" letter-spacing="-3">Speak</text>
-  </g>
-  <rect x="176" y="404" width="160" height="14" rx="8" fill="#facc15"/>
-</svg>

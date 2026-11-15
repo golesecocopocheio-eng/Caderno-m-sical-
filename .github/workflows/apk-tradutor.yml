@@ -3,7 +3,7 @@ name: Gerar APK do Clã Speak (tradutor)
 on:
   push:
     branches: [main, ccr-4277b803-nnu57g]
-    paths: ['app/tradutor*', 'app/icons/tradutor*.svg', 'app/firebase-config.js', 'android-tradutor/**', '.github/workflows/apk-tradutor.yml']
+    paths: ['app/tradutor*', 'app/icons/tradutor*', 'app/firebase-config.js', 'android-tradutor/**', '.github/workflows/apk-tradutor.yml']
   workflow_dispatch:
 
 permissions:
@@ -39,14 +39,14 @@ jobs:
           rm -rf www && mkdir -p www/icons www/vendor
           cp ../app/tradutor.html www/index.html
           cp ../app/tradutor.js ../app/tradutor.webmanifest ../app/firebase-config.js www/
-          cp ../app/icons/tradutor.svg www/icons/
+          cp ../app/icons/tradutor-gato.png ../app/icons/tradutor-192.png ../app/icons/tradutor-512.png www/icons/
           cp ../app/vendor/qrcode.js ../app/vendor/firebase-app-compat.js ../app/vendor/firebase-auth-compat.js ../app/vendor/firebase-firestore-compat.js www/vendor/
 
       - name: Criar o projeto Android
         run: npx cap add android
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#0b0b0b' --splashBackgroundColor '#0b0b0b' --splashBackgroundColorDark '#0b0b0b'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#6d28d9' --splashBackgroundColor '#3b0764' --splashBackgroundColorDark '#3b0764'
 
       - name: Definir a versão do app
         run: |

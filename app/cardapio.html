@@ -21,8 +21,24 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}
 .cats button{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:99px;padding:7px 12px;font-size:13.5px}
 .cats button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 .prod{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.menu{background:radial-gradient(120% 80% at 50% 0%,#5b21b6 0%,#2e1065 45%,#12051f 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px}
+.menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+.menu .mt span{color:#facc15}
+.menu .ms{text-align:center;color:#fcd34d;font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px}
+.menu .mc{display:flex;align-items:center;gap:10px;margin:22px 0 8px;color:#facc15;font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+.menu .mc:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(250,204,21,.6),transparent)}
+.menu .mi{display:flex;align-items:baseline;gap:6px;padding:7px 0;font-size:16px}
+.menu .mi .mn{font-weight:600}
+.menu .mi .ml{flex:1;border-bottom:2px dotted rgba(245,243,255,.28);transform:translateY(-4px);min-width:16px}
+.menu .mi .mp{font-weight:800;color:#fde047;white-space:nowrap}
+.menu .mf{text-align:center;color:rgba(245,243,255,.55);font-size:11px;letter-spacing:.12em;margin-top:22px}
+.cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#12051f;padding:20px 14px 40px}
+.cliente .menu{max-width:620px;margin:0 auto;box-shadow:none}
+.cliente .menu .mi{font-size:19px}.cliente .menu .mt{font-size:32px}
 .prod button{position:relative;text-align:left;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:14px;padding:12px 10px;min-height:74px;font-size:14.5px;font-weight:600;line-height:1.25}
-.prod button small{display:block;color:var(--ac);font-weight:800;font-size:15px;margin-top:6px}
+.prod button small{display:block;width:fit-content;color:var(--ac);font-weight:800;font-size:14.5px;margin-top:8px;background:rgba(109,40,217,.09);padding:2px 9px;border-radius:99px}
+.prod button{box-shadow:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.05);border-radius:16px!important;transition:transform .08s}
+.prod button:active{transform:scale(.97)}
 .prod button .qt{position:absolute;top:6px;right:6px;background:var(--ac);color:var(--on);border-radius:99px;min-width:22px;height:22px;font-size:12.5px;display:grid;place-items:center;padding:0 6px}
 .it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--bd);font-size:14.5px}
 .it:first-of-type{border-top:0}
@@ -248,19 +264,65 @@ function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"
     <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
     <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p>${leitura&&leitura.texto&&!lendo?`<details><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`}
 const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p>${leitura.texto?`<details style="margin-top:8px"><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`:'';
-function telaCardapio(){
-  let h=fotoCard();
-  if(fotos.length)h+=`<div class="card"><h2>🖼️ Fotos do cardápio (${fotos.length})</h2><p class="sub">Guardadas na nuvem do bar (conta do Bar Conect), não no seu celular.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[...fotos].sort((a,b)=>b.t-a.t).map(f=>`<button data-fv="${f.id}" style="border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)"><img src="${f.img}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div></div>`;
-  const C=categorias();
-  h+=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">📋 Cardápio (${itens.length})</h2><button class="link" data-aba="vender" id="irEditar">✏️ Editar valores</button></div>`;
-  if(!itens.length)h+='<p class="sub" style="margin-top:8px">Nenhum item ainda.</p>';
-  C.forEach(c=>{const l=itens.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));
-    h+=`<h2 style="margin:14px 0 2px">${esc(c)} <span class="chip">${l.length}</span></h2>`+l.map(i=>`<div class="it" style="${i.on===false?'opacity:.5':''}"><span>${esc(i.n)}</span><b>${R(i.p)}</b></div>`).join('')});
-  h+='</div>';
-  if(itens.length)h+=`<button class="btn sec" id="copiarCard">📋 Copiar cardápio (texto para WhatsApp)</button>`;
-  if(itens.length&&dono)h+=`<button class="btn sec" id="zerarCard" style="color:var(--bad)">Apagar o cardápio inteiro</button>`;
-  return h;
+const nomeBar=()=>(cfg.nome||'').trim()||'Bar Conect';
+function menuHTML(){
+  const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));
+  const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
+  const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
+  return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
+  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>`).join('')).join('')}
+  <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
 }
+function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
+  if(!el){el=document.createElement('div');el.id='cliente';el.className='cliente';document.body.appendChild(el)}
+  el.innerHTML=`<button class="x" id="clienteFechar" style="position:fixed;top:12px;right:14px;color:#fff;font-size:26px;z-index:31">✕</button>${menuHTML()}`}
+// imagem do cardápio (para WhatsApp, Instagram, imprimir)
+function imagemCardapio(){
+  const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c)),W=1080,lin=[];
+  C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt')).forEach(i=>lin.push({i}))});
+  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66),0)+140;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.9);bg.addColorStop(0,'#5b21b6');bg.addColorStop(.45,'#2e1065');bg.addColorStop(1,'#12051f');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  g.textAlign='center';g.fillStyle='#ffffff';g.font='900 74px '+F;
+  const nb=nomeBar().toUpperCase();g.fillText(nb,W/2,150);
+  g.fillStyle='#fcd34d';g.font='600 30px '+F;g.fillText(((cfg.sub||'').trim()||'Cardápio').toUpperCase().split('').join(' '),W/2,215);
+  let y=300;g.textAlign='left';
+  const fit=(t,max,font)=>{g.font=font;if(g.measureText(t).width<=max)return t;while(t.length>3&&g.measureText(t+'…').width>max)t=t.slice(0,-1);return t+'…'};
+  lin.forEach(l=>{
+    if(l.cat){y+=40;g.fillStyle='#facc15';g.font='800 34px '+F;const t=l.cat.toUpperCase();g.fillText(t,80,y+20);const w=g.measureText(t).width;
+      const gr=g.createLinearGradient(100+w,0,W-80,0);gr.addColorStop(0,'rgba(250,204,21,.7)');gr.addColorStop(1,'rgba(250,204,21,0)');g.fillStyle=gr;g.fillRect(100+w,y+8,W-180-w,3);y+=70;return}
+    const i=l.i,pr=i.p?R(i.p):'—';g.font='800 38px '+F;const pw=g.measureText(pr).width;
+    const nome=fit(i.n,W-200-pw,'600 38px '+F);g.fillStyle='#f5f3ff';g.font='600 38px '+F;g.fillText(nome,80,y+30);const nw=g.measureText(nome).width;
+    g.fillStyle='rgba(245,243,255,.35)';for(let x=80+nw+16;x<W-80-pw-16;x+=14)g.fillRect(x,y+26,5,5);
+    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66});
+  g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
+  return cv.toDataURL('image/png');
+}
+async function compartilharImagem(){
+  const url=imagemCardapio(),nome='cardapio-'+nomeBar().toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
+  const P=window.parent,Cap=P&&P.Capacitor&&P.Capacitor.Plugins;
+  try{
+    if(Cap&&Cap.Filesystem&&Cap.Share){const r=await Cap.Filesystem.writeFile({path:nome,data:url.split(',')[1],directory:'CACHE'});await Cap.Share.share({title:'Cardápio',files:[r.uri],dialogTitle:'Compartilhar cardápio'});return}
+    const b=await (await fetch(url)).blob(),f=new File([b],nome,{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Cardápio'});return}
+    const a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();toast('✅ Imagem do cardápio baixada');
+  }catch(e){if(!(e&&(e.name==='AbortError'||/cancel/i.test(e.message||''))))toast('Não consegui compartilhar: '+(e.message||e))}
+}
+window.__cardImagem=imagemCardapio;
+function telaCardapio(){
+  if(itens.length){
+    let h=menuHTML();
+    h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Compartilhar imagem</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
+    h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div></div>`;
+    h+=fotoCard();
+    if(fotos.length)h+=fotosHTML();
+    if(dono)h+=`<button class="btn sec" id="zerarCard" style="color:var(--bad)">Apagar o cardápio inteiro</button>`;
+    return h;
+  }
+  return fotoCard()+(fotos.length?fotosHTML():'')+'<p class="sub" style="text-align:center">Depois de digitalizar, o cardápio aparece aqui pronto para mostrar ao cliente.</p>';
+}
+const fotosHTML=()=>`<div class="card"><h2>🖼️ Fotos do cardápio (${fotos.length})</h2><p class="sub">Guardadas na nuvem do bar (conta do Bar Conect), não no seu celular.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[...fotos].sort((a,b)=>b.t-a.t).map(f=>`<button data-fv="${f.id}" style="border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)"><img src="${f.img}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div></div>`;
 function verFoto(){
   let f=$('#fotoFolha');if(!fotoVer){if(f)f.remove();return}
   const x=fotos.find(y=>y.id===fotoVer);if(!x){fotoVer=null;if(f)f.remove();return}
@@ -444,6 +506,9 @@ document.addEventListener('click',async ev=>{
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
   if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
   if(b.id==='editarBtn'){editar=!editar;aba='vender';draw();return}
+  if(b.id==='clienteBtn'){mostrarCliente(true);return}
+  if(b.id==='clienteFechar'){mostrarCliente(false);return}
+  if(b.id==='imgBtn'){compartilharImagem();return}
   if(b.id==='irEditar'){editar=true;aba='vender';draw();return}
   if(d.fv){fotoVer=d.fv;verFoto();return}
   if(b.id==='fvFechar'){fotoVer=null;verFoto();return}
@@ -472,6 +537,7 @@ document.addEventListener('input',e=>{const t=e.target;
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
+  if(t.id==='nbNome'||t.id==='nbSub'){cfg[t.id==='nbNome'?'nome':'sub']=t.value.trim();await salvarCfg();return}
   if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
   if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
   try{
@@ -490,7 +556,7 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
   db.collection('itens').onSnapshot(s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));carregado=true;draw()},()=>{});
   db.collection('fotos').onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.img);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
-  db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas};draw()},()=>{});
+  db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||''};draw()},()=>{});
   draw();
 })();
 </script>

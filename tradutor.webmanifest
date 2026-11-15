@@ -1,7 +1,7 @@
 {
   "id": "./tradutor.html",
-  "name": "Tradutor ao Vivo",
-  "short_name": "Tradutor",
+  "name": "Clã Speak",
+  "short_name": "Clã Speak",
   "description": "Tradução de voz em tempo real entre celulares ou frente a frente",
   "start_url": "./tradutor.html",
   "scope": "./",
@@ -11,6 +11,23 @@
   "theme_color": "#0f766e",
   "lang": "pt-BR",
   "icons": [
-    { "src": "icons/tradutor.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "icons/clan-speak-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/clan-speak-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/clan-speak-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

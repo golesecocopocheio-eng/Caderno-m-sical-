@@ -269,7 +269,7 @@ function desenharCarrinho(){
   el.innerHTML=`<div class="in"><details id="carDet"${carAberto?' open':''}><summary class="row" style="justify-content:space-between;list-style:none;cursor:pointer"><span>🛒 <b>${n}</b> ${n>1?'itens':'item'} · <span class="link">ver</span></span><span class="big">${R(totalCarrinho())}</span></summary><div style="max-height:34vh;overflow:auto;margin-top:6px">${linhas}</div><button class="btn sec" id="limpar" style="margin-top:6px">Limpar</button></details><button class="btn ok" id="cobrar">Cobrar ${R(totalCarrinho())}</button></div>`;
 }
 function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Aponte para o cardápio impresso (bem reto e com luz). O app <b>escaneia</b> nomes, preços e categorias e <b>monta o cardápio de venda</b> na hora. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
-    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
+    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Escanear cardápio</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
     <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p>${leitura&&leitura.texto&&!lendo?`<details><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`}
 const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p>${leitura.texto?`<details style="margin-top:8px"><summary class="link" style="cursor:pointer">Ver o texto que o app leu da foto</summary><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;max-height:40vh;overflow:auto">${esc(leitura.texto)}</pre></details>`:''}</div>`:'';
 const nomeBar=()=>(cfg.nome||'').trim()||'Bar Conect';
@@ -521,8 +521,41 @@ async function lerFotos(arqs,guardar=true){
   }
   if(guardar)arqs.forEach(a=>comprimir(a).then(img=>db.collection('fotos').add({img,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim()})).catch(()=>{}));
 }
+async function salvarLidos(lidos){
+  let novos=0,atual=0,erro='';const salvos=[];
+  for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
+    if(ja){atual++;continue}
+    salvos.push(db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()}).catch(e=>{erro=e.message||String(e)}));novos++}
+  await Promise.race([Promise.all(salvos),new Promise(r=>setTimeout(r,3000))]);
+  return {novos,atual,erro};
+}
+const scannerNativo=()=>{const n=leitorNativo();return n&&typeof n.digitalizar==='function'?n:null};
+// 📷 Scanner do Google: acha as bordas, recorta, endireita e deixa nítido; depois lê as informações
+async function digitalizar(){
+  const n=scannerNativo();if(!n){try{window.parent.__barFotoCardapio(true)}catch(e){}return}
+  if(leitura&&leitura.lendo)return;
+  let r;
+  try{r=await n.digitalizar({paginas:4})}
+  catch(e){const c=e&&(e.code||'');if(/CANCEL/i.test(c+(e.message||'')))return;
+    if(/INDISPON/i.test(c+(e.message||''))){toast('Scanner do Google indisponível neste celular. Abrindo a câmera…');try{window.parent.__barFotoCardapio(true)}catch(x){}return}
+    leitura={lendo:false,msg:'❌ Não consegui digitalizar: '+((e&&e.message)||e)};draw();return}
+  const pags=(r&&r.paginas)||[];if(!pags.length)return;
+  const t0=Date.now();leitura={lendo:true,msg:'Montando o cardápio…'};aba='vender';editar=false;draw();
+  let el=document.createElement('div');el.id='scan';el.className='scan';document.body.appendChild(el);
+  el.innerHTML=`<div class="quadro"><img src="${pags[0].imagem}" alt=""><div class="linha"></div><i class="canto c1"></i><i class="canto c2"></i><i class="canto c3"></i><i class="canto c4"></i></div><b>✅ Cardápio digitalizado</b><p id="scanMsg">Montando o cardápio…</p>`;
+  const lidos=[];let textoLido='';
+  pags.forEach(p=>{const tx=montarTexto(p.linhas)||p.texto||'';textoLido+=(textoLido?'\n----\n':'')+tx;let l=lerCardapio(tx);if(!l.length)l=lerCardapio(tx,true);lidos.push(...l)});
+  const {novos,atual,erro}=await salvarLidos(lidos);
+  // guarda as páginas digitalizadas (já recortadas e nítidas) na nuvem do bar
+  pags.forEach(p=>{const img=p.imagem;(img.length<700000?Promise.resolve(img):deDataUrl(img).then(comprimir)).then(im=>db.collection('fotos').add({img:im,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim(),digitalizada:true})).catch(()=>{})});
+  const seg=((Date.now()-t0)/1000).toFixed(1).replace('.',','),semP=lidos.filter(x=>!x.p).length;
+  await new Promise(r=>setTimeout(r,500));el.remove();
+  leitura={lendo:false,texto:textoLido,msg:lidos.length?`✅ Cardápio digitalizado (${pags.length} ${pags.length>1?'páginas':'página'}) e montado ${(Date.now()-t0)<1500?"na hora":"em "+seg+" s"}: ${novos} itens novos${atual?' ('+atual+' já estavam, mantive o preço)':''}.${semP?' '+semP+' ficaram sem preço: preencha.':''} A imagem digitalizada fica em 📋 Cardápio → Fotos. Confira e toque em ✅ Pronto.`
+    :'❌ Digitalizei, mas não achei itens'+(erro?' (erro: '+erro+')':'')+'. Veja a imagem em 📋 Cardápio → Fotos e tente de novo mais perto.'};
+  aba='vender';editar=lidos.length>0;draw();
+}
 window.__cardLerFotos=a=>lerFotos(a);
-window.__cardAoAbrir=()=>{if(!leitorNativo()){try{window.parent.__barOCRPreparar&&window.parent.__barOCRPreparar()}catch(e){}}if(carregado&&!itens.length&&!sessionStorage.getItem('card-auto')&&!(leitura&&leitura.lendo)){sessionStorage.setItem('card-auto','1');try{window.parent.__barFotoCardapio(true)}catch(e){}}};
+window.__cardAoAbrir=()=>{if(!leitorNativo()){try{window.parent.__barOCRPreparar&&window.parent.__barOCRPreparar()}catch(e){}}if(carregado&&!itens.length&&!sessionStorage.getItem('card-auto')&&!(leitura&&leitura.lendo)){sessionStorage.setItem('card-auto','1');if(scannerNativo()){digitalizar();return}try{window.parent.__barFotoCardapio(true)}catch(e){}}};
 const strip=i=>{const o={...i};delete o.id;return o};
 async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(JSON.stringify(cfg)))}catch(e){toast('Sem permissão para alterar')}}
 
@@ -548,6 +581,7 @@ document.addEventListener('click',async ev=>{
   if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
+  if(d.foto==='cam'&&scannerNativo()){digitalizar();return}
   if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
   if(b.id==='editarBtn'){editar=!editar;aba='vender';draw();return}
   if(b.id==='clienteBtn'){mostrarCliente(true);return}

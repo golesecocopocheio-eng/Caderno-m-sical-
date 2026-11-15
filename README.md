@@ -16,6 +16,10 @@ como app próprio ("Tradutor"). Arquivos: `app/tradutor.html`, `app/tradutor.js`
   fica de cabeça para baixo); cada lado tem seu idioma e seu microfone.
 - Dá para digitar em vez de falar.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
+- **APK Android próprio ("Tradutor"):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+  `Tradutor.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
+  `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
+  em voz alta), e o convite para a sala é pelo código.
 
 Como funciona: o reconhecimento de voz e a leitura em voz alta são do próprio navegador (Chrome no
 Android, Safari no iPhone; precisa de internet). A tradução usa o Google Tradutor gratuito, sem chave

@@ -64,11 +64,67 @@
     return r;
   }
 
+  // ---------- App Android (APK) ----------
+  // Dentro do APK a WebView não tem reconhecimento de voz nem leitura em voz alta:
+  // usa os plugins nativos do Capacitor (SpeechRecognition e TextToSpeech).
+  const NATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const plugin = (n) => (NATIVO && window.Capacitor.Plugins && window.Capacitor.Plugins[n]) || null;
+
+  // Imita a SpeechRecognition do navegador usando o plugin nativo. O Android ouve uma frase
+  // por vez: quando ela termina, entrega o texto final e o ouvinte abre a próxima.
+  let permissaoMic = null;
+  class ReconhecimentoNativo {
+    constructor() { this.lang = 'pt-BR'; this.ultimo = ''; this.acabou = false; this.handles = []; }
+    _emitir(texto, final) { const r = [{ transcript: texto }]; r.isFinal = final; this.onresult && this.onresult({ resultIndex: 0, results: [r] }); }
+    async start() {
+      const P = plugin('SpeechRecognition');
+      try {
+        if (permissaoMic !== 'granted') {
+          const st = await P.requestPermissions();
+          permissaoMic = st.speechRecognition;
+          if (permissaoMic !== 'granted') { this.onerror && this.onerror({ error: 'not-allowed' }); this._fim(); return; }
+        }
+        this.handles.push(await P.addListener('partialResults', (d) => {
+          const t = (d.matches && d.matches[0]) || '';
+          if (t && !this.acabou) { this.ultimo = t; this._emitir(t, false); }
+        }));
+        // "stopped" chega antes do resultado final: espera um pouco por ele
+        this.handles.push(await P.addListener('listeningState', (d) => { if (d.status === 'stopped') setTimeout(() => this._fim(), 700); }));
+        const inicio = Date.now();
+        // Silêncio ou erro não geram aviso no plugin: confere se ainda está ouvindo
+        this.vigia = setInterval(() => {
+          if (Date.now() - inicio < 1500) return;
+          P.isListening().then((r) => { if (!r.listening) setTimeout(() => this._fim(), 500); }).catch(() => {});
+        }, 1000);
+        await P.start({ language: this.lang, maxResults: 1, partialResults: true, popup: false });
+      } catch (e) { this._fim(); }
+    }
+    _fim() {
+      if (this.acabou) return;
+      this.acabou = true;
+      clearInterval(this.vigia);
+      this.handles.forEach((h) => h.remove().catch(() => {}));
+      if (this.ultimo.trim()) this._emitir(this.ultimo, true);
+      this.onend && this.onend();
+    }
+    stop() { const P = plugin('SpeechRecognition'); P.stop().catch(() => {}); this._fim(); }
+    abort() { this.ultimo = ''; this.stop(); }
+  }
+
   // ---------- Voz: falar ----------
   let vozLigada = localStorage.getItem('trad-voz') !== '0';
   const falando = { n: 0 };
   function falar(texto, lingua) {
-    if (!vozLigada || !window.speechSynthesis || !texto) return;
+    if (!vozLigada || !texto) return;
+    const TTS = plugin('TextToSpeech');
+    if (TTS) {
+      falando.n++;
+      ouvinte.pausar(true);
+      const fimN = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n) setTimeout(() => ouvinte.pausar(false), 250); };
+      TTS.speak({ text: texto, lang: lingua, rate: 1.0, queueStrategy: 1 }).then(fimN, fimN);
+      return;
+    }
+    if (!window.speechSynthesis) return;
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = lingua;
     const vs = speechSynthesis.getVoices();
@@ -82,7 +138,7 @@
   }
 
   // ---------- Voz: ouvir ----------
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SR = plugin('SpeechRecognition') ? ReconhecimentoNativo : (window.SpeechRecognition || window.webkitSpeechRecognition);
   const ouvinte = {
     rec: null, ativo: false, pausado: false, lingua: 'pt-BR', cb: null,
     iniciar(lingua, cb) {
@@ -310,17 +366,31 @@
   $('#digitar').addEventListener('keydown', (e) => { if (e.key === 'Enter') { enviarTexto(e.target.value); e.target.value = ''; } });
   $('#entrar').onclick = entrarSala;
   $('#btSair').onclick = sairSala;
-  $('#btVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#btVoz').textContent = vozLigada ? '🔊' : '🔇'; if (!vozLigada && window.speechSynthesis) speechSynthesis.cancel(); };
+  $('#btVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#btVoz').textContent = vozLigada ? '🔊' : '🔇'; if (!vozLigada) { if (plugin('TextToSpeech')) plugin('TextToSpeech').stop().catch(() => {}); else if (window.speechSynthesis) speechSynthesis.cancel(); } };
   const linkSala = () => location.origin + location.pathname + '?sala=' + $('#salaCod').textContent;
   $('#btConvidar').onclick = () => {
     const box = $('#convite'); box.hidden = !box.hidden;
     if (box.hidden) return;
+    if (NATIVO) { // no APK não há link (o app roda em https://localhost): convida pelo código
+      $('#qrImg').innerHTML = '<div style="font-size:2.6rem;font-weight:800;letter-spacing:.2em;color:#0f766e">' + esc($('#salaCod').textContent) + '</div>';
+      $('#qrLink').textContent = 'Peça para a outra pessoa abrir o app Tradutor e entrar na sala com este código.';
+      $('#btCopiar').textContent = 'Copiar código';
+      return;
+    }
     const L = linkSala();
     $('#qrLink').textContent = L;
     try { const qr = qrcode(0, 'M'); qr.addData(L); qr.make(); $('#qrImg').innerHTML = qr.createImgTag(6, 0); } catch (e) { $('#qrImg').textContent = ''; }
   };
-  $('#btCopiar').onclick = () => navigator.clipboard.writeText(linkSala()).then(() => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = 'Copiar link'; }, 1500); }).catch(() => prompt('Copie o link:', linkSala()));
-  $('#btCompart').onclick = () => navigator.share ? navigator.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala de tradução: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {}) : $('#btCopiar').onclick();
+  const copiado = (txt, volta) => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = volta; }, 1500); };
+  $('#btCompart').onclick = () => {
+    const Sh = plugin('Share');
+    if (Sh) return Sh.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala do Tradutor ao Vivo. Código: ' + $('#salaCod').textContent, dialogTitle: 'Convidar para a sala' }).catch(() => {});
+    if (navigator.share) return navigator.share({ title: 'Tradutor ao Vivo', text: 'Entre na minha sala de tradução: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {});
+    $('#btCopiar').onclick();
+  };
+  $('#btCopiar').onclick = () => NATIVO
+    ? navigator.clipboard.writeText($('#salaCod').textContent).then(() => copiado(0, 'Copiar código')).catch(() => prompt('Código da sala:', $('#salaCod').textContent))
+    : navigator.clipboard.writeText(linkSala()).then(() => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = 'Copiar link'; }, 1500); }).catch(() => prompt('Copie o link:', linkSala()));
   window.addEventListener('pagehide', () => { conexao && conexao.sair(); });
   // Voltou para a página pelo botão Voltar (cópia guardada pelo navegador): entra de novo na sala.
   window.addEventListener('pageshow', (e) => { if (e.persisted && $('#salaTela').classList.contains('on')) { conexao = null; entrarSala(); } });

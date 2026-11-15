@@ -146,6 +146,68 @@ function resumo(lista){
 }
 const nomeVia=id=>{const m=cfg.maquinas.find(x=>x.id===id);if(m)return m.n;const c=cfg.contas.find(x=>x.id===id);return c?c.n:id};
 
+/* ---------- Mercado Pago Point (maquininha ligada ao app) ----------
+   O app manda o valor para a maquininha (modo integrado/PDV) e acompanha até aprovar.
+   A chave (Access Token) fica SÓ neste celular: ela dá acesso à conta Mercado Pago, então
+   não vai para a nuvem do bar nem para o backup. Só funciona no APK (o navegador bloqueia). */
+const MP={tk:()=>localStorage.getItem('mp-token')||'',dev:()=>localStorage.getItem('mp-device')||'',maq:()=>localStorage.getItem('mp-maquina')||'mp'};
+const mpLigada=()=>!!(MP.tk()&&MP.dev());
+let mpEst={devs:null,msg:'',busy:false},mpCob=null;
+async function mpReq(method,path,body){
+  const url='https://api.mercadopago.com'+path,headers={Authorization:'Bearer '+MP.tk(),'Content-Type':'application/json'};
+  if(method==='POST')headers['X-Idempotency-Key']='bar-'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  let H=null;try{H=(window.parent.Capacitor||window.Capacitor).Plugins.CapacitorHttp}catch(e){}
+  let st,data;
+  if(H){const r=await H.request({url,method,headers,data:body});st=r.status;data=r.data;if(typeof data==='string'){try{data=JSON.parse(data)}catch(e){}}}
+  else{const r=await fetch(url,{method,headers,body:body?JSON.stringify(body):undefined});st=r.status;data=await r.json().catch(()=>({}))}
+  if(st>=400){const m=(data&&(data.message||data.error))||('erro '+st);const e=new Error(st===401?'chave (Access Token) inválida ou sem permissão':m);e.status=st;throw e}
+  return data;
+}
+window.__mpReq=mpReq;
+async function mpBuscar(){
+  mpEst.busy=true;mpEst.msg='Buscando suas maquininhas…';draw();
+  try{const d=await mpReq('GET','/point/integration-api/devices');mpEst.devs=(d&&d.devices)||[];
+    mpEst.msg=mpEst.devs.length?'✅ Conectado ao Mercado Pago. Escolha a maquininha:':'Conectado, mas nenhuma maquininha Point apareceu nessa conta. Ligue a maquininha e confira se ela está vinculada à mesma conta.'}
+  catch(e){mpEst.devs=null;mpEst.msg='❌ Não consegui conectar: '+(e.message||e)+(window.parent.Capacitor?'':' (a ligação só funciona no app instalado, APK)')}
+  mpEst.busy=false;draw();
+}
+async function mpModoPDV(id){
+  mpEst.msg='Ativando o modo integrado…';draw();
+  try{await mpReq('PATCH','/point/integration-api/devices/'+encodeURIComponent(id),{operating_mode:'PDV'});await mpBuscar();mpEst.msg='✅ Modo integrado ativado. Reinicie a maquininha (desligue e ligue) para valer.';draw()}
+  catch(e){mpEst.msg='❌ Não consegui ativar: '+(e.message||e);draw()}
+}
+async function mpCobrar(){
+  const total=Math.round(totalCarrinho()*100);if(!total||!folha)return;
+  mpCob={estado:'enviando',msg:'Enviando '+R(total/100)+' para a maquininha…'};desenharFolha();
+  try{
+    const r=await mpReq('POST','/point/integration-api/devices/'+encodeURIComponent(MP.dev())+'/payment-intents',
+      {amount:total,additional_info:{external_reference:'bar-'+Date.now(),print_on_terminal:true},payment:{type:folha.pg==='debito'?'debit_card':'credit_card',installments:1,installments_cost:'seller'}});
+    mpCob={id:r.id,estado:'OPEN',msg:'📲 Valor enviado. Peça para o cliente aproximar ou inserir o cartão na maquininha.'};desenharFolha();mpAcompanhar(r.id);
+  }catch(e){mpCob={estado:'erro',msg:'❌ '+(e.message||e)+'. Confira se a maquininha está ligada, no modo integrado e sem outra cobrança aberta.'};desenharFolha()}
+}
+async function mpAcompanhar(id){
+  for(let i=0;i<120&&mpCob&&mpCob.id===id;i++){
+    await new Promise(r=>setTimeout(r,3000));if(!mpCob||mpCob.id!==id)return;
+    let d;try{d=await mpReq('GET','/point/integration-api/payment-intents/'+encodeURIComponent(id))}catch(e){continue}
+    const st=d&&d.state;
+    if(st==='FINISHED'){
+      let ok=true,pid=d.payment&&d.payment.id;
+      if(pid){try{const p=await mpReq('GET','/v1/payments/'+pid);ok=p.status==='approved'}catch(e){}}
+      if(ok){mpCob={id,estado:'aprovado',msg:'✅ Pagamento aprovado na maquininha.'};desenharFolha();await confirmarVenda({mp:String(pid||id)});return}
+      mpCob={id,estado:'erro',msg:'❌ O pagamento não foi aprovado. Tente outro cartão ou outra forma.'};desenharFolha();return}
+    if(st==='CANCELED'||st==='ABANDONED'||st==='ERROR'){mpCob={id,estado:'erro',msg:st==='CANCELED'?'Cobrança cancelada na maquininha.':'❌ A maquininha não concluiu ('+st+'). Envie de novo.'};desenharFolha();return}
+    mpCob.msg=st==='PROCESSING'?'⏳ Processando o pagamento…':st==='ON_TERMINAL'?'📲 Na maquininha: aguardando o cartão do cliente…':mpCob.msg;desenharFolha();
+  }
+  if(mpCob&&mpCob.id===id){mpCob.estado='erro';mpCob.msg='Tempo esgotado. Confira na maquininha; se aprovou, confirme a venda à mão.';desenharFolha()}
+}
+async function mpCancelar(){
+  const c=mpCob;if(!c||!c.id){mpCob=null;desenharFolha();return}
+  mpCob={estado:'erro',msg:'Cancelando na maquininha…'};desenharFolha();
+  try{await mpReq('DELETE','/point/integration-api/devices/'+encodeURIComponent(MP.dev())+'/payment-intents/'+encodeURIComponent(c.id));mpCob={estado:'erro',msg:'Cobrança cancelada.'}}
+  catch(e){mpCob={estado:'erro',msg:'Não consegui cancelar pelo app ('+(e.message||e)+'). Cancele na própria maquininha.'}}
+  desenharFolha();
+}
+
 /* ---------- desenho ---------- */
 function draw(){
   const a=document.activeElement;if(a&&a.dataset&&a.dataset.k&&!folha)return;
@@ -222,7 +284,22 @@ function telaPag(){
     <label>Chave Pix (CPF, CNPJ, celular +55…, e-mail ou aleatória)<input data-k="ct" data-ct="${k}" data-cf="chave" value="${esc(c.chave||'')}" autocapitalize="none" ${dono?'':'readonly'}></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>Nome do recebedor<input data-k="ct" data-ct="${k}" data-cf="nome" value="${esc(c.nome||'')}" placeholder="Como no banco" ${dono?'':'readonly'}></label><label>Cidade<input data-k="ct" data-ct="${k}" data-cf="cidade" value="${esc(c.cidade||'')}" ${dono?'':'readonly'}></label></div>
     ${dono?`<button class="link" data-ctdel="${k}" style="margin-top:8px;color:var(--bad)">Remover conta</button>`:''}</div>`).join('')}${dono?'<button class="link" id="ctNova">+ Conta</button>':''}</div>`;
-  h+=`<div class="card"><h2>🔌 Ligação automática com a maquininha</h2><p class="sub" style="margin:0">Hoje o valor é passado na maquininha e confirmado aqui com um toque. A ligação automática (o app manda o valor direto para a maquininha) é possível com a <b>Mercado Pago Point</b>, usando a chave de integração da sua conta Mercado Pago. Para a <b>Santander/Getnet</b>, a ligação depende de liberação comercial do banco.</p></div>`;
+  {const tk=MP.tk(),dev=MP.dev();
+  h+=`<div class="card" style="border:2px solid ${mpLigada()?'var(--ok)':'var(--bd)'}"><h2>🔌 Mercado Pago Point ligada ao app ${mpLigada()?'<span class="chip" style="color:var(--ok)">ligada neste celular</span>':''}</h2>
+  <p class="sub">Com a maquininha ligada, ao cobrar no cartão o app <b>manda o valor direto para a Point</b> e registra a venda sozinho quando o pagamento for aprovado.</p>
+  <details ${tk&&(mpLigada()||(mpEst.devs&&mpEst.devs.length))?'':'open'}><summary style="font-weight:600;cursor:pointer">1. Chave de acesso (Access Token)</summary>
+  <p class="sub" style="margin-top:6px">No computador ou celular, entre em <b>mercadopago.com.br/developers/panel</b> com a conta do bar → <b>Suas integrações → Criar aplicação</b> (pagamentos presenciais / Point) → <b>Credenciais de produção</b> → copie o <b>Access Token</b> (começa com APP_USR-).</p>
+  <label>Access Token<input data-k="mpt" id="mpTk" type="password" autocomplete="off" autocapitalize="none" placeholder="APP_USR-…" value="${esc(tk)}"></label>
+  <p class="sub" style="font-size:12px">🔒 A chave fica guardada <b>só neste celular</b>. Não vai para a nuvem nem para o backup. Em outro celular que for cobrar, coloque de novo.</p></details>
+  <button class="btn" id="mpBuscar" ${mpEst.busy?'disabled':''}>${tk?'2. Conectar e buscar a maquininha':'Salvar chave e conectar'}</button>
+  ${mpEst.msg?`<p class="msg" style="font-weight:600;color:var(--tx)">${esc(mpEst.msg)}</p>`:''}
+  ${mpEst.devs&&mpEst.devs.length?`<div class="opc">${mpEst.devs.map(d=>`<button data-mpdev="${esc(d.id)}" class="${dev===d.id?'on':''}">${esc(d.id)}<small>${d.operating_mode==='PDV'?'✅ modo integrado (PDV)':'⚠️ modo '+esc(d.operating_mode||'?')+' — precisa ativar o integrado'}</small></button>`).join('')}</div>
+    ${(()=>{const d=mpEst.devs.find(x=>x.id===dev);return d&&d.operating_mode!=='PDV'?`<button class="btn sec" data-mppdv="${esc(d.id)}">Ativar modo integrado nesta maquininha</button>`:''})()}`:''}
+  ${dev?`<label>3. Qual maquininha da lista de cobrança é essa?<select id="mpMaq">${cfg.maquinas.map(m=>`<option value="${m.id}" ${MP.maq()===m.id?'selected':''}>${esc(m.n)}</option>`).join('')}</select></label>
+    <p class="sub" style="margin-top:8px">✅ Pronto: ao cobrar em Crédito ou Débito e escolher <b>${esc(nomeVia(MP.maq()))}</b>, aparece <b>📲 Enviar para a maquininha</b>.</p>
+    <button class="link" id="mpDesligar" style="color:var(--bad)">Desligar a maquininha deste celular</button>`:''}
+  </div>`;
+  h+=`<div class="card"><h2>Santander (Getnet)</h2><p class="sub" style="margin:0">A ligação automática da Getnet depende de liberação comercial do banco. Por enquanto: passe o valor na maquininha e confirme a venda no app.</p></div>`;}
   if(!dono)h+='<p class="msg">Só o dono altera maquininhas e contas.</p>';
   return h;
 }
@@ -243,7 +320,11 @@ function desenharFolha(){
     <p class="big" style="text-align:center;margin:12px 0 0;color:${tr<0?'var(--bad)':'var(--ok)'}">${rec?(tr<0?'Falta '+R(-tr):'Troco '+R(tr)):''}</p>`}
   if(F.pg==='credito'||F.pg==='debito'){
     h+=`<label>Qual maquininha?</label><div class="opc">${cfg.maquinas.map(m=>`<button data-via="${m.id}" class="${F.via===m.id?'on':''}">${esc(m.n)}</button>`).join('')}</div>`;
-    if(F.via)h+=`<p class="msg" style="font-size:15px">Passe <b>${R(total)}</b> no <b>${F.pg==='credito'?'crédito':'débito'}</b> da <b>${esc(nomeVia(F.via))}</b> e confirme quando aprovar.</p>`}
+    if(F.via&&F.via===MP.maq()&&mpLigada()){
+      if(!mpCob)h+=`<button class="btn" id="mpEnviar" style="background:#009ee3;color:#fff">📲 Enviar ${R(total)} para a maquininha</button><p class="msg">Ou passe à mão e confirme abaixo.</p>`;
+      else h+=`<div class="card" style="margin-top:10px;border-color:#009ee3"><p class="msg" style="font-size:15px;font-weight:600;color:var(--tx);margin:0">${esc(mpCob.msg)}</p>${mpCob.estado==='OPEN'||mpCob.estado==='enviando'?'<button class="btn sec" id="mpCancelar">Cancelar cobrança</button>':''}${mpCob.estado==='erro'?'<button class="btn sec" id="mpDeNovo">Tentar de novo</button>':''}</div>`;
+    }
+    else if(F.via)h+=`<p class="msg" style="font-size:15px">Passe <b>${R(total)}</b> no <b>${F.pg==='credito'?'crédito':'débito'}</b> da <b>${esc(nomeVia(F.via))}</b> e confirme quando aprovar.</p>`}
   if(F.pg==='pix'){
     h+=`<label>Receber em qual conta?</label><div class="opc">${cfg.contas.map(c=>`<button data-via="${c.id}" class="${F.via===c.id?'on':''}">${esc(c.n)}<small>${esc(c.tipo||'')}${c.chave?' · chave '+esc(c.chave):' · sem chave Pix cadastrada'}</small></button>`).join('')}</div>`;
     const c=cfg.contas.find(x=>x.id===F.via);
@@ -251,17 +332,18 @@ function desenharFolha(){
       if(cod){let img='';try{const q=qrcode(0,'M');q.addData(cod);q.make();img=q.createImgTag(5,0)}catch(e){}
         h+=`<div class="qr">${img}</div><p class="msg">O cliente lê o QR Code no app do banco e paga <b>${R(total)}</b> direto na conta <b>${esc(c.n)}</b>. Confira no extrato e confirme.</p><div class="copia" id="pixCod">${esc(cod)}</div><button class="btn sec" id="pixCopiar">📋 Copiar Pix copia e cola</button>`}
       else h+=`<p class="msg">Essa conta não tem chave Pix. ${dono?'Cadastre em <b>💳 Receber</b>.':'Peça ao dono para cadastrar.'} Você ainda pode confirmar se o cliente pagou pelo QR Code da conta.</p>`}}
-  const pode=F.pg&&(F.pg==='dinheiro'?(!F.recebido||nv(F.recebido)>=total):!!F.via);
+  const pode=F.pg&&(F.pg==='dinheiro'?(!F.recebido||nv(F.recebido)>=total):!!F.via)&&!(mpCob&&mpCob.estado!=='erro');
   h+=`<button class="btn ok" id="fConfirmar" ${pode?'':'disabled'}>✅ Confirmar venda</button></div>`;
   f.innerHTML=h;
 }
-async function confirmarVenda(){
+async function confirmarVenda(extra){
   const total=totalCarrinho();if(!total||!folha||!folha.pg)return;
   const lista=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?{i:id,n:i.n,p:i.p,q}:null}).filter(Boolean);
   const t=Date.now(),v={itens:lista,total:Math.round(total*100)/100,pg:folha.pg,noite:noiteDe(t),t,quem:(localStorage.getItem('bar-nome')||'').trim()};
   if(folha.via)v.via=folha.via;
+  if(extra&&extra.mp)v.mp=extra.mp;
   if(folha.pg==='dinheiro'&&nv(folha.recebido)){v.recebido=nv(folha.recebido);v.troco=Math.round((v.recebido-total)*100)/100}
-  try{await db.collection('vendas').add(v);carrinho={};folha=null;desenharFolha();ver=noiteDe(Date.now());toast('✅ Venda de '+R(v.total)+' registrada'+(v.troco?' · troco '+R(v.troco):''));draw()}
+  try{await db.collection('vendas').add(v);carrinho={};folha=null;mpCob=null;desenharFolha();ver=noiteDe(Date.now());toast('✅ Venda de '+R(v.total)+' registrada'+(v.troco?' · troco '+R(v.troco):''));draw()}
   catch(e){toast('Não consegui salvar a venda: '+(e.message||e))}
 }
 
@@ -333,9 +415,16 @@ document.addEventListener('click',async ev=>{
   if(d.menos){if(--carrinho[d.menos]<=0)delete carrinho[d.menos];draw();return}
   if(b.id==='limpar'){carrinho={};draw();return}
   if(b.id==='cobrar'){abrirCobranca();return}
-  if(b.id==='fFechar'){folha=null;desenharFolha();return}
-  if(d.pg&&folha){folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
-  if(d.via&&folha){folha.via=d.via;desenharFolha();return}
+  if(b.id==='fFechar'){if(mpCob&&(mpCob.estado==='OPEN'||mpCob.estado==='enviando')){toast('Cancele a cobrança na maquininha antes de fechar');return}folha=null;mpCob=null;desenharFolha();return}
+  if(b.id==='mpEnviar'){mpCobrar();return}
+  if(b.id==='mpCancelar'){mpCancelar();return}
+  if(b.id==='mpDeNovo'){mpCob=null;desenharFolha();return}
+  if(b.id==='mpBuscar'){const t=$('#mpTk');if(t)localStorage.setItem('mp-token',t.value.trim());if(!MP.tk()){mpEst.msg='Cole o Access Token primeiro.';draw();return}mpBuscar();return}
+  if(d.mpdev){localStorage.setItem('mp-device',d.mpdev);draw();return}
+  if(d.mppdv){mpModoPDV(d.mppdv);return}
+  if(b.id==='mpDesligar'){['mp-token','mp-device'].forEach(k=>localStorage.removeItem(k));mpEst={devs:null,msg:'Maquininha desligada deste celular.',busy:false};draw();return}
+  if(d.pg&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
+  if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
   if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
@@ -368,6 +457,8 @@ document.addEventListener('input',e=>{const t=e.target;
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
+  if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
+  if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
   try{
     if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):'Nome salvo'));return}
     if(!dono)return;

@@ -113,26 +113,29 @@
 
   // ---------- Voz: falar ----------
   let vozLigada = localStorage.getItem('trad-voz') !== '0';
+  // Modo fone de ouvido: a tradução toca no fone e o microfone não a escuta, então não precisa pausar.
+  let fone = localStorage.getItem('trad-fone') === '1';
   const falando = { n: 0 };
-  function falar(texto, lingua) {
-    if (!vozLigada || !texto) return;
+  function falar(texto, lingua, opc = {}) {
+    if ((!vozLigada && !opc.sempre) || !texto) return;
+    const vel = opc.vel || 1.0;
     const TTS = plugin('TextToSpeech');
     if (TTS) {
       falando.n++;
-      ouvinte.pausar(true);
-      const fimN = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n) setTimeout(() => ouvinte.pausar(false), 250); };
-      TTS.speak({ text: texto, lang: lingua, rate: 1.0, queueStrategy: 1 }).then(fimN, fimN);
+      if (!fone) ouvinte.pausar(true);
+      const fimN = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n && ouvinte.pausado) setTimeout(() => ouvinte.pausar(false), 250); };
+      TTS.speak({ text: texto, lang: lingua, rate: vel, queueStrategy: 1 }).then(fimN, fimN);
       return;
     }
     if (!window.speechSynthesis) return;
     const u = new SpeechSynthesisUtterance(texto);
-    u.lang = lingua;
+    u.lang = lingua; u.rate = vel;
     const vs = speechSynthesis.getVoices();
     const v = vs.find((x) => x.lang.replace('_', '-') === lingua) || vs.find((x) => x.lang.startsWith(lingua.split('-')[0]));
     if (v) u.voice = v;
     falando.n++;
-    ouvinte.pausar(true); // o microfone não pode ouvir a própria tradução
-    const fim = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n) setTimeout(() => ouvinte.pausar(false), 250); };
+    if (!fone) ouvinte.pausar(true); // sem fone, o microfone não pode ouvir a própria tradução
+    const fim = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n && ouvinte.pausado) setTimeout(() => ouvinte.pausar(false), 250); };
     u.onend = fim; u.onerror = fim;
     speechSynthesis.speak(u);
   }
@@ -182,6 +185,46 @@
       cb && cb.fim && cb.fim();
     }
   };
+
+  // ---------- Gatinho mascote ----------
+  let audio = null;
+  function miau() { // miado curtinho feito com o som do próprio aparelho
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime, o = audio.createOscillator(), f = audio.createBiquadFilter(), g = audio.createGain();
+      o.type = 'sawtooth'; f.type = 'bandpass'; f.Q.value = 4;
+      o.frequency.setValueAtTime(520, t); o.frequency.linearRampToValueAtTime(880, t + 0.16); o.frequency.linearRampToValueAtTime(560, t + 0.55);
+      f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(2000, t + 0.18); f.frequency.linearRampToValueAtTime(700, t + 0.55);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.05); g.gain.setValueAtTime(0.35, t + 0.38); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      o.connect(f); f.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.62);
+    } catch (e) { /* sem áudio */ }
+  }
+  const FRASES_GATO = ['Miau! 😺', 'Ronrom… 💛', 'Fale comigo em qualquer idioma! 🌍', 'Eu entendo 24 idiomas, sabia? 😼',
+    'Toque no 🎤 e fale!', 'Estudar um pouquinho todo dia faz miau-ravilhas! 📚', 'Com fone de ouvido 🎧 a conversa flui sem pausas.',
+    'Mande um emoji pra sala! 🎉', 'Prrr… carinho aceito! 🐾'];
+  function gato(id) {
+    const el = $('#' + id), img = $('img', el), fala = $('.fala', el);
+    let tm = null;
+    const g = {
+      dizer(t, ms = 3800) {
+        fala.textContent = t; el.classList.add('falando');
+        img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula');
+        clearTimeout(tm); if (el.classList.contains('mini')) tm = setTimeout(() => el.classList.remove('falando'), ms);
+      },
+      ouvindo(sim) { el.classList.toggle('ouvindo', sim); }
+    };
+    img.addEventListener('click', () => { miau(); g.dizer(FRASES_GATO[Math.floor(Math.random() * FRASES_GATO.length)]); });
+    return g;
+  }
+  const gatoInicio = gato('gatoInicio'), gatoSala = gato('gatoSala');
+  const CORES = ['#facc15', '#fb923c', '#f472b6', '#a78bfa', '#60a5fa', '#34d399', '#f87171', '#2dd4bf'];
+  const corDe = (id) => { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CORES[h % CORES.length]; };
+  const avatar = (id, nome) => `<span class="avatar" style="background:${corDe(id)}">${esc((nome || '?').trim().charAt(0).toUpperCase() || '?')}</span>`;
+  function voar(emoji) {
+    const e = document.createElement('div'); e.className = 'voador'; e.textContent = emoji;
+    e.style.left = (10 + Math.random() * 75) + 'vw'; document.body.appendChild(e);
+    setTimeout(() => e.remove(), 2700);
+  }
 
   // ---------- Transporte (nuvem ou abas do aparelho) ----------
   const uid = 'u' + Math.random().toString(36).slice(2, 10); // modo local: cada aba é uma pessoa
@@ -241,6 +284,7 @@
     return {
       nuvem: true,
       enviar: (texto) => { pend = null; pessoa.update({ vivo: '' }).catch(() => {}); return base.collection('falas').add({ uid: meu, nome: eu.nome, lingua: eu.lingua, texto, t: Date.now() }); },
+      evento: (ev) => base.collection('falas').add({ ...ev, uid: meu, nome: eu.nome, lingua: eu.lingua, t: Date.now() }).catch(() => {}),
       vivo,
       sair: () => { clearInterval(pulso); clearInterval(revisar); offs.forEach((f) => f()); return pessoa.delete().catch(() => {}); }
     };
@@ -255,12 +299,13 @@
       if (m.tipo === 'oi') { const novo = !pessoas.has(m.p.uid); pessoas.set(m.p.uid, { ...m.p, eu: false }); if (novo) anunciar(); mostrar(); }
       if (m.tipo === 'tchau') { pessoas.delete(m.uid); mostrar(); }
       if (m.tipo === 'vivo' && pessoas.has(m.uid)) { pessoas.get(m.uid).vivo = m.texto; mostrar(); }
-      if (m.tipo === 'fala') { if (pessoas.has(m.f.uid)) pessoas.get(m.f.uid).vivo = ''; mostrar(); h.fala({ ...m.f, eu: false, nova: true }); }
+      if (m.tipo === 'fala') { if (!m.f.tipo && pessoas.has(m.f.uid)) { pessoas.get(m.f.uid).vivo = ''; mostrar(); } h.fala({ ...m.f, eu: false, nova: true }); }
     };
     anunciar(); mostrar();
     return {
       nuvem: false,
       enviar: (texto) => { const f = { id: uid + Date.now(), uid, nome: eu.nome, lingua: eu.lingua, texto, t: Date.now() }; bc && bc.postMessage({ tipo: 'fala', f }); h.fala({ ...f, eu: true, nova: true }); },
+      evento: (ev) => { const f = { ...ev, id: uid + Date.now(), uid, nome: eu.nome, lingua: eu.lingua, t: Date.now() }; bc && bc.postMessage({ tipo: 'fala', f }); h.fala({ ...f, eu: true, nova: true }); },
       vivo: (texto) => bc && bc.postMessage({ tipo: 'vivo', uid, texto }),
       sair: () => { bc && (bc.postMessage({ tipo: 'tchau', uid }), bc.close()); }
     };
@@ -284,17 +329,40 @@
   const vivos = new Map(); // uid → elemento da bolha "falando agora"
 
   const rolar = () => { msgs.scrollTop = msgs.scrollHeight; };
+  const porId = new Map(); // id da mensagem → { linha, reacoes: Map(emoji → Set(uid)) }
+  const inserir = (el) => { const pos = [...msgs.children].find((x) => x.dataset.vivo); msgs.insertBefore(el, pos || null); rolar(); };
+  function sistema(texto) { const d = document.createElement('div'); d.className = 'sistema'; d.textContent = texto; inserir(d); }
+  function reagir(id, emoji) { if (conexao && conexao.evento && id) conexao.evento({ tipo: 'reacao', alvo: id, emoji }); }
+  function mostrarReacoes(id) {
+    const m = porId.get(id); if (!m) return;
+    const txt = [...m.reacoes].filter(([, us]) => us.size).map(([e, us]) => e + (us.size > 1 ? us.size : '')).join(' ');
+    $('.reacoes', m.linha).textContent = txt; m.linha.classList.toggle('reagiu', !!txt);
+  }
+  function evento(f) {
+    if (f.tipo === 'emoji') {
+      if (f.nova) { voar(f.emoji); if (!f.eu) gatoSala.dizer(`${f.nome} mandou ${f.emoji}`, 2500); }
+    } else if (f.tipo === 'reacao') {
+      const m = porId.get(f.alvo); if (!m) return;
+      if (!m.reacoes.has(f.emoji)) m.reacoes.set(f.emoji, new Set());
+      m.reacoes.get(f.emoji).add(f.uid); mostrarReacoes(f.alvo);
+      if (f.nova) voar(f.emoji);
+    }
+  }
   function bolha(f) {
+    if (f.tipo) return evento(f);
     const d = document.createElement('div');
-    d.className = 'msg' + (f.eu ? ' eu' : '');
+    d.className = 'linha' + (f.eu ? ' eu' : '');
     const quem = f.eu ? 'Você' : esc(f.nome || 'Alguém') + ' · ' + esc(nomeLingua(f.lingua));
     const mesma = codTrad(f.lingua) === codTrad(eu.lingua);
-    d.innerHTML = `<div class="quem">${quem}</div><div class="tr">${esc(f.eu || mesma ? f.texto : '…')}</div>` +
+    d.innerHTML = avatar(f.uid, f.eu ? eu.nome : f.nome) + `<div class="msg"><div class="quem">${quem}</div><div class="tr">${esc(f.eu || mesma ? f.texto : '…')}</div>` +
       (f.eu || mesma ? '' : `<div class="orig">${esc(f.texto)}</div>`) +
-      (f.eu ? '' : '<button class="ouvir">🔊 ouvir</button>');
-    const pos = [...msgs.children].find((x) => x.dataset.vivo);
-    msgs.insertBefore(d, pos || null);
-    rolar();
+      '<div class="acoes">' + (f.eu ? '' : '<button class="ouvir">🔊 ouvir</button>') + '<button class="curtir" title="Curtir">❤️</button><button class="rir" title="Rir">😂</button></div><div class="reacoes"></div></div>';
+    if (f.id) porId.set(f.id, { linha: d, reacoes: new Map() });
+    $('.curtir', d).onclick = () => reagir(f.id, '❤️');
+    $('.rir', d).onclick = () => reagir(f.id, '😂');
+    $('.msg', d).addEventListener('dblclick', () => reagir(f.id, '❤️'));
+    inserir(d);
+    if (!f.eu && f.nova) { const img = $('#gatoSala img'); img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula'); }
     const tr = $('.tr', d);
     const pronto = (f.eu || mesma) ? Promise.resolve(f.texto) : traduzir(f.texto, f.lingua, eu.lingua).then((t) => { tr.textContent = t; rolar(); return t; });
     const btn = $('.ouvir', d);
@@ -303,17 +371,26 @@
   }
 
   const vivoTimers = new Map();
+  let presentes = null; // uid → nome (null até a primeira lista chegar)
   function atualizarPessoas(lista) {
     const outros = lista.filter((p) => !p.eu);
-    $('#pessoas').textContent = outros.length ? 'Na sala: ' + outros.map((p) => p.nome + ' (' + nomeLingua(p.lingua) + ')').join(', ') : 'Ninguém mais na sala ainda — toque em Convidar';
+    $('#pessoas').innerHTML = outros.length
+      ? outros.map((p) => avatar(p.uid, p.nome)).join('') + '<span>' + esc(outros.map((p) => p.nome + ' (' + nomeLingua(p.lingua) + ')').join(', ')) + '</span>'
+      : 'Ninguém mais na sala ainda — toque em Convidar';
+    const agora = new Map(outros.map((p) => [p.uid, p.nome]));
+    if (presentes) {
+      for (const [id, nome] of agora) if (!presentes.has(id)) { sistema('🐾 ' + nome + ' entrou na sala'); if (vozLigada) miau(); gatoSala.dizer('Miau! Oi, ' + nome + '! 👋'); voar('🐾'); }
+      for (const [id, nome] of presentes) if (!agora.has(id)) sistema('👋 ' + nome + ' saiu da sala');
+    }
+    presentes = agora;
     const ids = new Set();
     outros.forEach((p) => {
       if (!p.vivo) return;
       ids.add(p.uid);
       let el = vivos.get(p.uid);
       if (!el) {
-        el = document.createElement('div'); el.className = 'msg vivo'; el.dataset.vivo = 1;
-        el.innerHTML = `<div class="quem">${esc(p.nome)} está falando…</div><div class="tr"></div><div class="orig"></div>`;
+        el = document.createElement('div'); el.className = 'linha vivo'; el.dataset.vivo = 1;
+        el.innerHTML = avatar(p.uid, p.nome) + `<div class="msg"><div class="quem pontos">${esc(p.nome)} está falando</div><div class="tr"></div><div class="orig"></div></div>`;
         msgs.appendChild(el); vivos.set(p.uid, el);
       }
       $('.orig', el).textContent = p.vivo;
@@ -333,7 +410,8 @@
     localStorage.setItem('trad-nome', nome); localStorage.setItem('trad-lingua', eu.lingua); localStorage.setItem('trad-sala', sala);
     history.replaceState(null, '', '?sala=' + sala);
     $('#salaCod').textContent = sala;
-    msgs.innerHTML = ''; vivos.clear(); $('#avisoSala').hidden = true;
+    msgs.innerHTML = ''; vivos.clear(); porId.clear(); presentes = null; $('#avisoSala').hidden = true;
+    setTimeout(() => gatoSala.dizer('Miau! Bem-vindo à sala ' + sala + '. Convide alguém e fale no 🎤! 🐾', 5000), 600);
     $('#pessoas').textContent = 'Conectando…';
     mostrarTela('salaTela');
     $('#btVoz').textContent = vozLigada ? '🔊' : '🔇';
@@ -359,9 +437,9 @@
       parcial: (t) => { $('#digitar').placeholder = t || 'Ouvindo…'; conexao && conexao.vivo(t); },
       final: (t) => { enviarTexto(t); $('#digitar').placeholder = 'Ouvindo…'; },
       erro: (m) => alert(m),
-      fim: () => { mic.classList.remove('on'); $('#digitar').placeholder = 'Fale no microfone ou digite…'; conexao && conexao.vivo(''); }
+      fim: () => { mic.classList.remove('on'); gatoSala.ouvindo(false); $('#digitar').placeholder = 'Fale no microfone ou digite…'; conexao && conexao.vivo(''); }
     });
-    if (ok) { mic.classList.add('on'); $('#digitar').placeholder = 'Ouvindo…'; }
+    if (ok) { mic.classList.add('on'); gatoSala.ouvindo(true); gatoSala.dizer(fone ? 'Estou ouvindo 👂 (modo fone: pode falar à vontade)' : 'Estou ouvindo… 👂', 2500); $('#digitar').placeholder = 'Ouvindo…'; }
   };
   $('#digitar').addEventListener('keydown', (e) => { if (e.key === 'Enter') { enviarTexto(e.target.value); e.target.value = ''; } });
   $('#entrar').onclick = entrarSala;
@@ -394,6 +472,33 @@
   window.addEventListener('pagehide', () => { conexao && conexao.sair(); });
   // Voltou para a página pelo botão Voltar (cópia guardada pelo navegador): entra de novo na sala.
   window.addEventListener('pageshow', (e) => { if (e.persisted && $('#salaTela').classList.contains('on')) { conexao = null; entrarSala(); } });
+
+  // Emojis que voam para todos da sala
+  ['👋', '😂', '❤️', '👍', '😮', '🐱', '🎉', '🙏'].forEach((e) => {
+    const b = document.createElement('button'); b.textContent = e;
+    b.onclick = () => { if (conexao && conexao.evento) conexao.evento({ tipo: 'emoji', emoji: e }); };
+    $('#emojis').appendChild(b);
+  });
+
+  // ---------- Modo fone de ouvido ----------
+  function definirFone(v) {
+    fone = v; localStorage.setItem('trad-fone', v ? '1' : '0');
+    $('#fone').checked = v;
+    $('#btFone').classList.toggle('ligado', v);
+    $('#f2fFone').classList.toggle('ligado', v);
+    $('#f2fFone').textContent = '🎧 Fone: ' + (v ? 'sim' : 'não');
+  }
+  definirFone(fone);
+  $('#fone').onchange = (e) => { definirFone(e.target.checked); gatoInicio.dizer(e.target.checked ? '🎧 Modo fone ligado: falo no seu ouvido e continuo ouvindo você!' : 'Modo fone desligado: pauso o microfone enquanto leio a tradução.'); };
+  $('#btFone').onclick = () => { definirFone(!fone); gatoSala.dizer(fone ? '🎧 Modo fone ligado!' : 'Modo fone desligado.', 2500); };
+
+  // ---------- Abas de baixo ----------
+  document.querySelectorAll('.abas button').forEach((b) => { b.onclick = () => { ouvinte.parar(); mostrarTela(b.dataset.aba); if (b.dataset.aba === 'estudo' && window.ClaSpeakEstudo) window.ClaSpeakEstudo.abrir(); }; });
+  const nomeSalvo = localStorage.getItem('trad-nome');
+  if (nomeSalvo) setTimeout(() => gatoInicio.dizer('Miau! Que bom te ver, ' + nomeSalvo + '! 😺'), 400);
+
+  // Para a aba Estudar (tradutor-estudo.js)
+  window.ClaSpeak = { traduzir, falar, ouvinte, miau, gato, LINGUAS, preencher, nomeLingua, codTrad, esc, linguaPadrao, minhaLingua: () => linguaEl.value, temVoz: () => !!SR };
 
   // ---------- Frente a frente ----------
   const lados = {};
@@ -429,6 +534,7 @@
   $('#abrirF2f').onclick = () => { mostrarTela('f2f'); $('#f2fVoz').textContent = '🔊 Voz: ' + (vozLigada ? 'ligada' : 'desligada'); };
   $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').textContent = '🔊 Voz: ' + (vozLigada ? 'ligada' : 'desligada'); };
   $('#f2fLimpar').onclick = () => { lados.a.txt.textContent = ''; lados.b.txt.textContent = ''; };
+  $('#f2fFone').onclick = () => definirFone(!fone);
   $('#f2fSair').onclick = () => { ouvinte.parar(); mostrarTela('inicio'); };
 
   // Link de convite: entra direto se já tiver nome salvo

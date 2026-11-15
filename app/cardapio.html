@@ -83,7 +83,7 @@ const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString('sv-SE');
 const toast=m=>{const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)};
 const PG={dinheiro:'💵 Dinheiro',pix:'⚡ Pix',credito:'💳 Crédito',debito:'💳 Débito'};
 const CFG0={maquinas:[{id:'mp',n:'Mercado Pago (Point)'},{id:'sant',n:'Santander (Getnet)'}],contas:[{id:'cmp',n:'Mercado Pago',tipo:'Conta digital',chave:'',nome:'',cidade:''},{id:'csant',n:'Santander',tipo:'Banco físico',chave:'',nome:'',cidade:''}]};
-let db=null,dono=true,me='',itens=[],vendas=[],cfg=JSON.parse(JSON.stringify(CFG0)),aba='vender',cat='',carrinho={},ver=noiteDe(Date.now()),leitura=null,folha=null,carAberto=false;
+let db=null,dono=true,me='',itens=[],vendas=[],cfg=JSON.parse(JSON.stringify(CFG0)),aba='vender',cat='',carrinho={},ver=noiteDe(Date.now()),leitura=null,folha=null,carAberto=false,fotos=[],editar=false,carregado=false,fotoVer=null;
 
 /* ---------- Pix: BR Code (copia e cola) com o valor, para a chave da conta ---------- */
 function crc16(s){let c=0xFFFF;for(let i=0;i<s.length;i++){c^=s.charCodeAt(i)<<8;for(let j=0;j<8;j++)c=(c&0x8000)?((c<<1)^0x1021)&0xFFFF:(c<<1)&0xFFFF}return c.toString(16).toUpperCase().padStart(4,'0')}
@@ -101,26 +101,34 @@ window.__pixCodigo=pixCodigo;
 
 /* ---------- Leitura do cardápio pela foto ---------- */
 function lerCardapio(txt){
-  const linhas=String(txt||'').split(/\n/).map(l=>l.replace(/[|_]+/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+  const linhas=String(txt||'').split(/\n/).map(l=>l.replace(/[|_~«»"“”]+/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
   const out=[];let categoria='Cardápio',pendente='';
-  const PRECO=/(?:R\s?\$\s*)?(\d{1,4}(?:[.,]\d{2}))\s*$/;
+  const LETRAS=/[A-Za-zÀ-ú]{2}/;
+  // preço: "25,00", "R$ 25,00", "R$25", "25.90"; inteiro só com R$ antes
+  const PRECO=/(?:R\s?\$\s*(\d{1,4}(?:[.,]\d{1,2})?)|(\d{1,4}[.,]\d{2}))(?![\d])/g;
+  const limpaNome=t=>t.replace(/[.\-–—·…:=*•]+\s*$/,'').replace(/^[\s.\-–—·…:=*•\d]+(?=[A-Za-zÀ-ú])/,'').replace(/\s*R\s?\$?\s*$/,'').trim();
   for(const l of linhas){
-    const m=l.match(PRECO);
-    if(m){
-      let nome=l.slice(0,m.index).replace(/[.\-–—·…:=]+\s*$/,'').replace(/\s*R\s?\$?\s*$/,'').trim();
-      if(!/[A-Za-zÀ-ú]{2}/.test(nome)&&pendente){nome=pendente}
-      else if(pendente&&nome.length<4){nome=pendente+' '+nome}
+    const ms=[...l.matchAll(PRECO)];
+    if(ms.length){
+      let ini=0;
+      ms.forEach((m,k)=>{
+        let nome=limpaNome(l.slice(ini,m.index));ini=m.index+m[0].length;
+        if(!LETRAS.test(nome)&&pendente&&k===0)nome=pendente;
+        else if(pendente&&k===0&&nome.length<4)nome=pendente+' '+nome;
+        const p=nv(m[1]||m[2]);
+        if(LETRAS.test(nome)&&p>0&&p<5000)out.push({n:nome,c:categoria,p});
+      });
       pendente='';
-      const p=nv(m[1]);
-      if(/[A-Za-zÀ-ú]{2}/.test(nome)&&p>0&&p<5000)out.push({n:nome.replace(/^[\d\W]+/,'').trim()||nome,c:categoria,p,ok:true});
-    }else if(/[A-Za-zÀ-ú]{3}/.test(l)&&l.length<=40){
+    }else if(/[A-Za-zÀ-ú]{3}/.test(l)&&l.length<=48){
       const letras=l.replace(/[^A-Za-zÀ-ú]/g,'');
       const maiusc=letras&&letras===letras.toUpperCase();
-      if(maiusc&&letras.length>=3){categoria=l.replace(/[^\wÀ-ú &/-]/g,'').trim();pendente=''}
-      else pendente=l;
+      if(maiusc&&letras.length>=3&&l.split(' ').length<=4){categoria=l.replace(/[^\wÀ-ú &/-]/g,'').trim();pendente=''}
+      else pendente=limpaNome(l);
     }
   }
-  return out;
+  // tira repetidos (mesmo nome): fica o último preço lido
+  const m=new Map();out.forEach(x=>m.set(x.n.toLowerCase(),x));
+  return [...m.values()];
 }
 window.__lerCardapio=lerCardapio;
 
@@ -150,9 +158,15 @@ function draw(){
   desenharCarrinho();
 }
 function telaVender(){
-  const A=ativos();if(!A.length)return (podeMontar()?fotoCard():'')+`<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Tire uma foto do cardápio impresso acima, ou adicione os itens à mão.</p><button class="btn sec" data-aba="cardapio">✍️ Adicionar itens à mão</button></div>`;
+  const A=editar?itens:ativos();if(!A.length)return fotoCard()+`<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Tire a foto do cardápio acima ou adicione os itens à mão.</p><button class="btn sec" id="editarBtn">✍️ Adicionar itens à mão</button></div>`;
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
-  let h=`<div class="cats"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="${cat===c?'on':''}">${esc(c)}</button>`).join('')}</div>`;
+  let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="${cat===c?'on':''}">${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
+  if(editar){
+    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome e preço direto aqui. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
+    (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));if(!l.length)return;
+      h+=`<h2 style="margin:12px 2px 6px">${esc(c)}</h2><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+    return h;
+  }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort((x,y)=>(x.o??0)-(y.o??0)||x.n.localeCompare(y.n,'pt'));if(!l.length)return;
     h+=`${cat?'':`<h2 style="margin:12px 2px 6px">${esc(c)}</h2>`}<div class="prod">${l.map(i=>`<button data-add="${i.id}">${esc(i.n)}<small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
   return h;
@@ -164,27 +178,28 @@ function desenharCarrinho(){
   const linhas=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?`<div class="it"><span>${esc(i.n)}<small>${R(i.p)} cada</small></span><span class="q"><button data-menos="${id}">−</button><b>${q}</b><button data-mais="${id}">+</button></span><b style="min-width:76px;text-align:right">${R(i.p*q)}</b></div>`:''}).join('');
   el.innerHTML=`<div class="in"><details id="carDet"${carAberto?' open':''}><summary class="row" style="justify-content:space-between;list-style:none;cursor:pointer"><span>🛒 <b>${n}</b> ${n>1?'itens':'item'} · <span class="link">ver</span></span><span class="big">${R(totalCarrinho())}</span></summary><div style="max-height:34vh;overflow:auto;margin-top:6px">${linhas}</div><button class="btn sec" id="limpar" style="margin-top:6px">Limpar</button></details><button class="btn ok" id="cobrar">Cobrar ${R(totalCarrinho())}</button></div>`;
 }
-const podeMontar=()=>dono||!itens.length;
-function fotoCard(){return `<div class="card"><h2>📷 Montar pela foto do cardápio</h2><p class="sub">Tire uma foto bem reta e com luz do cardápio impresso (ou escolha da galeria). O app lê nomes e preços e monta o cardápio digital. Você confere antes de salvar.</p>
-    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px">📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff">🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
-    <p class="msg" id="fotoMsg">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`}
+function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Tire a foto do cardápio impresso (bem reto e com luz). O app lê nomes, preços e categorias e <b>já monta o cardápio de venda</b> sozinho. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
+    <div class="row"><button class="foto" data-foto="cam" style="flex:1;margin:0;border:0;font-size:16px" ${lendo?'disabled':''}>📷 Tirar foto</button><button class="foto" data-foto="gal" style="flex:1;margin:0;border:0;font-size:16px;background:#4c1d95;color:#fff" ${lendo?'disabled':''}>🖼️ Galeria</button><input type="file" id="fotoGal" accept="image/*" multiple hidden></div>
+    <p class="msg" id="fotoMsg" style="${leitura&&leitura.msg?'font-weight:600;color:var(--tx)':''}">${leitura&&leitura.msg?esc(leitura.msg):''}</p></div>`}
+const aviso=()=>leitura&&leitura.msg?`<div class="card" style="border-color:var(--ac)"><p class="msg" id="fotoMsg2" style="margin:0;font-weight:600;color:var(--tx)">${esc(leitura.msg)}</p></div>`:'';
 function telaCardapio(){
-  let h='';
-  if(podeMontar())h+=fotoCard();else h+=`<p class="sub">📷 A foto do cardápio e as mudanças nos itens ficam com o <b>dono do bar</b>.</p>`;
-  if(leitura&&leitura.itens&&leitura.itens.length){
-    h+=`<div class="card prev"><h2>Confira o que foi lido (${leitura.itens.length})</h2><p class="sub">Corrija nome, categoria e preço. Desmarque o que não for item.</p>${leitura.itens.map((x,k)=>`<div class="it" style="align-items:flex-start"><input type="checkbox" data-lk="ok" data-li="${k}" ${x.ok?'checked':''} style="width:22px;height:22px;margin-top:8px"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="ln" data-lk="n" data-li="${k}" value="${esc(x.n)}"><input data-k="lp" data-lk="p" data-li="${k}" value="${campo(x.p)}" inputmode="decimal" style="text-align:right"><input data-k="lc" data-lk="c" data-li="${k}" value="${esc(x.c)}" style="grid-column:1/3;font-size:13px;color:var(--mut)"></div></div>`).join('')}
-    <button class="btn ok" id="lerSalvar">✅ Adicionar ${leitura.itens.filter(x=>x.ok).length} itens ao cardápio</button><button class="btn sec" id="lerDescartar">Descartar leitura</button></div>`;
-  }
+  let h=fotoCard();
+  if(fotos.length)h+=`<div class="card"><h2>🖼️ Fotos do cardápio (${fotos.length})</h2><p class="sub">Guardadas na nuvem do bar (conta do Bar Conect), não no seu celular.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[...fotos].sort((a,b)=>b.t-a.t).map(f=>`<button data-fv="${f.id}" style="border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)"><img src="${f.img}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div></div>`;
   const C=categorias();
-  h+=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">📋 Cardápio (${itens.length})</h2>${podeMontar()?'<button class="link" id="novoBtn">+ Item</button>':''}</div>`;
-  if(podeMontar())h+=`<div id="novoBox" hidden><div style="display:grid;grid-template-columns:1fr 100px;gap:6px;margin-top:8px"><input data-k="nn" id="nn" placeholder="Nome do item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria (ex.: Drinks)" style="grid-column:1/3"></div><datalist id="catsL">${C.map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">Salvar item</button></div>`;
+  h+=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">📋 Cardápio (${itens.length})</h2><button class="link" data-aba="vender" id="irEditar">✏️ Editar valores</button></div>`;
   if(!itens.length)h+='<p class="sub" style="margin-top:8px">Nenhum item ainda.</p>';
   C.forEach(c=>{const l=itens.filter(i=>(i.c||'Outros')===c).sort((x,y)=>x.n.localeCompare(y.n,'pt'));
-    h+=`<h2 style="margin:14px 0 2px">${esc(c)} <span class="chip">${l.length}</span></h2>`+l.map(i=>dono?`<div class="it"><div style="flex:1;display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`
-      :`<div class="it"><span>${esc(i.n)}</span><b>${R(i.p)}</b></div>`).join('')});
+    h+=`<h2 style="margin:14px 0 2px">${esc(c)} <span class="chip">${l.length}</span></h2>`+l.map(i=>`<div class="it" style="${i.on===false?'opacity:.5':''}"><span>${esc(i.n)}</span><b>${R(i.p)}</b></div>`).join('')});
   h+='</div>';
   if(itens.length)h+=`<button class="btn sec" id="copiarCard">📋 Copiar cardápio (texto para WhatsApp)</button>`;
+  if(itens.length&&dono)h+=`<button class="btn sec" id="zerarCard" style="color:var(--bad)">Apagar o cardápio inteiro</button>`;
   return h;
+}
+function verFoto(){
+  let f=$('#fotoFolha');if(!fotoVer){if(f)f.remove();return}
+  const x=fotos.find(y=>y.id===fotoVer);if(!x){fotoVer=null;if(f)f.remove();return}
+  if(!f){f=document.createElement('div');f.id='fotoFolha';f.className='fundo';document.body.appendChild(f);f.addEventListener('click',e=>{if(e.target===f){fotoVer=null;verFoto()}})}
+  f.innerHTML=`<div class="folha"><div class="row" style="justify-content:space-between"><b>${new Date(x.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}${x.quem?' · '+esc(x.quem):''}</b><button class="x" id="fvFechar">✕</button></div><img src="${x.img}" alt="" style="width:100%;border-radius:12px;margin-top:8px"><button class="btn" id="fvLer">🔁 Digitalizar de novo esta foto</button>${dono?`<button class="btn sec" id="fvDel" style="color:var(--bad)">Apagar foto</button>`:''}</div>`;
 }
 function telaVendas(){
   const L=daNoite(),r=resumo(L),hoje=noiteDe(Date.now());
@@ -271,25 +286,40 @@ function aplicarCaixa(){
 async function copiar(t){try{await navigator.clipboard.writeText(t);toast('✅ Copiado')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('✅ Copiado')}catch(x){toast('Não consegui copiar')}a.remove()}}
 
 /* ---------- foto do cardápio ---------- */
-async function lerFotos(arqs){
-  if(!arqs||!arqs.length)return;
-  const ocr=window.parent&&window.parent.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
-  leitura={itens:(leitura&&leitura.itens)||[],msg:'Lendo a foto… (a primeira vez demora um pouco)'};aba='cardapio';draw();
+async function comprimir(arq){
+  const url=URL.createObjectURL(arq);
+  try{const img=await new Promise((ok,er)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=er;i.src=url});
+    let max=1400,q=.7,out='';
+    for(let k=0;k<6;k++){const e=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*e);c.height=Math.round(img.height*e);c.getContext('2d').drawImage(img,0,0,c.width,c.height);out=c.toDataURL('image/jpeg',q);if(out.length<700000)break;max=Math.round(max*.82);q=Math.max(.45,q-.07)}
+    return out}finally{URL.revokeObjectURL(url)}
+}
+const deDataUrl=async u=>{const r=await fetch(u);const b=await r.blob();return new File([b],'cardapio.jpg',{type:b.type||'image/jpeg'})};
+async function lerFotos(arqs,guardar=true){
+  if(!arqs||!arqs.length||(leitura&&leitura.lendo))return;
+  const P=window.parent,ocr=P&&P!==window&&P.__barOCR;if(!ocr){toast('A leitura de foto só funciona dentro do app.');return}
+  leitura={lendo:true,msg:'📷 Foto recebida. Lendo o cardápio… (a primeira vez demora um pouco)'};if(!itens.length)aba='vender';draw();
+  const msg=t=>{leitura.msg=t;['#fotoMsg','#fotoMsg2'].forEach(s=>{const el=$(s);if(el)el.textContent=t})};
+  const lidos=[];let erro='';
   for(const [k,a] of arqs.entries()){
-    try{const r=await ocr(a,m=>{if(m.status==='recognizing text'){const el=$('#fotoMsg');if(el)el.textContent='Lendo a foto '+(k+1)+'/'+arqs.length+'… '+Math.round(m.progress*100)+'%'}},2200);
-      const novos=lerCardapio(r.texto);leitura.itens.push(...novos)}
-    catch(err){leitura.msg='Não consegui ler a foto: '+(err.message||err)}
+    const pre=arqs.length>1?'Foto '+(k+1)+' de '+arqs.length+': ':'';
+    try{
+      if(guardar){msg(pre+'guardando a foto na nuvem do bar…');try{const img=await comprimir(a);await db.collection('fotos').add({img,t:Date.now(),quem:(localStorage.getItem('bar-nome')||'').trim()})}catch(e){}}
+      const prog=m=>{if(m.status==='recognizing text')msg(pre+'lendo o cardápio… '+Math.round(m.progress*100)+'%')};
+      let novos=lerCardapio((await ocr(a,prog,2400,4)).texto);
+      if(novos.length<4){msg(pre+'lendo de outro jeito…');const n2=lerCardapio((await ocr(a,prog,2400,6)).texto);if(n2.length>novos.length)novos=n2}
+      lidos.push(...novos);
+    }catch(e){erro=(e&&e.message)||String(e)}
   }
-  leitura.msg=leitura.itens.length?'✅ Li '+leitura.itens.length+' itens. Confira abaixo.':'Não achei itens com preço. Tente uma foto mais reta, perto e com luz, ou adicione à mão.';
-  draw();
+  let novos=0,atual=0;
+  for(const x of lidos){const ja=itens.find(i=>i.n.toLowerCase()===x.n.toLowerCase());
+    try{if(ja){atual++}
+      else{await db.collection('itens').add({n:x.n,c:x.c||'Cardápio',p:x.p,on:true,t:Date.now()});novos++}}catch(e){erro=e.message||String(e)}}
+  leitura={lendo:false,msg:lidos.length?`✅ Cardápio digitalizado: ${novos} itens novos${atual?' ('+atual+' já estavam no cardápio, mantive o preço)':''}. Já estão em 🛒 Vender. Para mudar valores, toque em ✏️ Editar.`
+    :'Não consegui achar itens com preço nessa foto'+(erro?' ('+erro+')':'')+'. Tente de novo mais perto, bem reta e sem reflexo, ou adicione à mão em ✏️ Editar.'};
+  aba='vender';draw();
 }
-async function salvarLeitura(){
-  const ok=leitura.itens.filter(x=>x.ok&&x.n.trim()&&x.p>0);let n=0;
-  for(const x of ok){const ja=itens.find(i=>i.n.toLowerCase()===x.n.trim().toLowerCase());
-    if(ja)await db.collection('itens').doc(ja.id).set({...strip(ja),p:x.p,c:x.c.trim()||ja.c});
-    else await db.collection('itens').add({n:x.n.trim(),c:x.c.trim()||'Cardápio',p:x.p,on:true,t:Date.now()});n++}
-  leitura=null;toast('✅ '+n+' itens no cardápio');aba='cardapio';draw();
-}
+window.__cardLerFotos=a=>lerFotos(a);
+window.__cardAoAbrir=()=>{if(carregado&&!itens.length&&!sessionStorage.getItem('card-auto')&&!(leitura&&leitura.lendo)){sessionStorage.setItem('card-auto','1');try{window.parent.__barFotoCardapio(true)}catch(e){}}};
 const strip=i=>{const o={...i};delete o.id;return o};
 async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(JSON.stringify(cfg)))}catch(e){toast('Sem permissão para alterar')}}
 
@@ -308,20 +338,23 @@ document.addEventListener('click',async ev=>{
   if(d.via&&folha){folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
-  if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barEscolherFoto){P.__barEscolherFoto(d.foto==='cam',d.foto!=='cam').then(lerFotos)}else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
+  if(d.foto){const P=window.parent;if(P&&P!==window&&P.__barFotoCardapio)P.__barFotoCardapio(d.foto==='cam');else{const i=$('#fotoGal');if(d.foto==='cam')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}return}
+  if(b.id==='editarBtn'){editar=!editar;aba='vender';draw();return}
+  if(b.id==='irEditar'){editar=true;aba='vender';draw();return}
+  if(d.fv){fotoVer=d.fv;verFoto();return}
+  if(b.id==='fvFechar'){fotoVer=null;verFoto();return}
+  if(b.id==='fvLer'){const x=fotos.find(y=>y.id===fotoVer);fotoVer=null;verFoto();if(x)lerFotos([await deDataUrl(x.img)],false);return}
   if(b.id==='fConfirmar'){b.disabled=true;await confirmarVenda();return}
   if(b.id==='relBtn'){copiar(relatorio());return}
   if(b.id==='caixaBtn'){aplicarCaixa();return}
   if(b.id==='copiarCard'){const T=['*CARDÁPIO*'];categorias().forEach(c=>{const l=ativos().filter(i=>(i.c||'Outros')===c);if(!l.length)return;T.push('','*'+c.toUpperCase()+'*');l.forEach(i=>T.push(i.n+' — '+R(i.p)))});copiar(T.join('\n'));return}
-  if(!podeMontar())return;
   try{
-    if(b.id==='novoBtn'){$('#novoBox').hidden=!$('#novoBox').hidden;if(!$('#novoBox').hidden)$('#nn').focus();return}
-    if(b.id==='novoOk'){const n=$('#nn').value.trim(),p=nv($('#np').value),c=$('#nc').value.trim()||'Outros';if(!n||!p){toast('Preencha nome e preço');return}await db.collection('itens').add({n,c,p,on:true,t:Date.now()});toast('✅ '+n+' adicionado');return}
-    if(b.id==='lerSalvar'){b.disabled=true;await salvarLeitura();return}
-    if(b.id==='lerDescartar'){leitura=null;draw();return}
-    if(!dono)return;
+    if(b.id==='novoOk'){const n=$('#nn').value.trim(),p=nv($('#np').value),c=$('#nc').value.trim()||cat||'Outros';if(!n||!p){toast('Preencha nome e preço');return}await db.collection('itens').add({n,c,p,on:true,t:Date.now()});toast('✅ '+n+' adicionado');return}
     if(d.on){const i=itens.find(x=>x.id===d.on);if(i)await db.collection('itens').doc(i.id).set({...strip(i),on:i.on===false});return}
     if(d.del){if(b.dataset.s){await db.collection('itens').doc(d.del).delete();delete carrinho[d.del]}else{b.dataset.s=1;b.textContent='Apagar?';setTimeout(()=>{b.dataset.s='';b.textContent='✕'},2500)}return}
+    if(!dono)return;
+    if(b.id==='fvDel'){const id=fotoVer;fotoVer=null;verFoto();await db.collection('fotos').doc(id).delete();return}
+    if(b.id==='zerarCard'){if(b.dataset.s){for(const i of itens)await db.collection('itens').doc(i.id).delete();carrinho={};toast('Cardápio apagado')}else{b.dataset.s=1;b.textContent='Toque de novo para apagar TODOS os itens';setTimeout(()=>{b.dataset.s='';b.textContent='Apagar o cardápio inteiro'},3000)}return}
     if(d.vdel){if(b.dataset.s)await db.collection('vendas').doc(d.vdel).delete();else{b.dataset.s=1;b.textContent='Apagar?';setTimeout(()=>{b.dataset.s='';b.textContent='✕'},2500)}return}
     if(b.id==='mqNova'){cfg.maquinas.push({id:'m'+Date.now().toString(36),n:'Nova maquininha'});await salvarCfg();return}
     if(d.mqdel!==undefined){cfg.maquinas.splice(+d.mqdel,1);await salvarCfg();return}
@@ -331,14 +364,13 @@ document.addEventListener('click',async ev=>{
 });
 document.addEventListener('input',e=>{const t=e.target;
   if(t.id==='rec'&&folha){folha.recebido=t.value;const pos=t.selectionStart;desenharFolha();const n=$('#rec');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}return}
-  if(t.dataset.lk&&leitura){const x=leitura.itens[+t.dataset.li];if(!x)return;if(t.dataset.lk==='ok'){x.ok=t.checked;const s=$('#lerSalvar');if(s)s.textContent='✅ Adicionar '+leitura.itens.filter(y=>y.ok).length+' itens ao cardápio'}else if(t.dataset.lk==='p')x.p=nv(t.value);else x[t.dataset.lk]=t.value}
 });
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
-  if(!dono)return;
   try{
-    if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v})}
+    if(t.dataset.ed){const i=itens.find(x=>x.id===t.dataset.id);if(!i)return;const v=t.dataset.ed==='p'?nv(t.value):t.value.trim();if(!v)return;await db.collection('itens').doc(i.id).set({...strip(i),[t.dataset.ed]:v});toast('✅ '+(t.dataset.ed==='p'?i.n+': '+R(v):'Nome salvo'));return}
+    if(!dono)return;
     if(t.dataset.mq!==undefined){cfg.maquinas[+t.dataset.mq].n=t.value.trim()||'Maquininha';await salvarCfg()}
     if(t.dataset.ct!==undefined){cfg.contas[+t.dataset.ct][t.dataset.cf]=t.value.trim();await salvarCfg()}
   }catch(x){toast('Não consegui salvar')}
@@ -349,7 +381,8 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
 (async()=>{
   try{db=await claude.use('db');const u=await claude.use('user');if(u){dono=await u.isOwner();me=await u.id()}}catch(e){}
   if(!db){$('#app').innerHTML='<h1>🍽️ Cardápio</h1><p class="sub">Não foi possível abrir o banco de dados.</p>';return}
-  db.collection('itens').onSnapshot(s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
+  db.collection('itens').onSnapshot(s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));carregado=true;draw()},()=>{});
+  db.collection('fotos').onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.img);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
   db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas};draw()},()=>{});
   draw();

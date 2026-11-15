@@ -7,8 +7,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#6d28d9",
-  "theme_color": "#6d28d9",
+  "background_color": "#0b0b0b",
+  "theme_color": "#0b0b0b",
   "lang": "pt-BR",
   "icons": [
     { "src": "icons/tradutor.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }

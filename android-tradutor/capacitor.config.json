@@ -1,0 +1,9 @@
+{
+  "appId": "br.tradutor.aovivo",
+  "appName": "Tradutor",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "backgroundColor": "#0f766e"
+}

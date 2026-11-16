@@ -207,6 +207,9 @@ nav button:active{background:rgba(255,255,255,.08)}
   <div class="painel" id="f-ajustes">
     <h1>⚙️ Ajustes</h1>
     <div class="info" id="info"></div>
+    <div class="info" id="donoBox" hidden style="margin-top:10px"><b>👑 Dono do bar</b><p id="donoTxt" style="margin:6px 0"></p>
+      <input id="donoPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN do dono (4 a 8 números)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #dcdfe8;border-radius:12px;font-size:17px;letter-spacing:.2em">
+      <button id="donoBtn" style="margin-top:8px"></button><p id="donoMsg" style="margin:6px 0 0"></p></div>
     <p id="versao" style="margin-top:10px"></p>
     <label style="margin-top:18px">Tamanho da letra</label>
     <div id="zoom" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
@@ -244,6 +247,7 @@ function fotoCardapioEscolhida(e){const a=[...(e.target.files||[])];if(!a.length
   const f=document.getElementById('f-cardapio');const ir=()=>{try{f.contentWindow.__cardLerFotos(a)}catch(x){setTimeout(ir,500)}};ir()}
 function abrir(t){
   if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
+  if(t==='ajustes')setTimeout(mostrarDono,60);
   const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
   if(t==='precos'&&window.__barPrecosAtualizar)setTimeout(window.__barPrecosAtualizar,50);
   if(t==='backup'&&window.__barHistorico)setTimeout(carregarHistorico,50);
@@ -260,7 +264,16 @@ function carregarAbas(){
   document.querySelectorAll('iframe').forEach(f=>{if(!f.src){f.addEventListener('load',()=>aplicarZoom(f));f.src=f.dataset.src}});
   aplicarZoomTudo();
 }
-function mostrarInfo(){
+async function mostrarDono(){const box=$('#donoBox');if(!box||!window.__barDono)return;
+  let e;try{e=await window.__barDono.estado()}catch(x){return}if(!e.nuvem){box.hidden=true;return}box.hidden=false;
+  $('#donoTxt').innerHTML=e.dono?'✅ <b>Este celular é dono.</b> Pode editar valores, apagar e restaurar. '+(e.temPin?'Para liberar outro celular como dono, use o PIN do dono nele. Aqui você pode trocar o PIN.':'Crie um <b>PIN do dono</b> para poder liberar outro celular (ou este, se trocar de aparelho).')
+    :'Este celular <b>não é dono</b>: editar valores, apagar e restaurar ficam escondidos. '+(e.temPin?'Digite o <b>PIN do dono</b> para liberar.':'Ainda não existe PIN do dono: o PIN que você criar aqui vira o PIN do bar e este celular passa a ser dono.');
+  $('#donoBtn').textContent=e.dono?(e.temPin?'Trocar o PIN do dono':'Criar o PIN do dono'):'👑 Tornar este celular dono';
+  $('#donoBtn').onclick=async()=>{const m=$('#donoMsg');m.textContent='Conferindo…';try{const r=await window.__barDono.virar($('#donoPin').value);$('#donoPin').value='';
+    if(e.dono){m.textContent='✅ PIN do dono salvo. Guarde esse número.';mostrarDono();return}
+    m.textContent='✅ Pronto! Este celular agora é dono'+(r.novoPin?' (PIN do dono criado; guarde esse número)':'')+'. Recarregando…';setTimeout(()=>location.reload(),1500)}
+    catch(x){m.textContent='❌ '+(x.message||x)}}}
+function mostrarInfo(){setTimeout(mostrarDono,300);
   $('#info').innerHTML=nuvem&&codigo()
     ?`☁️ <b>Sincronizando entre os celulares</b><br>Bar: <b>${codigo().replace(/</g,'&lt;')}</b><br>Você: <b>${(nome()||'—').replace(/</g,'&lt;')}</b>`
     :`📱 <b>Dados salvos só neste aparelho</b><br>${nuvem?'Entre com o código do bar para sincronizar.':'Sincronização automática entre celulares: ainda falta ligar o Firebase da conta barconnect@gmail.com.'}<br>☁️ Cópia de segurança: aba <b>Backup → Salvar no Google Drive</b>.`;

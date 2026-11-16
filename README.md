@@ -37,6 +37,8 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   quando alguém fala, corre para o meio, vira para a pessoa e balança a cada palavra; quando a tradução fica
   pronta, pula, e a mensagem atravessa a tela com patinhas; enquanto ela é lida, ele dança e o palco vira
   pista de dança com luzes e notinhas. Tocar nele faz miar e pular.
+  Dentro de cada caixa de texto há outro gatinho: acena com a dica "toque no 🎤" quando a caixa está vazia,
+  fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
 - **Sala animada:** bandeiras dos idiomas, som de mensagem nova, 📋 copiar, comentários do gatinho, avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂

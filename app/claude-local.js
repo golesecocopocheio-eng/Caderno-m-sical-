@@ -180,7 +180,11 @@
         try { const snap = await bar.get(); info = snap.exists ? snap.data() : null; } catch (e2) {}
       }
       if (nome()) bar.collection('pessoas').doc(user.uid).set({ nome: nome(), t: Date.now() }).catch(() => {});
-      const dono = !!info && info.dono === user.uid;
+      // Dono: quem criou o código do bar OU quem liberou este celular com o PIN do dono
+      // (bares/{codigo}/acesso/donos: { pin: hash, uids: [...] }).
+      let acesso = {};
+      try { const a = await bar.collection('acesso').doc('donos').get(); if (a.exists) acesso = a.data() || {}; } catch (e) {}
+      const dono = (!!info && info.dono === user.uid) || (Array.isArray(acesso.uids) && acesso.uids.includes(user.uid));
       // Uma vez por bar: sobe para a nuvem o que a Portaria e o Estoque já tinham guardado só
       // neste celular. Não apaga nada; registros com o mesmo id são substituídos. Valores e
       // configurações só sobem do celular do dono.
@@ -200,11 +204,30 @@
           localStorage.setItem(MIG, String(Date.now()));
         } catch (e) { /* tenta de novo na próxima abertura */ }
       }
-      return { bar, user, dono };
+      return { bar, user, dono, info, acesso };
     })();
     return core;
   }
   window.__barIniciarCore = iniciarCore;
+
+  /* 👑 Dono do bar pelo PIN (Ajustes). O PIN fica guardado só como código embaralhado (hash). */
+  const hashPin = async (pin) => {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codigo() + '|' + String(pin).trim()));
+    return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  };
+  window.__barDono = {
+    async estado() { const c = await iniciarCore().catch(() => null); if (!c) return { nuvem: false, dono: true }; return { nuvem: true, dono: c.dono, temPin: !!(c.acesso && c.acesso.pin) }; },
+    async virar(pin) {
+      const c = await iniciarCore(); if (!c) throw new Error('a nuvem não está ligada');
+      if (!/^\d{4,8}$/.test(String(pin).trim())) throw new Error('o PIN precisa ter de 4 a 8 números');
+      const ref = c.bar.collection('acesso').doc('donos'); const s = await ref.get(); const a = s.exists ? (s.data() || {}) : {};
+      const h = await hashPin(pin);
+      if (a.pin && a.pin !== h && !c.dono) throw new Error('PIN errado');
+      const uids = [...new Set([...(a.uids || []), c.user.uid, ...(c.info && c.info.dono ? [c.info.dono] : [])])];
+      await ref.set({ pin: c.dono ? h : (a.pin || h), uids, t: Date.now() });
+      return { novoPin: !a.pin || (c.dono && a.pin !== h) };
+    },
+  };
 
   async function iniciarNuvem() {
     let c = null;

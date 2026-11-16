@@ -622,17 +622,19 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
 /* ===== Capa de abertura ===== */
 .capa{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0A0A0B;font-family:Inter,'Segoe UI',system-ui,sans-serif;transition:opacity .4s ease,transform .4s ease}
 .capa.sai{opacity:0;transform:scale(1.02);pointer-events:none}
-.capaBrilho{position:absolute;inset:0;background:radial-gradient(60% 40% at 50% 42%,rgba(94,106,210,.35),transparent 70%)}
-.capaLogo{position:relative;width:112px;height:112px;filter:drop-shadow(0 12px 32px rgba(94,106,210,.55));animation:capaLogo .7s cubic-bezier(.2,.7,.2,1) both}
-.capaNome{position:relative;color:#EDEDEF;font-size:34px;font-weight:700;letter-spacing:-1.2px;animation:capaTx .6s .15s cubic-bezier(.2,.7,.2,1) both}
-.capaNome span{background:linear-gradient(90deg,#9AA3F0,#5E6AD2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capaBrilho{position:absolute;inset:0;background:radial-gradient(60% 40% at 50% 42%,rgba(200,204,214,.2),transparent 70%)}
+.capaLogo{position:relative;width:112px;height:112px;filter:drop-shadow(0 12px 32px rgba(210,214,222,.25));animation:capaLogo .7s cubic-bezier(.2,.7,.2,1) both}
+.capaNome{position:relative;color:transparent;background:linear-gradient(180deg,#FFFFFF 0%,#D9DCE2 45%,#9EA2AC 60%,#E4E6EA 100%);-webkit-background-clip:text;background-clip:text;font-size:34px;font-weight:700;letter-spacing:-1.2px;animation:capaTx .6s .15s cubic-bezier(.2,.7,.2,1) both}
+.capaNome span{background:linear-gradient(180deg,#FFFFFF 0%,#D9DCE2 45%,#9EA2AC 60%,#E4E6EA 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .capaFrase{position:relative;color:#8B8D98;font-size:14px;animation:capaTx .6s .25s cubic-bezier(.2,.7,.2,1) both}
 .capaBarra{position:relative;width:96px;height:2px;margin-top:18px;border-radius:2px;background:#26262B;overflow:hidden}
-.capaBarra i{position:absolute;inset:0;background:linear-gradient(90deg,#7C85E0,#5E6AD2);transform-origin:left;animation:capaBarra 1.3s ease-out both}
+.capaBarra i{position:absolute;inset:0;background:linear-gradient(90deg,#9EA2AC,#F4F5F7);transform-origin:left;animation:capaBarra 1.3s ease-out both}
 @keyframes capaLogo{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
 @keyframes capaTx{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes capaBarra{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.marca img{border-radius:6px}
+.marca::before{display:none}
+.marca img{display:block;width:24px;height:24px;border-radius:6px;box-shadow:none}
+#inicio .marca{background:linear-gradient(180deg,#FFFFFF 0%,#D9DCE2 45%,#9EA2AC 60%,#E4E6EA 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 @media (prefers-reduced-motion:reduce){.capa *{animation:none!important}}
 </style>
 </head>

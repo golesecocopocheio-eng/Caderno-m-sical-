@@ -38,7 +38,7 @@ jobs:
         run: |
           rm -rf www && mkdir -p www/icons www/vendor
           cp ../app/tradutor.html www/index.html
-          cp ../app/tradutor.js ../app/tradutor-estudo.js ../app/tradutor-extra.js ../app/tradutor-musica.js ../app/tradutor.webmanifest ../app/firebase-config.js www/
+          cp ../app/tradutor.js ../app/tradutor-estudo.js ../app/tradutor-extra.js ../app/tradutor-musica.js ../app/tradutor-emocao.js ../app/tradutor.webmanifest ../app/firebase-config.js www/
           cp ../app/icons/tradutor-gato.png ../app/icons/gato-corpo.png ../app/icons/gato-danca.webp ../app/icons/gato-rosto.png ../app/icons/gato-rosto-danca.webp ../app/icons/tradutor-192.png ../app/icons/tradutor-512.png www/icons/
           cp ../app/vendor/qrcode.js ../app/vendor/firebase-app-compat.js ../app/vendor/firebase-auth-compat.js ../app/vendor/firebase-firestore-compat.js www/vendor/
 

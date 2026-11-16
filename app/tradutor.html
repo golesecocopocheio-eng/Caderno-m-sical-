@@ -288,6 +288,27 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 @keyframes vez{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(5px)}}
 @keyframes vezCima{0%,100%{transform:translateX(-50%) rotate(180deg) translateY(0)}50%{transform:translateX(-50%) rotate(180deg) translateY(5px)}}
 #f2fAuto.ligado{background:var(--c);color:#0b0b0b}
+/* Emoções do gatinho */
+.emoBadge{position:fixed;font-size:1.7rem;pointer-events:none;z-index:40;animation:emoSobe 1.4s ease-out forwards}
+@keyframes emoSobe{0%{opacity:0;transform:translateY(8px) scale(.4)}20%{opacity:1;transform:translateY(-6px) scale(1.2)}100%{opacity:0;transform:translateY(-60px) scale(1)}}
+body .emo-feliz{animation:emoFeliz .45s ease-out 2 !important}
+@keyframes emoFeliz{0%,100%{transform:none}40%{transform:translateY(-16px) scale(1.06)}}
+body .emo-canta{animation:emoCanta .6s ease-in-out 4 !important}
+@keyframes emoCanta{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) translateY(-6px) scale(1.04)}}
+body .emo-assustado{animation:emoSusto 1.1s ease-out !important}
+@keyframes emoSusto{0%{transform:none}12%{transform:translateY(-34px) scale(1.15,1.2)}22%{transform:translateY(-30px) rotate(-6deg) scale(1.1)}30%{transform:translateY(-30px) rotate(6deg)}38%{transform:translateY(-28px) rotate(-6deg)}46%{transform:translateY(-26px) rotate(6deg)}70%{transform:translateY(0) scale(.92,1.06)}100%{transform:none}}
+body .emo-triste{animation:emoTriste 1.8s ease-in-out !important;filter:saturate(.6) brightness(.85) drop-shadow(0 0 4px rgba(96,165,250,.8)) !important}
+@keyframes emoTriste{0%,100%{transform:none}30%,80%{transform:translateY(6px) rotate(-5deg) scale(.94)}}
+body .emo-apaixonado{animation:emoAmor .55s ease-in-out 4 !important;filter:drop-shadow(0 0 8px rgba(244,114,182,.95)) !important}
+@keyframes emoAmor{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+body .emo-surpreso{animation:emoSurpreso .8s ease-out !important}
+@keyframes emoSurpreso{0%{transform:none}25%{transform:scale(1.18) translateY(-8px)}100%{transform:none}}
+body .emo-tonto{animation:emoTonto 1.5s ease-in-out !important}
+@keyframes emoTonto{0%{transform:none}25%{transform:rotate(25deg) translateX(6px)}50%{transform:rotate(-22deg) translateX(-6px)}75%{transform:rotate(14deg)}100%{transform:none}}
+body .emo-bravo{animation:emoBravo .12s linear 10 !important;filter:drop-shadow(0 0 8px rgba(239,68,68,.95)) !important}
+@keyframes emoBravo{0%,100%{transform:translateX(0)}50%{transform:translateX(4px) scale(1.04)}}
+body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.7) !important}
+@keyframes emoSono{0%,100%{transform:none}40%,80%{transform:translateY(5px) rotate(4deg) scale(.96,.94)}}
 /* Música */
 .yt{position:relative;width:100%;aspect-ratio:16/9;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;border:2px solid var(--c)}
 .yt iframe,.yt>div{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -594,5 +615,6 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 <script src="tradutor-estudo.js"></script>
 <script src="tradutor-extra.js"></script>
 <script src="tradutor-musica.js"></script>
+<script src="tradutor-emocao.js"></script>
 </body>
 </html>

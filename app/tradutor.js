@@ -236,13 +236,16 @@
   let audio = null;
   const ctxAudio = () => (audio = audio || new (window.AudioContext || window.webkitAudioContext)());
   // Miado sintetizado com as vogais de um miado de verdade (m → i → a → u), diferente a cada vez
-  function miauSintetico() {
-    const ctx = ctxAudio(), t = ctx.currentTime;
-    const k = 0.88 + Math.random() * 0.3, dur = 0.65 + Math.random() * 0.25;
+  // opc: alt (altura), dur (duração), forma: 'normal' | 'assustado' (sobe rápido) | 'triste' (cai) | 'curto' (mrrp), quando (atraso em s)
+  function miauSintetico(opc = {}) {
+    const ctx = ctxAudio(), t = ctx.currentTime + (opc.quando || 0);
+    const k = (opc.alt || 1) * (opc.alt ? 1 : 0.88 + Math.random() * 0.3), forma = opc.forma || 'normal';
+    const dur = opc.dur || (forma === 'assustado' ? 0.38 : forma === 'triste' ? 1.1 : forma === 'curto' ? 0.22 : 0.65 + Math.random() * 0.25);
     const src = ctx.createOscillator(); src.type = 'sawtooth';
-    src.frequency.setValueAtTime(470 * k, t);
-    src.frequency.linearRampToValueAtTime(830 * k, t + dur * 0.35);
-    src.frequency.linearRampToValueAtTime(540 * k, t + dur * 0.95);
+    const [f0, f1, f2] = forma === 'assustado' ? [700, 1250, 1050] : forma === 'triste' ? [620, 560, 360] : forma === 'curto' ? [520, 760, 700] : [470, 830, 540];
+    src.frequency.setValueAtTime(f0 * k, t);
+    src.frequency.linearRampToValueAtTime(f1 * k, t + dur * (forma === 'assustado' ? 0.2 : 0.35));
+    src.frequency.linearRampToValueAtTime(f2 * k, t + dur * 0.95);
     const lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.frequency.value = 6 + Math.random() * 2; lfoG.gain.value = 12;
     lfo.connect(lfoG); lfoG.connect(src.frequency);
     const mestre = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
@@ -635,7 +638,7 @@
     $('.msg', d).addEventListener('dblclick', () => reagir(f.id, '❤️'));
     inserir(d);
     if (!f.eu && f.nova) {
-      plop();
+      plop(); if (window.ClaSpeakEmocao && Math.random() < 0.35) setTimeout(() => window.ClaSpeakEmocao('surpreso', $('#gatoSala img')), 300);
       salaGolpe('pulo', 800);
       if (Math.random() < 0.3) gatoSala.dizer(/\?\s*$/.test(f.texto) ? 'Hmm, uma pergunta! 🤔 Responda no 🎤' : ['Que legal! 😺', 'Miau, entendi tudo! 🐾', 'Prrr… 💛', 'Conversa boa! 😸'][Math.floor(Math.random() * 4)], 2500);
     }
@@ -799,7 +802,7 @@
 
   // Para a aba Estudar (tradutor-estudo.js)
   window.ClaSpeak = {
-    traduzir, traduzirVarias, falar, melhorVoz, ronrom, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
+    traduzir, traduzirVarias, falar, melhorVoz, ronrom, miauVoz: (o) => { if (sons || o.forcar) try { miauSintetico(o); } catch (e) {} }, ctxAudio, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
     get fone() { return fone; },
     get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },
     get sons() { return sons; }, set sons(v) { sons = v; localStorage.setItem('trad-sons', v ? '1' : '0'); },

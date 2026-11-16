@@ -41,6 +41,10 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **🎶 Aba Música** (`app/tradutor-musica.js`): 3 músicas de reggae originais do Clã Speak ("Miau Reggae",
+  "Clã da Paz", "Patinhas no Chão"), com a letra no estilo karaokê (palavras acendendo no ritmo) e a tradução
+  embaixo no idioma escolhido. O gatinho canta a letra (ou a tradução), dança no palco, anda, quica em cada
+  batida e faz um gesto a cada verso (acena, aponta, gira, pula, solta corações e mia quando a letra diz "miau").
 - **🎶 Batida de reggae original:** feita pelo próprio app (sem áudio de terceiros, sem direitos autorais):
   bumbo e caixa no tempo 3 (one drop), chimbal, guitarrinha no contratempo e baixo em Lá menor → Ré, a 80 bpm.
   Toca no 💃 Dançar e no botão 🎶 Som de reggae da aba Gatinho (sem parar até desligar) e nas festas do Estudar.

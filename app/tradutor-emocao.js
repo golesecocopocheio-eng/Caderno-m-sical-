@@ -11,12 +11,12 @@
   // Onde está cada gatinho: [o que recebe o toque, o que se mexe]
   const GATOS = [
     ['#gatoInicio img'], ['#gatoTexto img'], ['#gatoEstudo img'], ['#gatoAjustes img'], ['#gatoSala img'],
-    ['#ator', '#corpo'], ['#mAtor', '#mCorpo'], ['#petImg'], ['.gatoCaixa']
+    ['#ator', '#corpo'], ['#gatoKara img'], ['#petImg'], ['.gatoCaixa']
   ];
   const alvoDe = (el) => { for (const [toque, anim] of GATOS) { const t = el.closest(toque); if (t) return anim ? $(anim) : t; } return null; };
   const visivel = () => { // o gatinho principal da tela aberta
     const tela = document.querySelector('.tela.on,#f2f.on'); if (!tela) return null;
-    const mapa = { inicio: '#gatoInicio img', texto: '#gatoTexto img', estudo: '#gatoEstudo img', ajustes: '#gatoAjustes img', salaTela: '#gatoSala img', f2f: '#corpo', musica: '#mCorpo', gato: '#petImg' };
+    const mapa = { inicio: '#gatoInicio img', texto: '#gatoTexto img', estudo: '#gatoEstudo img', ajustes: '#gatoAjustes img', salaTela: '#gatoSala img', f2f: '#corpo', musica: '#gatoKara img', gato: '#petImg' };
     return mapa[tela.id] ? $(mapa[tela.id]) : null;
   };
 

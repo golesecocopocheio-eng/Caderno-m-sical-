@@ -309,11 +309,26 @@ body .emo-bravo{animation:emoBravo .12s linear 10 !important;filter:drop-shadow(
 @keyframes emoBravo{0%,100%{transform:translateX(0)}50%{transform:translateX(4px) scale(1.04)}}
 body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.7) !important}
 @keyframes emoSono{0%,100%{transform:none}40%,80%{transform:translateY(5px) rotate(4deg) scale(.96,.94)}}
+/* Karaokê */
+.kLinhas{max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+.kl{padding:8px 10px;border-radius:12px;opacity:.42;transition:all .25s;cursor:pointer}
+.kl.on{opacity:1;background:#1f1a05;box-shadow:0 0 0 1px #4a3d0a}
+.kl.foi{opacity:.62}
+.kl .o{font-size:1.15rem;font-weight:800;line-height:1.3}
+.kl.on .o{font-size:1.45rem}
+.kl .o span{transition:color .12s,text-shadow .12s}
+.kl.on .o span.lit{color:var(--c);text-shadow:0 0 10px rgba(250,204,21,.5)}
+.kl .t{color:var(--mu);font-size:.92rem;margin-top:2px}
+.kl.on .t{color:#fde68a;font-size:1rem}
+.kl .st{float:right;font-size:.85rem;margin-left:6px}
+#kMarcar{width:100%;height:62px;font-size:1.05rem;margin-top:10px;animation:pulsa 1.2s infinite}
+#kCantar.ligado{background:#dc2626;color:#fff}
 /* Música */
 .yt{position:relative;width:100%;aspect-ratio:16/9;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;border:2px solid var(--c)}
 .yt iframe,.yt>div{position:absolute;inset:0;width:100%;height:100%;border:0}
 #ytCtl button{padding:8px 10px}
 #ytCtl button.ligado{background:var(--c);color:#0b0b0b;border-color:var(--c)}
+.botaoLink[hidden]{display:none}
 .botaoLink{display:inline-flex;align-items:center;border-radius:12px;padding:12px 16px;background:var(--card2);color:var(--tx);border:1px solid var(--borda);font-weight:700;text-decoration:none}
 .palcoMusica{height:190px}
 .palcoMusica .ator{bottom:10px}
@@ -482,44 +497,38 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
   </div></div>
 </section>
 
-<!-- Música -->
+<!-- Karaokê (aba Música) -->
 <section id="musica" class="tela">
-  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Música</h1></header>
-  <div class="pista palcoMusica" id="mPista">
-    <div class="ator" id="mAtor"><div class="vira" id="mVira"><div class="corpo" id="mCorpo"><img src="icons/gato-corpo.png" alt="Gatinho"></div></div></div>
-    <span class="gesto" id="mGesto"></span>
-    <div class="balaoM" id="mBalao"></div>
-  </div>
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Karaokê</h1><div class="xp"><span id="kPontos">⭐ 0</span></div></header>
   <div class="rolavel"><div class="box">
-    <div class="card">
-      <div class="musicas" id="mLista"></div>
-      <div class="player">
-        <button id="mPlay" class="play">▶</button>
-        <div style="flex:1;min-width:0"><b id="mTitulo">Escolha uma música</b><div class="barraProg" style="margin:6px 0 0"><div id="mProg" style="width:0"></div></div></div>
-      </div>
-      <div class="row" style="margin-top:10px;align-items:center">
-        <label style="margin:0;flex:none">Tradução</label><select id="mLingua"></select>
-      </div>
-    </div>
-    <div class="card letra" id="mLetra"><p class="mu" style="text-align:center">🎶 Toque em ▶ para ouvir. A letra aparece aqui, com a tradução.</p></div>
+    <div class="card gatinho" id="gatoKara"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Cole o link da música e a letra: a gente canta junto e treina o idioma! 🎤</div></div>
     <div class="card" id="ytCard">
-      <b>🎬 Treinar com YouTube</b>
-      <p class="mu">Cole o link de uma música ou vídeo do YouTube: ele toca aqui pelo player oficial. Repita trechos, deixe mais devagar e treine as frases.</p>
-      <div class="row"><input id="ytLink" placeholder="https://youtu.be/…" inputmode="url"><button id="ytCarregar" style="flex:none">▶ Abrir</button></div>
+      <b>🎬 Vídeo do YouTube</b>
+      <div class="row" style="margin-top:8px"><input id="ytLink" placeholder="Cole aqui o link: https://youtu.be/…" inputmode="url"><button id="ytCarregar" style="flex:none">▶ Abrir</button></div>
       <div class="yt" id="ytBox" hidden><div id="ytPlayer"></div></div>
       <div class="botoes" id="ytCtl" hidden>
         <button class="sec" id="ytVolta">⏪ 5s</button><button id="ytTocar">⏯</button><button class="sec" id="ytVel">🐢 1×</button>
         <button class="sec" id="ytA">A</button><button class="sec" id="ytB">B</button><button class="sec" id="ytLoop">🔁 Trecho</button>
       </div>
       <p class="mu" id="ytInfo"></p>
-      <label for="ytFrase">Frase que você ouviu</label>
-      <div class="row" style="margin-bottom:6px"><select id="ytDe"></select></div>
-      <textarea id="ytFrase" placeholder="Escreva um trecho que você ouviu…" style="min-height:70px"></textarea>
-      <div class="resultado" id="ytTrad" style="min-height:30px"></div>
-      <div class="botoes" style="justify-content:flex-start"><button id="ytOuvir">🔊 Ouvir</button><button class="sec" id="ytRepetir">🎤 Repetir</button><a class="sec botaoLink" id="ytBuscar" target="_blank" rel="noopener">🔎 Buscar no YouTube</a></div>
-      <p class="mu" id="ytOuvi"></p>
+      <a class="sec botaoLink" id="ytFora" target="_blank" rel="noopener" hidden>▶ Abrir no YouTube</a>
     </div>
-    <p class="mu" style="text-align:center">Músicas e batida originais do Clã Speak 🐾</p>
+    <div class="card karaoke">
+      <div class="kLinhas" id="kLinhas"><p class="mu" style="text-align:center">🎤 A letra aparece aqui, verso por verso, com a tradução embaixo.<br>Cole a letra no quadro 📝 abaixo.</p></div>
+      <button id="kMarcar" hidden>👆 Toque quando começar este verso</button>
+      <div class="botoes"><button class="sec" id="kAnt">◀ Verso</button><button id="kCantar">🎤 Cantar junto</button><button class="sec" id="kProx">Verso ▶</button></div>
+      <p class="mu" id="kCantou" style="text-align:center"></p>
+    </div>
+    <div class="card">
+      <b>📝 Letra</b>
+      <p class="mu">Cole a letra da música, um verso por linha. Depois toque em ⏱️ Marcar o tempo (ou ⚡ Automático) para a letra andar junto com o vídeo. Fica guardada para este vídeo.</p>
+      <label for="kIdioma">Idioma da música</label><select id="kIdioma"></select>
+      <label for="kTrad">Tradução para</label><select id="kTrad"></select>
+      <textarea id="kTexto" placeholder="Cole a letra aqui…" style="margin-top:10px;min-height:120px"></textarea>
+      <div class="botoes" style="justify-content:flex-start"><button id="kSalvar">💾 Usar esta letra</button><button class="sec" id="kSinc">⏱️ Marcar o tempo</button><button class="sec" id="kAuto">⚡ Automático</button></div>
+      <p class="mu" id="kInfo"></p>
+    </div>
+    <p class="mu" style="text-align:center">🎧 Dica: com fone de ouvido, o 🎤 Cantar junto entende melhor a sua voz.</p>
   </div></div>
 </section>
 
@@ -604,7 +613,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
   <button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button>
   <button data-aba="texto"><b>✍️</b>Texto</button>
   <button data-aba="estudo"><b>📚</b>Estudar</button>
-  <button data-aba="musica"><b>🎶</b>Música</button>
+  <button data-aba="musica"><b>🎤</b>Karaokê</button>
   <button data-aba="gato"><b>🐱</b>Gatinho</button>
   <button data-aba="ajustes"><b>⚙️</b>Ajustes</button>
 </nav>

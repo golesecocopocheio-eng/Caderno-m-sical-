@@ -802,7 +802,7 @@
 
   // Para a aba Estudar (tradutor-estudo.js)
   window.ClaSpeak = {
-    traduzir, traduzirVarias, falar, melhorVoz, ronrom, miauVoz: (o) => { if (sons || o.forcar) try { miauSintetico(o); } catch (e) {} }, ctxAudio, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
+    gatoInicio, traduzir, traduzirVarias, falar, melhorVoz, ronrom, miauVoz: (o) => { if (sons || o.forcar) try { miauSintetico(o); } catch (e) {} }, ctxAudio, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
     get fone() { return fone; },
     get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },
     get sons() { return sons; }, set sons(v) { sons = v; localStorage.setItem('trad-sons', v ? '1' : '0'); },

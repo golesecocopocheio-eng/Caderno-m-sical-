@@ -310,6 +310,23 @@ body .emo-bravo{animation:emoBravo .12s linear 10 !important;filter:drop-shadow(
 @keyframes emoBravo{0%,100%{transform:translateX(0)}50%{transform:translateX(4px) scale(1.04)}}
 body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.7) !important}
 @keyframes emoSono{0%,100%{transform:none}40%,80%{transform:translateY(5px) rotate(4deg) scale(.96,.94)}}
+/* Saber */
+.sbChips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.sbChips button{background:var(--card2);color:var(--tx);border:1px solid var(--borda);padding:8px 2px;font-size:.72rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+.sbChips button b{font-size:1.4rem}
+.sbChips button.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
+.sbAssuntos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.sbAssuntos button{background:var(--card);color:var(--tx);border:1px solid #2a2a2a;padding:8px 12px;border-radius:20px;font-weight:600}
+.sbResp{animation:entra .3s}
+.sbCab{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.sbCab img{width:84px;height:84px;object-fit:cover;border-radius:12px;flex:none;border:2px solid var(--c)}
+.sbCab b{font-size:1.25rem;color:var(--c)}
+.sbTexto{font-size:1.05rem;line-height:1.5;white-space:pre-wrap}
+.sbTexto.carregando{color:var(--mu)}
+.sbLinguaSel{width:auto;padding:8px;flex:none}
+.sbFonte{font-size:.72rem;margin:8px 0 0}
+#sbVeja a{color:var(--c)}
+.txMais{margin-top:10px}.txMais summary{color:var(--mu);cursor:pointer}
 /* Conversar */
 .cvTopo{display:flex;gap:6px;padding:8px 12px;background:#111;border-bottom:1px solid #262626}
 .cvTopo select{flex:1;padding:9px}
@@ -428,6 +445,18 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
       <p class="mu">Um celular só, na mesa entre duas pessoas: a tela se divide e cada lado fala e lê no seu idioma.</p>
       <button id="abrirF2f" class="sec" style="width:100%">Abrir modo frente a frente</button>
     </div>
+    <div class="card" id="cardTexto">
+      <b>✍️ Traduzir texto</b>
+      <div class="idiomas" style="margin-top:8px"><select id="txDe"></select><button class="sec" id="txTroca" title="Inverter">⇄</button><select id="txPara"></select></div>
+      <textarea id="txEntrada" placeholder="Digite ou dite aqui…" style="margin-top:10px;min-height:80px"></textarea>
+      <div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="txDitar" style="flex:none">🎤 Ditar</button><div class="onda" id="txOnda"><i></i><i></i><i></i><i></i><i></i></div><button class="sec" id="txLimpar" style="flex:none;margin-left:auto">✖</button></div>
+      <div class="resultado" id="txSaida"></div>
+      <div class="botoes" style="justify-content:flex-start"><button id="txOuvir">🔊 Ouvir</button><button class="sec" id="txCopiar">📋 Copiar</button><button class="sec" id="txFav">⭐ Salvar</button></div>
+      <details class="txMais"><summary>⭐ Favoritas e 🕘 recentes</summary>
+        <div class="lista" id="txFavs" style="margin-top:8px"></div><p class="mu" id="txFavsVazio">Toque em ⭐ Salvar para guardar uma tradução aqui.</p>
+        <div class="lista" id="txHist" style="margin-top:8px"></div>
+      </details>
+    </div>
     <div id="semVoz" class="aviso" hidden>Este navegador não reconhece voz. Você ainda pode digitar. Para falar, use o Chrome (Android) ou o Safari (iPhone).</div>
   </div></div>
 </section>
@@ -476,22 +505,30 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
   </div></div>
 </section>
 
-<!-- Texto -->
-<section id="texto" class="tela">
-  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Texto</h1></header>
+<!-- Saber (cultura e dúvidas, com a Wikipédia) -->
+<section id="saber" class="tela">
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Saber</h1></header>
   <div class="rolavel"><div class="box">
-    <div class="card gatinho" id="gatoTexto"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Escreva (ou dite) qualquer coisa que eu traduzo enquanto você digita! ✍️</div></div>
+    <div class="card gatinho" id="gatoSaber"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Pergunte o que quiser: literatura, artes, história, ciência… Eu procuro pra você! 🎓</div></div>
     <div class="card">
-      <div class="idiomas"><select id="txDe"></select><button class="sec" id="txTroca" title="Inverter">⇄</button><select id="txPara"></select></div>
-      <textarea id="txEntrada" placeholder="Digite aqui…" style="margin-top:10px"></textarea>
-      <div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="txDitar" style="flex:none">🎤 Ditar</button><div class="onda" id="txOnda"><i></i><i></i><i></i><i></i><i></i></div><button class="sec" id="txLimpar" style="flex:none;margin-left:auto">✖</button></div>
+      <div class="row"><input id="sbPergunta" placeholder="Faça uma pergunta… ex.: Quem pintou a Mona Lisa?" enterkeyhint="search"><button class="sec" id="sbMic" style="flex:none" title="Perguntar falando">🎤</button></div>
+      <button id="sbPerguntar" style="width:100%;margin-top:8px">🔎 Perguntar</button>
+      <div class="sbChips" id="sbTemas"></div>
+      <button class="sec" id="sbSorte" style="width:100%;margin-top:8px">🎲 Curiosidade aleatória</button>
     </div>
-    <div class="card">
-      <div class="resultado" id="txSaida"></div>
-      <div class="botoes" style="justify-content:flex-start"><button id="txOuvir">🔊 Ouvir</button><button class="sec" id="txCopiar">📋 Copiar</button><button class="sec" id="txFav">⭐ Salvar</button></div>
+    <div class="sbAssuntos" id="sbAssuntos" hidden></div>
+    <div class="card sbResp" id="sbResp" hidden>
+      <div class="sbCab"><img id="sbImg" alt="" hidden><div><b id="sbTitulo"></b><div class="mu" id="sbDesc"></div></div></div>
+      <div class="sbTexto" id="sbTexto"></div>
+      <div class="botoes" style="justify-content:flex-start">
+        <button id="sbOuvir">🔊 Ouvir</button>
+        <button class="sec" id="sbOutra">🌍 Ler em…</button><select id="sbLingua" class="sbLinguaSel"></select>
+        <button class="sec" id="sbCopiar">📋</button><a class="sec botaoLink" id="sbMais" target="_blank" rel="noopener">🔗 Ler mais</a>
+      </div>
+      <div class="mu" id="sbVeja"></div>
+      <p class="mu sbFonte">Fonte: Wikipédia (CC BY-SA)</p>
     </div>
-    <div class="card"><b>⭐ Favoritas</b><div class="lista" id="txFavs" style="margin-top:8px"></div><p class="mu" id="txFavsVazio">Toque em ⭐ Salvar para guardar uma tradução aqui.</p></div>
-    <div class="card"><b>🕘 Recentes</b><div class="lista" id="txHist" style="margin-top:8px"></div></div>
+    <div class="card"><b>🕘 Suas últimas perguntas</b><div class="lista" id="sbHist" style="margin-top:8px"></div></div>
   </div></div>
 </section>
 
@@ -645,7 +682,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 
 <nav class="abas" id="abas">
   <button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button>
-  <button data-aba="texto"><b>✍️</b>Texto</button>
+  <button data-aba="saber"><b>🎓</b>Saber</button>
   <button data-aba="estudo"><b>📚</b>Estudar</button>
   <button data-aba="musica"><b>🎤</b>Karaokê</button>
   <button data-aba="conversa"><b>💬</b>Conversar</button>
@@ -659,6 +696,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <script src="tradutor-extra.js"></script>
 <script src="tradutor-musica.js"></script>
 <script src="tradutor-conversa.js"></script>
+<script src="tradutor-saber.js"></script>
 <script src="tradutor-emocao.js"></script>
 </body>
 </html>

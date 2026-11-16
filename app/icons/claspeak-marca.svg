@@ -1,15 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F5F7"/><stop offset=".35" stop-color="#C9CCD3"/><stop offset=".55" stop-color="#9A9EA8"/><stop offset=".75" stop-color="#D6D8DE"/><stop offset="1" stop-color="#7D818C"/></linearGradient>
-    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".15"/></linearGradient>
-    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26272C"/><stop offset="1" stop-color="#0E0F12"/></linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C3AED"/><stop offset=".55" stop-color="#4C1D95"/><stop offset="1" stop-color="#2E1065"/></linearGradient>
+    <radialGradient id="l" cx=".28" cy=".18" r=".85"><stop offset="0" stop-color="#C4B5FD" stop-opacity=".35"/><stop offset=".6" stop-color="#C4B5FD" stop-opacity="0"/></radialGradient>
+    <linearGradient id="y" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FEF3C7"/><stop offset=".45" stop-color="#FACC15"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+    <mask id="m"><rect x="0" y="0" width="512" height="512" fill="#fff"/><circle cx="292" cy="226" r="104" fill="#000"/></mask>
+    <filter id="b" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
   </defs>
   
   <g class="marca">
     <rect x="80" y="80" width="352" height="352" rx="84" fill="url(#g)"/>
-    <rect x="81" y="81" width="350" height="350" rx="83" fill="none" stroke="url(#b)" stroke-width="2"/>
-    <path d="M170 182a34 34 0 0 1 34-34h104a34 34 0 0 1 34 34v96a34 34 0 0 1-34 34h-62l-50 42v-42h-8a34 34 0 0 1-34-34z" fill="none" stroke="url(#t)" stroke-width="18" stroke-linejoin="round"/>
-    <g transform="translate(6 0)"><path d="M268 196a46 46 0 1 0 0 68" fill="none" stroke="url(#t)" stroke-width="20" stroke-linecap="round"/>
-    <path d="M296 206a30 30 0 0 1 0 48" fill="none" stroke="#26272C" stroke-opacity=".75" stroke-width="14" stroke-linecap="round"/></g>
+    <rect x="80" y="80" width="352" height="352" rx="84" fill="url(#l)"/>
+    <rect x="80.75" y="80.75" width="350.5" height="350.5" rx="83.25" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>
+    <g fill="#FDE68A"><circle cx="356" cy="140" r="4"/><circle cx="380" cy="186" r="2.5" fill-opacity=".7"/><circle cx="132" cy="372" r="3" fill-opacity=".6"/><circle cx="150" cy="136" r="2.5" fill-opacity=".5"/></g>
+    <g transform="translate(10 -6)"><circle cx="240" cy="262" r="118" fill="#FACC15" fill-opacity=".35" mask="url(#m)" filter="url(#b)"/>
+    <circle cx="240" cy="262" r="118" fill="url(#y)" mask="url(#m)"/>
+    <g fill="none" stroke="#FDE68A" stroke-linecap="round">
+            <path d="M326 236a44 44 0 0 1 0 56" stroke-width="16"/>
+      <path d="M358 214a76 76 0 0 1 0 100" stroke-width="14" stroke-opacity=".7"/>
+    </g></g>
   </g>
 </svg>

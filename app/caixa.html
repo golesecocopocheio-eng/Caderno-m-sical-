@@ -88,15 +88,18 @@ const S=CS(),first=!S.init,L=cdocs();S.h=S.h||{};
 for(const p of new Set([...Object.keys(L),...Object.keys(cloud)])){const lj=L[p],c=cloud[p],last=S.h[p];if(c&&lj===undefined){capply(p,c.j);S.h[p]=hs(c.j);pulled++}else if(c){const ch=hs(c.j),lh=hs(lj);if(ch===lh){S.h[p]=lh}else if(first){if(p.startsWith('cxdays/')){const cv=JSON.parse(c.j),lv=JSON.parse(lj);const mg=Object.assign({},lv,cv);capply(p,JSON.stringify(mg))}else capply(p,c.j);S.h[p]=ch;pulled++}else if(last===lh){capply(p,c.j);S.h[p]=ch;pulled++}else if(last===ch){}else{if(p.startsWith('cxdays/'))capply(p,c.j,true);S.h[p]=ch}}}
 S.init=1;CSset(S);if(pulled){persist()}CL.ready=true;CL.busy=false;if(pulled){cstat('☁️ Dados carregados da nuvem');if(document.querySelector('#bm'))home();else toast('Dados da nuvem carregados. Volte à tela inicial.')}await cloudPush()}catch(e){cstat('⚠️ Não consegui conectar à nuvem. Salvando só neste celular.')}finally{CL.busy=false}}
 const persist=()=>{try{const a=JSON.stringify(days);localStorage.setItem('caixa-bar',a);localStorage.setItem('caixa-bar-meta',JSON.stringify(meta));if(localStorage.getItem('caixa-bar')!==a)throw 0;cloudSoon();return true}catch(e){toast('Não consegui gravar neste navegador. Copie o backup.');return false}};
-const num=s=>{s=String(s||'').trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.split('.').join('');const n=parseFloat(s);return isNaN(n)?0:n};
-const R=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+// lê valor digitado: "1.234,56", "108,50", "108.5", "R$ 50", "2.600" (milhar). Com vírgula, o ponto é milhar;
+// sem vírgula, "2.600" é milhar e "108.5" é decimal.
+const num=s=>{s=String(s??'').trim().replace(/R\$|\s/g,'');if(!s)return 0;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.split('.').join('');const n=parseFloat(s);return isNaN(n)?0:n};
+const c2=n=>{const x=Math.round((Number(n)||0)*100)/100;return Object.is(x,-0)?0:x}; // arredonda no centavo
+const R=n=>{let x=Math.round((Number(n)||0)*100)/100;if(Object.is(x,-0))x=0;return x.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})};
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const lbl=k=>new Date(k+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
 const short=k=>new Date(k+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)}
 function calc(d){const g=k=>num(d[k]);const kk=Object.keys(days).find(x=>days[x]===d),fa=kk?fornDia(kk):0,fcsh=kk?fornDia(kk,true):0;const bar=g('bd')+g('bc')+g('bp'),por=g('pd')+g('pc')+g('pp'),vendas=bar+por,saidas=g('dj')+g('ex')+gsT(d);
  const din=g('bd')+g('pd'),car=g('bc')+g('pc'),pix=g('bp')+g('pp'),cofre=g('cofre'),sdn=gsT(d,'Dinheiro')+advT(d,'Dinheiro')+((d.ad_f||'Dinheiro')==='Dinheiro'?g('ad'):0)+['dj','ex'].reduce((a,x)=>a+((d[x+'_f']||'Dinheiro')==='Dinheiro'?g(x):0),0),cfg=cgx(d),esp=g('fundo')+din-sdn-cofre;
- return{cofre,bar,por,vendas,saidas,forn:fa,adiant:g('ad')+advT(d),res:bar,din,car,pix,esp,sdn,cfg,dif:(d.cont||'').trim()===''?null:num(d.cont)-esp}}
+ return{cofre:c2(cofre),bar:c2(bar),por:c2(por),vendas:c2(vendas),saidas:c2(saidas),forn:c2(fa),adiant:c2(g('ad')+advT(d)),res:c2(bar),din:c2(din),car:c2(car),pix:c2(pix),esp:c2(esp),sdn:c2(sdn),cfg:c2(cfg),dif:String(d.cont??'').trim()===''?null:c2(num(d.cont)-esp)}}
 const sign=n=>n>0?'pos':n<0?'neg':'';
 
 function home(){const ks=Object.keys(days).sort().reverse(),ym=today().slice(0,7);

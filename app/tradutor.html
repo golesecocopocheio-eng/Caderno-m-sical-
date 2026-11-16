@@ -16,6 +16,8 @@
 :root{--c:#facc15;--c2:#eab308;--bg:#0b0b0b;--card:#181818;--card2:#222;--borda:#333;--tx:#f5f5f4;--mu:#a8a29e;--eu:#3a3205}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+body{display:flex;flex-direction:column}
+body.grande{font-size:118%}
 button,select,input{font:inherit}
 button{cursor:pointer;border:0;border-radius:12px;padding:12px 16px;background:var(--c);color:#0b0b0b;font-weight:700}
 button:active{transform:scale(.97)}
@@ -28,8 +30,9 @@ header{background:#0b0b0b;border-bottom:4px solid var(--c);color:#fff;padding:ca
 header h1{font-size:1.1rem;margin:0;flex:1}
 header button{background:rgba(255,255,255,.12);color:#fff;padding:8px 10px;font-size:.9rem}
 header button.ligado{background:var(--c);color:#0b0b0b}
-.tela{display:none;height:100%;flex-direction:column;position:relative}
-.tela.on{display:flex}
+.tela{display:none;flex:1;min-height:0;flex-direction:column;position:relative}
+.tela.on{display:flex;animation:aparece .28s ease-out}
+@keyframes aparece{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .rolavel{flex:1;overflow-y:auto}
 .box{max-width:520px;margin:0 auto;padding:16px;width:100%}
 .card{background:var(--card);border:1px solid #262626;border-radius:16px;padding:16px;margin-bottom:14px}
@@ -43,8 +46,10 @@ header button.ligado{background:var(--c);color:#0b0b0b}
 /* Abas de baixo */
 .abas{display:flex;background:#0b0b0b;border-top:1px solid #262626;padding:6px 6px calc(env(safe-area-inset-bottom) + 6px)}
 .abas button{flex:1;background:none;color:var(--mu);font-weight:600;padding:8px 4px;font-size:.85rem;display:flex;flex-direction:column;align-items:center;gap:2px}
-.abas button b{font-size:1.4rem}
+.abas button b{font-size:1.35rem;transition:transform .2s}
 .abas button.on{color:var(--c)}
+.abas button.on b{transform:scale(1.2) translateY(-2px)}
+.abas[hidden]{display:none}
 /* Gatinho mascote */
 .gatinho{display:flex;align-items:center;gap:12px}
 .gatinho img{width:76px;height:76px;border-radius:50%;box-shadow:0 0 0 3px var(--c);cursor:pointer;flex:none;transition:transform .2s}
@@ -110,9 +115,49 @@ header button.ligado{background:var(--c);color:#0b0b0b}
 .xp{display:flex;gap:14px;justify-content:center;font-weight:700;color:var(--c)}
 .barraProg{height:8px;background:#262626;border-radius:4px;overflow:hidden;margin:10px 0}
 .barraProg div{height:100%;background:var(--c);transition:width .3s}
+/* Onda do microfone */
+.onda{display:none;align-items:center;gap:3px;height:28px;padding:0 4px}
+.onda.on{display:flex}
+.onda i{width:4px;height:6px;background:var(--c);border-radius:2px;animation:onda .9s ease-in-out infinite}
+.onda i:nth-child(2){animation-delay:.1s}.onda i:nth-child(3){animation-delay:.2s}.onda i:nth-child(4){animation-delay:.3s}.onda i:nth-child(5){animation-delay:.4s}
+.onda.forte i{animation-duration:.45s}
+@keyframes onda{0%,100%{height:6px}50%{height:26px}}
+/* Texto */
+.idiomas{display:flex;gap:6px;align-items:center}
+.idiomas select{flex:1}
+.idiomas button{flex:none;padding:10px 12px}
+textarea{width:100%;min-height:110px;padding:12px;border:1px solid var(--borda);border-radius:12px;background:var(--card2);color:var(--tx);font:inherit;font-size:1.1rem;resize:vertical}
+.resultado{min-height:80px;font-size:1.25rem;line-height:1.4;color:var(--c);font-weight:600;white-space:pre-wrap;padding:6px 2px}
+.lista{display:flex;flex-direction:column;gap:6px}
+.lista .item{background:var(--card2);border:1px solid var(--borda);border-radius:12px;padding:8px 10px;cursor:pointer;animation:entra .25s}
+.lista .item small{color:var(--mu);display:block}
+/* Gatinho (bichinho) */
+.pet{text-align:center;position:relative}
+.pet .foto{position:relative;display:inline-block;margin:6px 0 10px}
+.pet .foto img{width:190px;height:190px;border-radius:50%;box-shadow:0 0 0 5px var(--c),0 0 40px rgba(250,204,21,.25);cursor:pointer;transition:transform .2s}
+.pet .foto .acess{position:absolute;left:50%;top:-18px;transform:translateX(-50%);font-size:3.4rem;pointer-events:none}
+.pet .foto .acess.oculos{top:58px;font-size:3rem}
+.pet .foto .acess.laco{top:auto;bottom:-6px;font-size:2.6rem}
+.pet .foto.dormindo img{filter:brightness(.55) saturate(.6)}
+.pet .zz{position:absolute;right:-6px;top:10px;font-size:1.6rem;animation:zz 2s infinite}
+@keyframes zz{0%{opacity:0;transform:translate(0,10px)}50%{opacity:1}100%{opacity:0;transform:translate(14px,-20px)}}
+.medidor{display:flex;align-items:center;gap:8px;margin:6px 0;text-align:left}
+.medidor span{width:110px;font-size:.9rem}
+.medidor .barraProg{flex:1;margin:0}
+.acoesPet{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.acoesPet button{background:var(--card2);color:var(--tx);border:1px solid var(--borda)}
+.loja{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.loja button{background:var(--card2);color:var(--tx);border:1px solid var(--borda);font-size:1.4rem;padding:8px 12px}
+.loja button.usando{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
+.loja button small{display:block;font-size:.7rem;color:var(--mu)}
+.coracao{position:absolute;font-size:1.6rem;pointer-events:none;animation:sobe 1.4s ease-out forwards}
+@keyframes sobe{from{opacity:1;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-120px) scale(1.3)}}
+.novelo{position:absolute;font-size:2.2rem;animation:rola 1.4s ease-in-out forwards;pointer-events:none}
+@keyframes rola{0%{transform:translateX(-140px) rotate(0)}50%{transform:translateX(60px) rotate(400deg)}100%{transform:translateX(-20px) rotate(720deg);opacity:0}}
+input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 /* Frente a frente */
-#f2f{display:none;height:100%;flex-direction:column}
-#f2f.on{display:flex}
+#f2f{display:none;flex:1;min-height:0;flex-direction:column}
+#f2f.on{display:flex;animation:aparece .28s ease-out}
 .lado{flex:1;display:flex;flex-direction:column;padding:12px;gap:8px;min-height:0}
 .lado.cima{transform:rotate(180deg);background:#141204}
 .lado .texto{flex:1;overflow-y:auto;background:var(--card);border:1px solid #2a2a2a;border-radius:14px;padding:12px;font-size:1.35rem;line-height:1.4}
@@ -122,6 +167,8 @@ header button.ligado{background:var(--c);color:#0b0b0b}
 .meio{display:flex;justify-content:center;gap:6px;padding:6px;background:#0b0b0b;border-top:3px solid var(--c);border-bottom:3px solid var(--c);flex-wrap:wrap}
 .meio button{background:rgba(255,255,255,.12);color:#fff;padding:6px 10px;font-size:.85rem}
 .meio button.ligado{background:var(--c);color:#0b0b0b}
+.meio img{width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 2px var(--c);cursor:pointer}
+.msg .acoes button.copiar{color:var(--mu)}
 </style>
 </head>
 <body>
@@ -153,7 +200,6 @@ header button.ligado{background:var(--c);color:#0b0b0b}
     </div>
     <div id="semVoz" class="aviso" hidden>Este navegador não reconhece voz. Você ainda pode digitar. Para falar, use o Chrome (Android) ou o Safari (iPhone).</div>
   </div></div>
-  <nav class="abas"><button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button><button data-aba="estudo"><b>📚</b>Estudar</button></nav>
 </section>
 
 <!-- Estudar -->
@@ -198,7 +244,87 @@ header button.ligado{background:var(--c);color:#0b0b0b}
       <button class="sec" id="estVoltar" style="width:100%">← Outros temas</button>
     </div>
   </div></div>
-  <nav class="abas"><button data-aba="inicio"><b>🌐</b>Traduzir</button><button class="on" data-aba="estudo"><b>📚</b>Estudar</button></nav>
+</section>
+
+<!-- Texto -->
+<section id="texto" class="tela">
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Texto</h1></header>
+  <div class="rolavel"><div class="box">
+    <div class="card gatinho" id="gatoTexto"><img src="icons/tradutor-gato.png" alt="Gatinho"><div class="fala">Escreva (ou dite) qualquer coisa que eu traduzo enquanto você digita! ✍️</div></div>
+    <div class="card">
+      <div class="idiomas"><select id="txDe"></select><button class="sec" id="txTroca" title="Inverter">⇄</button><select id="txPara"></select></div>
+      <textarea id="txEntrada" placeholder="Digite aqui…" style="margin-top:10px"></textarea>
+      <div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="txDitar" style="flex:none">🎤 Ditar</button><div class="onda" id="txOnda"><i></i><i></i><i></i><i></i><i></i></div><button class="sec" id="txLimpar" style="flex:none;margin-left:auto">✖</button></div>
+    </div>
+    <div class="card">
+      <div class="resultado" id="txSaida"></div>
+      <div class="botoes" style="justify-content:flex-start"><button id="txOuvir">🔊 Ouvir</button><button class="sec" id="txCopiar">📋 Copiar</button><button class="sec" id="txFav">⭐ Salvar</button></div>
+    </div>
+    <div class="card"><b>⭐ Favoritas</b><div class="lista" id="txFavs" style="margin-top:8px"></div><p class="mu" id="txFavsVazio">Toque em ⭐ Salvar para guardar uma tradução aqui.</p></div>
+    <div class="card"><b>🕘 Recentes</b><div class="lista" id="txHist" style="margin-top:8px"></div></div>
+  </div></div>
+</section>
+
+<!-- Gatinho (bichinho virtual) -->
+<section id="gato" class="tela">
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Meu gatinho</h1><div class="xp"><span id="petNivel">Nível 1</span></div></header>
+  <div class="rolavel"><div class="box">
+    <div class="card pet">
+      <div class="gatinho" id="gatoPet" style="justify-content:center"><div class="fala">Miau! Cuida de mim? 🥺</div></div>
+      <div class="foto" id="petFoto"><img src="icons/tradutor-gato.png" alt="Gatinho" id="petImg"><span class="acess" id="petAcess"></span></div>
+      <div class="medidor"><span>😺 Felicidade</span><div class="barraProg"><div id="petFeliz"></div></div></div>
+      <div class="medidor"><span>🍗 Barriga</span><div class="barraProg"><div id="petFome"></div></div></div>
+      <div class="medidor"><span>⚡ Energia</span><div class="barraProg"><div id="petEnergia"></div></div></div>
+      <div class="acoesPet">
+        <button id="petComer">🍗 Dar comida</button><button id="petBrincar">🧶 Brincar</button>
+        <button id="petCarinho">✋ Fazer carinho</button><button id="petDormir">😴 Dormir</button>
+      </div>
+    </div>
+    <div class="card"><b>🛍️ Acessórios</b> <span class="mu">(ganhe ⭐ estudando)</span><div class="loja" id="petLoja"></div></div>
+    <div class="card">
+      <b>🎙️ Miado de verdade</b>
+      <p class="mu">Grave o miado do seu gato (ou escolha um áudio do celular). Ele vira o miado do app inteiro.</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button id="miauGravar">⏺ Gravar</button>
+        <button class="sec" id="miauArquivo">📁 Escolher áudio</button>
+        <button class="sec" id="miauTestar">▶ Ouvir</button>
+        <button class="sec" id="miauPadrao">↺ Padrão</button>
+      </div>
+      <input type="file" id="miauInput" accept="audio/*" hidden>
+      <p class="mu" id="miauInfo"></p>
+    </div>
+  </div></div>
+</section>
+
+<!-- Ajustes -->
+<section id="ajustes" class="tela">
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Ajustes</h1></header>
+  <div class="rolavel"><div class="box">
+    <div class="card gatinho" id="gatoAjustes"><img src="icons/tradutor-gato.png" alt="Gatinho"><div class="fala">Aqui você deixa o app do seu jeito! ⚙️</div></div>
+    <div class="card">
+      <b>🎤 Microfone</b>
+      <div class="chave"><span>Segurar para falar<br><span class="mu">Fale enquanto segura o 🎤 e solte para enviar. Capta melhor em lugar barulhento.</span></span><input type="checkbox" id="ajSegurar"></div>
+      <div class="chave"><span>🎧 Estou de fone de ouvido<br><span class="mu">O microfone continua ouvindo enquanto a tradução toca.</span></span><input type="checkbox" id="ajFone"></div>
+    </div>
+    <div class="card">
+      <b>🔊 Voz e sons</b>
+      <label for="ajVel">Velocidade da voz: <span id="ajVelTx">1.0×</span></label>
+      <input type="range" id="ajVel" min="0.6" max="1.4" step="0.1" value="1">
+      <div class="chave"><span>Ler as traduções em voz alta</span><input type="checkbox" id="ajVoz"></div>
+      <div class="chave"><span>Sons do app (miado, bolhas)</span><input type="checkbox" id="ajSons"></div>
+      <button class="sec" id="ajTestar" style="margin-top:10px">▶ Testar a voz</button>
+    </div>
+    <div class="card">
+      <b>👀 Tela</b>
+      <div class="chave"><span>Letras grandes</span><input type="checkbox" id="ajGrande"></div>
+    </div>
+    <div class="card">
+      <b>🧹 Dados</b>
+      <p class="mu" id="ajCacheTx"></p>
+      <button class="sec" id="ajLimpar">Apagar traduções guardadas</button>
+    </div>
+    <p class="mu" style="text-align:center">Clã Speak 🐾</p>
+  </div></div>
 </section>
 
 <!-- Sala -->
@@ -223,6 +349,7 @@ header button.ligado{background:var(--c);color:#0b0b0b}
   <div class="emojis" id="emojis"></div>
   <div class="barra">
     <input id="digitar" placeholder="Fale no microfone ou digite…" enterkeyhint="send">
+    <div class="onda" id="salaOnda"><i></i><i></i><i></i><i></i><i></i></div>
     <button class="mic" id="mic" title="Falar">🎤</button>
   </div>
 </section>
@@ -233,16 +360,25 @@ header button.ligado{background:var(--c);color:#0b0b0b}
     <div class="texto"></div>
     <div class="ctl"><select></select><button class="mic">🎤</button></div>
   </div>
-  <div class="meio"><button id="f2fVoz">🔊 Voz: ligada</button><button id="f2fFone">🎧 Fone</button><button id="f2fLimpar">Limpar</button><button id="f2fSair">Sair</button></div>
+  <div class="meio"><img src="icons/tradutor-gato.png" alt="Gatinho" id="f2fGato"><button id="f2fVoz">🔊 Voz: ligada</button><button id="f2fFone">🎧 Fone</button><button id="f2fLimpar">Limpar</button><button id="f2fSair">Sair</button></div>
   <div class="lado" data-lado="a">
     <div class="texto"></div>
     <div class="ctl"><select></select><button class="mic">🎤</button></div>
   </div>
 </section>
 
+<nav class="abas" id="abas">
+  <button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button>
+  <button data-aba="texto"><b>✍️</b>Texto</button>
+  <button data-aba="estudo"><b>📚</b>Estudar</button>
+  <button data-aba="gato"><b>🐱</b>Gatinho</button>
+  <button data-aba="ajustes"><b>⚙️</b>Ajustes</button>
+</nav>
+
 <script src="firebase-config.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="tradutor.js"></script>
 <script src="tradutor-estudo.js"></script>
+<script src="tradutor-extra.js"></script>
 </body>
 </html>

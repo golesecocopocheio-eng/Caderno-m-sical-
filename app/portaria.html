@@ -37,7 +37,7 @@ label{font-size:13px;color:var(--mut);flex:1}
   <div class="sub" id="noite"></div>
   <input type="date" id="dia" style="margin-bottom:10px" aria-label="Escolher data">
   <div class="msg" id="status">Conectando…</div>
-  <div class="msg" id="msgDono" hidden>Somente o dono pode apagar entradas e mudar os valores.</div>
+  <div class="msg" id="msgDono" hidden>Somente o dono muda os valores. Dar baixa em entradas: qualquer pessoa do bar (fica registrado quem deu).</div>
 
   <div class="card">
     <div class="sub" style="margin:0 0 6px">Forma de pagamento</div>
@@ -158,13 +158,13 @@ function render(){
   $("#lista").innerHTML=rec.length?rec.map(e=>{
     const h=new Date(e.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
     const c=CATS.find(x=>x[0]===e.cat)[1],p=PGS.find(x=>x[0]===e.pg)[1];
-    return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} ${(owner||(me&&e.u===me))?`<button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button>`:""}</span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
+    return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} <button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button></span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
   const sm=a=>a.reduce((s,l)=>s+(l.valor||0),0);
   $("#audit").innerHTML=`<div><b>${lan.length}</b><span>Lançadas · ${brl(sm(lan))}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(sm(lan)-sm(apg))}</b><span>Saldo</span></div>`;
-  $("#apagadas").innerHTML=apg.sort((a,b)=>b.ts-a.ts).slice(0,10).map(l=>{const h=new Date(l.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});const c=(CATS.find(x=>x[0]===l.cat)||[0,"?"])[1];return `<div class="item"><span>🗑 ${h} · ${c}</span><span>${brl(l.valor)}</span></div>`}).join("");
+  $("#apagadas").innerHTML=apg.sort((a,b)=>b.ts-a.ts).slice(0,10).map(l=>{const h=new Date(l.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});const c=(CATS.find(x=>x[0]===l.cat)||[0,"?"])[1];return `<div class="item"><span>🗑 ${h} · ${c}${l.nome?" · "+escN(l.nome):""}${l.quem?" · por <b>"+escN(l.quem)+"</b>":""}</span><span>${brl(l.valor)}</span></div>`}).join("");
   document.querySelectorAll(".dono").forEach(el=>el.hidden=!owner);
-  {const minha=[...ents].filter(e=>owner||(me&&e.u===me)).sort((a,b)=>b.ts-a.ts)[0];const d=$("#desfazer");d.hidden=!minha||ver!==noite;if(minha)d.dataset.alvo=minha.id}
+  {const minha=[...ents].filter(e=>me&&e.u===me).sort((a,b)=>b.ts-a.ts)[0]||[...ents].sort((a,b)=>b.ts-a.ts)[0];const d=$("#desfazer");d.hidden=!minha||ver!==noite;if(minha)d.dataset.alvo=minha.id}
   $("#msgDono").hidden=owner;
 }
 
@@ -200,14 +200,14 @@ document.addEventListener("click",async ev=>{
       const e=ents.find(x=>x.id===t.dataset.alvo);
       if(e&&conf("desf"+e.id,"Desfazer a última: "+((CATS.find(x=>x[0]===e.cat)||[0,''])[1])+(e.nome?" · "+e.nome:"")+" · "+brl(e.valor)+"?")){
         await db.collection("entradas").doc(e.id).delete();
-        await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now(),...(e.nome?{nome:e.nome}:{})});
+        await db.collection("log").add({tipo:"apagou",quem:(localStorage.getItem("bar-nome")||"").trim(),u:me,cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now(),...(e.nome?{nome:e.nome}:{})});
       }
     }else if(t.dataset.del){
       const e0=ents.find(x=>x.id===t.dataset.del);
-      if((owner||(me&&e0&&e0.u===me))&&conf("del"+t.dataset.del,"Dar baixa nesta entrada ("+brl(e0?e0.valor:0)+")?")){
+      if(e0&&conf("del"+t.dataset.del,"Dar baixa nesta entrada ("+brl(e0?e0.valor:0)+")?")){
         const e=e0;
         await db.collection("entradas").doc(t.dataset.del).delete();
-        if(e)await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now(),...(e.nome?{nome:e.nome}:{})});
+        if(e)await db.collection("log").add({tipo:"apagou",quem:(localStorage.getItem("bar-nome")||"").trim(),u:me,cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now(),...(e.nome?{nome:e.nome}:{})});
       }
     }else if(!owner){return}else if(t.id==="editBtn"){
       $("#inputs").innerHTML=CATS.filter(c=>c[0]!=="clan").map(([k,n])=>`<label>${n}<input type="number" inputmode="decimal" min="0" step="0.5" id="p_${k}" value="${precos[k]}"></label>`).join("");
@@ -216,7 +216,7 @@ document.addEventListener("click",async ev=>{
       if(conf("zerar","Zerar todos os valores da portaria?")){await db.doc("config/precos").set({turista:0,morador:0,clan:0,lista:0});$("#editBox").hidden=true}
     }else if(t.id==="limpar"){
       if(ents.length&&conf("limpar","Apagar as "+ents.length+" entradas desta noite? Não dá para desfazer.")){
-        await Promise.all([...ents].map(async e=>{await db.collection("entradas").doc(e.id).delete();await db.collection("log").add({tipo:"apagou",cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now()})}));
+        await Promise.all([...ents].map(async e=>{await db.collection("entradas").doc(e.id).delete();await db.collection("log").add({tipo:"apagou",quem:(localStorage.getItem("bar-nome")||"").trim(),u:me,cat:e.cat,pg:e.pg,valor:e.valor,noite:e.noite,ts:Date.now()})}));
       }
     }else if(t.id==="salvar"){
       const v={clan:0};CATS.filter(c=>c[0]!=="clan").forEach(([k])=>v[k]=Number($("#p_"+k).value)||0);

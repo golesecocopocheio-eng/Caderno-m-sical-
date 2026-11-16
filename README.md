@@ -41,21 +41,19 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
-- **🎶 Aba Música** (`app/tradutor-musica.js`): 3 músicas de reggae originais do Clã Speak ("Miau Reggae",
-  "Clã da Paz", "Patinhas no Chão"), com a letra no estilo karaokê (palavras acendendo no ritmo) e a tradução
-  embaixo no idioma escolhido. O gatinho dança no palco, anda, quica em cada
-  batida e faz um gesto a cada verso (acena, aponta, gira, pula, solta corações e mia quando a letra diz "miau").
-- **🎬 Treinar com YouTube** (aba Música): cola-se o link de um vídeo e ele toca pelo **player oficial incorporado
-  do YouTube** (nada é baixado). Botões de treino: ⏪ 5 s, 🐢 0,75×/0,5×, marcar A e B e 🔁 repetir o trecho.
-  A frase ouvida é escrita, traduzida, falada e pode ser repetida com conferência da pronúncia. Vídeos cujo dono
-  bloqueou a reprodução fora do YouTube mostram "Abrir no YouTube".
+- **🎤 Aba Karaokê** (`app/tradutor-musica.js`): cola-se o link de uma música do YouTube (toca pelo **player oficial
+  incorporado**, nada é baixado) e a letra (um verso por linha). A letra é traduzida verso por verso e aparece no estilo
+  karaokê, com as palavras acendendo. O tempo de cada verso é marcado tocando em "👆" enquanto o vídeo toca (ou
+  ⚡ distribuído automaticamente) e fica guardado para aquele vídeo; depois a letra anda sozinha com o vídeo.
+  **🎤 Cantar junto** ouve a pessoa e dá ⭐ de 0 a 3 por verso, com o gatinho reagindo. Botões de treino: ⏪ 5 s,
+  🐢 0,75×/0,5×, A-B 🔁. Vídeos que o dono bloqueou fora do YouTube: "Abrir no YouTube" e ◀ ▶ para acompanhar.
 - **Frente a frente 🔄 Automático:** com o botão Auto ligado, o app passa a vez sozinho: ouve um lado, traduz, lê a
   tradução e já liga o microfone do outro lado (mostrando "Vez de 🇧🇷/🇺🇸"); no silêncio continua ouvindo. Cada
   tradução entregue solta confete no palco.
 - **🎶 Batida de reggae original:** feita pelo próprio app (sem áudio de terceiros, sem direitos autorais):
   bumbo macio e aro no tempo 3 (one drop), chimbal suave, órgão no contratempo com eco dub e baixo redondo
   em Lá menor → Ré, a 80 bpm, com compressor na mixagem.
-  Toca no 💃 Dançar e no botão 🎶 Som de reggae da aba Gatinho (sem parar até desligar) e nas festas do Estudar.
+  Toca no 💃 Dançar da aba Gatinho e nas festas do Estudar.
 - **Emoções do gatinho** (`app/tradutor-emocao.js`): feliz, canta (melodia de miados), dança, assustado, triste,
   apaixonado, surpreso, tonto, bravo e sono, cada uma com animação, emojis e som próprio. Gestos: um toque
   (feliz/canta/surpreso ou a ação de sempre), 3 toques rápidos (susto ou bravo), segurar o dedo (carinho →

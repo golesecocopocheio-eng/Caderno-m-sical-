@@ -16,6 +16,17 @@ h1{font-size:20px;margin:4px 0 2px}
 .row{display:flex;gap:8px}
 .chips button{flex:1;padding:9px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:14px}
 .chips button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+/* forma de pagamento: botões grandes com ícone e cor */
+#pgs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#pgs button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 2px 10px;border:2px solid var(--bd);border-radius:14px;font-size:14px;font-weight:700;transition:transform .08s,box-shadow .15s}
+#pgs button i{font-style:normal;font-size:26px;line-height:1}
+#pgs button:active{transform:scale(.96)}
+#pgs button.on{color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+#pgs button.on[data-pg=dinheiro]{background:#15803d}
+#pgs button.on[data-pg=pix]{background:#0e7490}
+#pgs button.on[data-pg=cartao]{background:#6d28d9}
+#pgs button.on[data-pg=cortesia]{background:#b45309}
+#pgSel{margin:8px 0 0;font-size:13px;color:var(--mut);text-align:center}
 .big{flex:1;padding:16px 4px;border:0;border-radius:14px;background:var(--ac);color:var(--on);font-size:15px;font-weight:700;line-height:1.25}
 .big small{display:block;font-weight:500;opacity:.9;font-size:13px}
 .tot{font-size:30px;font-weight:800}
@@ -41,7 +52,8 @@ label{font-size:13px;color:var(--mut);flex:1}
 
   <div class="card">
     <div class="sub" style="margin:0 0 6px">Forma de pagamento</div>
-    <div class="row chips" id="pgs"></div>
+    <div id="pgs"></div>
+    <div id="pgSel"></div>
   </div>
 
   <div id="cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
@@ -138,6 +150,7 @@ window.linkPortaria=()=>{const base="https://golesecocopocheio-eng.github.io/Cad
 <script>
 const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"],["lista","Lista"]];
 const PGS=[["dinheiro","Dinheiro"],["pix","Pix"],["cartao","Cartão"],["cortesia","Cortesia"]];
+const PGI={dinheiro:"💵",pix:"⚡",cartao:"💳",cortesia:"🎁"};
 const $=s=>document.querySelector(s);
 const brl=n=>(Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 // soma exata em centavos (evita erro de arredondamento e valor salvo como texto)
@@ -152,14 +165,15 @@ const escN=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function render(){
   $("#noite").textContent=(ver===noite?"Hoje · noite de ":"Noite de ")+ver.split("-").reverse().join("/");
   $("#dia").value=ver;
-  $("#pgs").innerHTML=PGS.map(([k,n])=>`<button data-pg="${k}" class="${k===pg?"on":""}">${n}</button>`).join("");
+  $("#pgs").innerHTML=PGS.map(([k,n])=>`<button data-pg="${k}" class="${k===pg?"on":""}" aria-pressed="${k===pg}"><i>${PGI[k]}</i>${n}</button>`).join("");
+  $("#pgSel").innerHTML="Próximas entradas em <b>"+PGI[pg]+" "+(PGS.find(x=>x[0]===pg)||[0,""])[1]+"</b>";
   $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan"||(k==="lista"&&!preco(k)))?"Grátis":brl(preco(k))}${k==="lista"?" · com nome":""}</small></button>`).join("");
   const tot=soma(ents);
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
   {const sa=saidas.length;$("#cEnt").textContent=ents.length;$("#cSai").textContent=sa;$("#cDentro").textContent=Math.max(0,ents.length-sa);
    $("#saida").disabled=ver!==noite;$("#saidaDesf").hidden=!sa||ver!==noite}
   $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(soma(l))}</span></div>`}).join("");
-  $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(soma(ents.filter(e=>e.pg===k)))}</b><span>${n}</span></div>`).join("");
+  $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(soma(ents.filter(e=>e.pg===k)))}</b><span>${PGI[k]} ${n}</span></div>`).join("");
   {// ✅ conferência: total = categorias = formas de pagamento; pessoas = categorias
    const tc=cent(tot),porCat=CATS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.cat===k))*100),0),porPg=PGS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.pg===k))*100),0);
    const pessoas=CATS.reduce((s,[k])=>s+ents.filter(e=>e.cat===k).length,0),semPg=ents.filter(e=>!PGS.some(([k])=>k===e.pg)),cortesiaVal=soma(ents.filter(e=>e.pg==="cortesia"));

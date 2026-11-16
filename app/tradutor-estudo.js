@@ -83,7 +83,7 @@
     itens = tema.frases.map((pt, k) => ({ pt, minha: minhas[k], alvo: alvos[k] }));
     pos = 0; modo = 'cartao';
     mostrar();
-    gato.dizer('Toque em 🔊 para ouvir e em 🎤 para repetir. Você consegue! 💪');
+    gato.dizer('Toque em 🔊 para ouvir e em 🎤 para repetir. Você consegue! 💪'); gato.dancar(2000, true); combo = 0;
   }
 
   function mostrar() {
@@ -109,11 +109,11 @@
         const b = document.createElement('button'); b.textContent = o;
         b.onclick = () => {
           if (respondeu) return; respondeu = true;
-          if (o === certas) { b.classList.add('certa'); ganhar(5); C.miau(); gato.dancar(1600); gato.dizer('Acertou! +5 ⭐ 😺'); setTimeout(proximo, 1200); }
+          if (o === certas) { b.classList.add('certa'); acertou(5, 'Acertou! +5 ⭐ 😺'); setTimeout(proximo, 1400); }
           else {
             b.classList.add('errada');
             [...box.children].find((x) => x.textContent === certas).classList.add('certa');
-            gato.nao(); gato.dizer('Quase! A certa está em verde. Vamos para a próxima 💛');
+            errou('Quase! A certa está em verde. Vamos para a próxima 💛');
           }
         };
         box.appendChild(b);
@@ -121,15 +121,31 @@
       ouvirAlvo();
     }
   }
-  const ouvirAlvo = (vel = 0.95) => { const it = itens[pos]; if (it) C.falar(it.alvo, alvoLingua, { sempre: true, vel }); };
-  function proximo() { pos = (pos + 1) % itens.length; if (pos === 0) { ganhar(10); gato.dizer('🎉 Você terminou o tema! +10 ⭐ Miau!'); C.miau(); gato.dancar(3200, true); } mostrar(); }
+  // o gatinho dança enquanto a frase é falada
+  const ouvirAlvo = (vel = 0.95) => {
+    const it = itens[pos]; if (!it) return;
+    C.falar(it.alvo, alvoLingua, { sempre: true, vel, aoComecar: () => gato.dancando(true), aoTerminar: () => gato.dancando(false) });
+  };
+  // combo: acertos seguidos deixam a festa maior
+  let combo = 0;
+  function acertou(pontos, frase) {
+    combo++; ganhar(pontos); C.miau();
+    if (combo >= 3) {
+      const c = document.createElement('div'); c.className = 'combo'; c.textContent = '🔥 Combo x' + combo + '!';
+      document.body.appendChild(c); setTimeout(() => c.remove(), 1350);
+      gato.dancar(2600, true); gato.confete(combo >= 5 ? 28 : 18);
+      gato.dizer(frase + ' 🔥 ' + combo + ' seguidos!');
+    } else { gato.dancar(1700); gato.confete(8); gato.dizer(frase); }
+  }
+  function errou(frase) { combo = 0; gato.nao(); gato.dizer(frase); }
+  function proximo() { pos = (pos + 1) % itens.length; if (pos === 0) { ganhar(10); gato.dizer('🎉 Você terminou o tema! +10 ⭐ Miau!'); C.miau(); gato.dancar(3600, true); gato.confete(30); } else gato.pular(); mostrar(); }
 
   $('#estAlvo').onclick = () => $('#estAlvo').classList.remove('oculto');
   $('#estOuvir').onclick = () => { $('#estAlvo').classList.remove('oculto'); ouvirAlvo(); };
   $('#estDevagar').onclick = () => { $('#estAlvo').classList.remove('oculto'); ouvirAlvo(0.6); };
   $('#estQuizOuvir').onclick = () => ouvirAlvo();
   $('#estProx').onclick = () => { C.ouvinte.parar(); proximo(); };
-  $('#estAnt').onclick = () => { C.ouvinte.parar(); pos = (pos - 1 + itens.length) % itens.length; mostrar(); };
+  $('#estAnt').onclick = () => { C.ouvinte.parar(); pos = (pos - 1 + itens.length) % itens.length; gato.pular(); mostrar(); };
   $('#estTroca').onclick = () => { C.ouvinte.parar(); modo = modo === 'cartao' ? 'quiz' : 'cartao'; mostrar(); };
   $('#estVoltar').onclick = () => { C.ouvinte.parar(); tema = null; $('#estCartoes').hidden = true; $('#estTemas').hidden = false; gato.dizer('Qual tema agora? 📚'); };
 
@@ -145,9 +161,9 @@
         const nota = parecido(t, it.alvo);
         $('#estOuvi').textContent = '👂 Ouvi: “' + t + '”';
         $('#estAlvo').classList.remove('oculto');
-        if (nota >= 0.75) { ganhar(10); C.miau(); gato.dancar(nota > 0.92 ? 2600 : 1800, nota > 0.92); gato.dizer((nota > 0.92 ? 'Perfeito! ' : 'Muito bem! ') + '+10 ⭐ 😺'); }
-        else if (nota >= 0.5) { gato.nao(); gato.dizer('Quase lá! Ouça de novo e repita 💪'); }
-        else { gato.nao(); gato.dizer('Hmm, não entendi bem. Toque em 🐢 e tente de novo! 🐾'); }
+        if (nota >= 0.75) acertou(10, (nota > 0.92 ? 'Perfeito! ' : 'Muito bem! ') + '+10 ⭐ 😺');
+        else if (nota >= 0.5) errou('Quase lá! Ouça de novo e repita 💪');
+        else errou('Hmm, não entendi bem. Toque em 🐢 e tente de novo! 🐾');
       },
       erro: (m) => gato.dizer(m),
       fim: () => { falarBtn.classList.remove('ligado'); falarBtn.textContent = '🎤 Repetir'; gato.ouvindo(false); }

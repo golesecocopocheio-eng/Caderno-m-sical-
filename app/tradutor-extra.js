@@ -26,7 +26,7 @@
     if (Date.now() - ultDanca > 4000) { ultDanca = Date.now(); gTexto.dancar(1200); }
     clearTimeout(tmHist); tmHist = setTimeout(() => guardarHist(t, r), 1500);
   }
-  const agendar = () => { clearTimeout(tmTx); tmTx = setTimeout(traduzTexto, 350); };
+  const agendar = () => { clearTimeout(tmTx); tmTx = setTimeout(traduzTexto, C.motor.ativo ? 1100 : 350); };
   ent.addEventListener('input', agendar);
   de.onchange = () => { localStorage.setItem('trad-tx-de', de.value); agendar(); };
   para.onchange = () => { localStorage.setItem('trad-tx-para', para.value); agendar(); gTexto.dizer('Agora em ' + C.bandeira(para.value) + ' ' + C.nomeLingua(para.value) + '!'); };
@@ -148,7 +148,27 @@
   $('#ajGrande').onchange = (e) => { document.body.classList.toggle('grande', e.target.checked); localStorage.setItem('trad-grande', e.target.checked ? '1' : '0'); };
   $('#ajTestar').onclick = async () => { const t = await C.traduzir('Olá! Eu sou o gatinho do Clã Speak.', 'pt-BR', C.minhaLingua()); C.falar(t, C.minhaLingua(), { sempre: true }); };
   $('#ajLimpar').onclick = () => { if (confirm('Apagar as traduções guardadas? (o app fica um pouco mais lento até guardar de novo)')) { C.limparCache(); mostrarAjustes(); gAj.dizer('Pronto, limpei! 🧹'); } };
-  C.ganchosAba.ajustes = () => { mostrarAjustes(); mostrarMiau(); setTimeout(() => gAj.dizer('Aqui você deixa o app do seu jeito! ⚙️'), 200); };
+  // Motor de tradução (Padrão / Executivo)
+  function mostrarMotor() {
+    $('#ajMotor').value = C.motor.tipo; $('#ajChave').value = C.motor.chave;
+    $('#ajSetor').value = C.motor.setor; $('#ajRegistro').value = C.motor.registro;
+    $('#ajExecutivo').hidden = C.motor.tipo !== 'executivo';
+    $('#ajMotorStatus').textContent = C.motor.tipo === 'executivo' ? (C.motor.chave ? 'Modo Executivo ativo.' : 'Informe a chave da API para ativar o Modo Executivo.') : '';
+  }
+  $('#ajMotor').onchange = (e) => { localStorage.setItem('trad-motor', e.target.value); mostrarMotor(); };
+  $('#ajChave').onchange = (e) => { localStorage.setItem('trad-api-key', e.target.value.trim()); mostrarMotor(); };
+  $('#ajVerChave').onclick = () => { const i = $('#ajChave'); i.type = i.type === 'password' ? 'text' : 'password'; $('#ajVerChave').textContent = i.type === 'password' ? 'Mostrar' : 'Ocultar'; };
+  $('#ajSetor').onchange = (e) => localStorage.setItem('trad-setor', e.target.value);
+  $('#ajRegistro').onchange = (e) => localStorage.setItem('trad-registro', e.target.value);
+  $('#ajTestarMotor').onclick = async () => {
+    localStorage.setItem('trad-api-key', $('#ajChave').value.trim());
+    if (!C.motor.chave) { $('#ajMotorStatus').textContent = 'Informe a chave da API.'; return; }
+    $('#ajMotorStatus').textContent = 'Testando…';
+    try { const r = await C.testarExecutivo('O relatório trimestral foi aprovado pela diretoria.'); $('#ajMotorStatus').textContent = 'Conexão OK. Exemplo: ' + r; }
+    catch (e) { $('#ajMotorStatus').textContent = 'Falha na conexão: ' + ((e && (e.status ? e.status + ' ' : '') + (e.message || '')) || 'erro desconhecido') + '. Confira a chave e a internet.'; }
+  };
+  mostrarMotor();
+  C.ganchosAba.ajustes = () => { mostrarMotor(); mostrarAjustes(); mostrarMiau(); setTimeout(() => gAj.dizer('Aqui você deixa o app do seu jeito! ⚙️'), 200); };
 
   // Gatinho da tela inicial também comenta quando volta para ela
   C.ganchosAba.inicio = () => {};

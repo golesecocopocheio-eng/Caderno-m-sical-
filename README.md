@@ -15,81 +15,44 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Frente a frente:** um celular só, na mesa entre duas pessoas. A tela se divide (a parte de cima
   fica de cabeça para baixo); cada lado tem seu idioma e seu microfone.
 - Dá para digitar em vez de falar.
-- **Tema escuro** (preto e amarelo) em todas as telas.
-- **Gatinho mascote** (a foto do logo): fala com você, mia quando é tocado e reage ao que acontece
-  (alguém entrou na sala, microfone ligado, acertos nos estudos).
-- **Aba 📚 Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
-  Compras, Números, Emergência, Gatinhos) traduzidas na hora, com 🔊 ouvir, 🐢 devagar, 🎤 repetir (o app
-  confere a pronúncia) e 🧩 quiz. Pontos ⭐ e dias seguidos 🔥 ficam guardados no aparelho.
-- **6 abas** na barra de baixo: 🌐 Traduzir (sala, frente a frente e texto), 🎓 Saber, 📚 Estudar, 🎤 Karaokê, 💬 Conversar e ⚙️ Ajustes
-  (`app/tradutor-extra.js`), com animação ao trocar de tela e o gatinho em todas elas.
-- **✍️ Texto:** traduz enquanto digita, ditado pelo 🎤, ⇄ inverter idiomas, ouvir, copiar, ⭐ favoritas e recentes.
-- **🐱 Gatinho:** bichinho virtual (felicidade, barriga, energia que mudam com o tempo; dar comida, brincar,
-  carinho com ronronar, dormir) e acessórios liberados com as ⭐ dos estudos. **Miado de verdade:** grave o
-  miado do seu gato ou escolha um áudio, e ele vira o miado do app. Sem gravação, o app usa um miado
-  sintetizado com as vogais m-i-a-u.
-- **⚙️ Ajustes:** segurar para falar (capta melhor em lugar barulhento), modo fone, velocidade da voz,
-  ler em voz alta, sons do app, letras grandes e apagar as traduções guardadas.
+- **Visual corporativo (2026-11):** design minimalista no estilo Linear/Stripe/Vercel. Fundo neutro
+  `#0A0A0B`, cartões `#111113` com borda de 1px, destaque índigo `#5E6AD2`, tipografia Inter/sistema e ícones
+  de linha em SVG (`app/tradutor-ui.js` troca os emojis da interface por ícones; o conteúdo — mensagens,
+  reações, textos traduzidos — fica como está). O mascote gatinho saiu de todas as telas: os balões dele
+  viraram linhas de status discretas e as animações decorativas (confete, palco, notinhas) foram desligadas.
+  Novo logo: dois balões de conversa sobre um quadrado índigo (`app/icons/claspeak.svg`, ícones do PWA e do APK, splash).
+- **Motor de tradução:**
+  - **Padrão (gratuito):** Google Tradutor sem chave, com MyMemory de reserva.
+  - **Modo Executivo (opcional):** em ⚙️ Ajustes → Motor de tradução, escolha "Executivo", cole a sua chave
+    da API da Anthropic, o **setor** (Jurídico, Médico, Financeiro, TI, Engenharia, Comercial, Marketing,
+    Acadêmico, Governo…) e o **registro** (Formal, Técnico, Neutro). As traduções finais passam a ser feitas
+    pelo Claude como um Tradutor Executivo Sênior: terminologia do setor, registro formal/técnico e somente a
+    tradução, sem comentários. "Testar" faz uma tradução de exemplo. A chave fica guardada só no aparelho e é
+    enviada só para a API da Anthropic (SDK oficial em `app/vendor/anthropic-sdk.js`). As prévias "ao vivo" e
+    as listas continuam no Google (mais rápido); se a API falhar, o app volta sozinho para o Google.
+- **Aba Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
+  Compras, Números, Emergência, Trabalho) traduzidas na hora, com ouvir, devagar, repetir (o app confere a
+  pronúncia) e quiz. Pontos e dias seguidos ficam guardados no aparelho.
+- **6 abas:** Traduzir (sala, frente a frente e texto), Saber, Estudar, Karaokê, Conversar e Ajustes.
+- **Texto:** traduz enquanto digita, ditado pelo microfone, inverter idiomas, ouvir, copiar, favoritas e recentes.
+- **Ajustes:** motor de tradução, segurar para falar, modo fone, velocidade da voz, ler em voz alta, sons de
+  interface, letras grandes e apagar as traduções guardadas.
 - **Áudio da sala:** escolhe a voz mais natural do aparelho para cada idioma, destaca a mensagem que está
-  sendo lida (com barrinhas de som e o gatinho cantando), bipe ao ligar/desligar o 🎤 e 🔁 para repetir a última.
-- **Frente a frente animado:** no meio da tela há um palco com o **gatinho de corpo inteiro** (recortado da
-  foto, `app/icons/gato-corpo.png`). Sozinho, ele passeia de um lado para o outro e às vezes pula ou dança;
-  quando alguém fala, corre para o meio, vira para a pessoa e balança a cada palavra; quando a tradução fica
-  pronta, pula, e a mensagem atravessa a tela com patinhas; enquanto ela é lida, ele dança e o palco vira
-  pista de dança com luzes e notinhas. Tocar nele faz miar e pular.
-  Dentro de cada caixa de texto há outro gatinho: acena com a dica "toque no 🎤" quando a caixa está vazia,
-  fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
-- **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
-- **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
-- **🎓 Aba Saber** (`app/tradutor-saber.js`): cultura e dúvidas. A pessoa pergunta (escrevendo ou falando) e o app
-  busca na **Wikipédia** (API pública, conteúdo CC BY-SA) o artigo mais relevante: título, imagem, resumo, "veja também",
-  🔊 ouvir, 🌍 ler o mesmo artigo em outro idioma (para treinar leitura), copiar e "ler mais". Temas prontos: 📚 Literatura,
-  🎨 Artes, 🏛️ História, 🔬 Ciência, 🌍 Geografia, 🎵 Música, 🤔 Filosofia e ⚽ Esportes, além de 🎲 curiosidade aleatória
-  e histórico das perguntas. O tradutor de texto (antiga aba Texto) agora é o cartão "✍️ Traduzir texto" da aba Traduzir.
-  Recursos de estudo em cada artigo: **▶ leitura guiada** (lê frase por frase, destacando a frase lida), **📝 vocabulário**
-  (palavras importantes traduzidas para o idioma estudado, tocar para ouvir), **🧩 teste "complete a frase"** gerado com o
-  próprio texto (vale ⭐), **⭐ artigos salvos** e **📅 Hoje na história** (fatos do dia, do feed da Wikipédia).
-- **💬 Aba Conversar** (`app/tradutor-conversa.js`): prática de conversação com o gatinho, em tela de bate-papo.
-  Situações: ☕ Cafeteria, ✈️ Aeroporto, 🏨 Hotel, 🛍️ Compras, 🤝 Fazer amigos e 💼 Entrevista. Os diálogos são
-  traduzidos na hora para o idioma praticado; o gatinho fala (texto + voz), a pessoa responde falando 🎤 ou digitando,
-  com sugestões de resposta (com tradução, tocar para ouvir). O app compara com as respostas possíveis e dá ⭐ de 0 a 3
-  (ou pede para tentar de novo), e no fim mostra o resumo; a melhor nota de cada situação fica guardada e as ⭐ somam
-  nos pontos do Estudar. (Substitui o antigo bichinho virtual; o 🎙️ Miado de verdade foi para os Ajustes.)
-- **🎤 Aba Karaokê** (`app/tradutor-musica.js`): cola-se o link de uma música do YouTube (toca pelo **player oficial
-  incorporado**, nada é baixado) e a letra (um verso por linha). A letra é traduzida verso por verso e aparece no estilo
-  karaokê, com as palavras acendendo. O tempo de cada verso é marcado tocando em "👆" enquanto o vídeo toca (ou
-  ⚡ distribuído automaticamente) e fica guardado para aquele vídeo; depois a letra anda sozinha com o vídeo.
-  **🎤 Cantar junto** ouve a pessoa e dá ⭐ de 0 a 3 por verso, com o gatinho reagindo. Botões de treino: ⏪ 5 s,
-  🐢 0,75×/0,5×, A-B 🔁. Vídeos que o dono bloqueou fora do YouTube: "Abrir no YouTube" e ◀ ▶ para acompanhar.
-- **Frente a frente 🔄 Automático:** com o botão Auto ligado, o app passa a vez sozinho: ouve um lado, traduz, lê a
-  tradução e já liga o microfone do outro lado (mostrando "Vez de 🇧🇷/🇺🇸"); no silêncio continua ouvindo. Cada
-  tradução entregue solta confete no palco.
-- **🎶 Batida de reggae original:** feita pelo próprio app (sem áudio de terceiros, sem direitos autorais):
-  bumbo macio e aro no tempo 3 (one drop), chimbal suave, órgão no contratempo com eco dub e baixo redondo
-  em Lá menor → Ré, a 80 bpm, com compressor na mixagem.
-  Toca nas festas do Estudar.
-- **Emoções do gatinho** (`app/tradutor-emocao.js`): feliz, canta (melodia de miados), dança, assustado, triste,
-  apaixonado, surpreso, tonto, bravo e sono, cada uma com animação, emojis e som próprio. Gestos: um toque
-  (feliz/canta/surpreso ou a ação de sempre), 3 toques rápidos (susto ou bravo), segurar o dedo (carinho →
-  apaixonado, ronrona), chacoalhar o celular (tonto/assustado). Também reage sozinho: triste ao errar no Estudar,
-  canta no combo de 5, surpreso com mensagem nova na sala e boceja depois de 45 s parado.
-- **Gatinho rasta:** o mascote do app é o gatinho preto de gorro reggae do GIF enviado. Os 9 passos de dança
-  foram recortados do fundo (`app/icons/gato-danca.webp`, animado; `gato-corpo.png`, parado;
-  `gato-rosto.png` e `gato-rosto-danca.webp`, redondos). Sempre que o gatinho dança ou anda, toca a dança
-  de verdade do GIF.
-- **Gatinho dançarino em todas as abas:** nos cartões de Traduzir, Texto, Estudar e Ajustes aparece o gatinho de
-  corpo inteiro, que dança e pula sozinho de vez em quando e dança ao ser tocado; no Texto dança quando a
-  tradução aparece; no Estudar comemora os acertos, balança a cabeça nos erros e faz festa com música ao
-  terminar um tema.
-  No Estudar ele também dança enquanto a frase é falada (🔊/🐢), pula ao trocar de cartão e tem **combo**:
-  3 ou mais acertos seguidos fazem festa com música, confete e "🔥 Combo xN!".
-- **Gatinho dançarino na sala:** o gatinho de corpo inteiro passeia pela parte de baixo da conversa, dança
-  com luzes de festa e notinhas enquanto uma tradução é lida, dança junto com os emojis, pula quando alguém
-  entra e fica atento (balançando a cada palavra) com o microfone ligado.
-- **Sala animada:** bandeiras dos idiomas, som de mensagem nova, 📋 copiar, comentários do gatinho, avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂
-  nas mensagens (ou toque duas vezes) e "fulano está falando..." com pontinhos.
+  sendo lida, bipe ao ligar/desligar o microfone e repetir a última.
+- **Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca.
+- **Aba Saber** (`app/tradutor-saber.js`): pergunte (escrevendo ou falando) e o app busca na **Wikipédia**
+  (API pública, CC BY-SA) o artigo mais relevante, com resumo, imagem, "veja também", ouvir, ler em outro
+  idioma, leitura guiada frase por frase, vocabulário traduzido, teste "complete a frase", artigos salvos e
+  "Hoje na história". Temas: Literatura, Artes, História, Ciência, Geografia, Música, Filosofia e Esportes.
+- **Aba Conversar** (`app/tradutor-conversa.js`): prática de conversação em tela de bate-papo (Cafeteria,
+  Aeroporto, Hotel, Compras, Fazer amigos, Entrevista), com sugestões de resposta, nota de 0 a 3 por fala e resumo.
+- **Aba Karaokê** (`app/tradutor-musica.js`): link do YouTube (player oficial incorporado, nada é baixado) +
+  letra colada, traduzida verso por verso, com marcação de tempo, cantar junto com nota, velocidade e repetição A-B.
+- **Frente a frente Automático:** com Auto ligado, o app passa a vez sozinho entre os dois lados.
+- **Sala:** bandeiras dos idiomas, som de mensagem nova, copiar, avatares, aviso de quem entrou e saiu,
+  emojis e reações nas mensagens e "fulano está falando...".
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
-- **APK Android próprio ("Clã Speak", logo com o gatinho rasta dançando (gorro reggae, pingente da paz) num círculo verde/amarelo/vermelho, balão "Miau!" e o nome):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+- **APK Android próprio ("Clã Speak", logo de balões de conversa índigo sobre fundo escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
   `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
   em voz alta), e o convite para a sala é pelo código.

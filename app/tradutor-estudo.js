@@ -15,7 +15,7 @@
     { ico: '🛍️', nome: 'Compras', frases: ['Quanto custa isto?', 'Está muito caro.', 'Tem um tamanho maior?', 'Posso experimentar?', 'Vou levar este.', 'Tem desconto?', 'Onde fica o caixa?', 'Só estou olhando, obrigado.', 'Aceita dinheiro?', 'Pode embrulhar para presente?'] },
     { ico: '🔢', nome: 'Números', frases: ['um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez'] },
     { ico: '🚑', nome: 'Emergência', frases: ['Socorro!', 'Chame uma ambulância!', 'Eu preciso de um médico.', 'Onde fica o hospital?', 'Chame a polícia!', 'Eu perdi meu passaporte.', 'Estou com dor.', 'Sou alérgico a amendoim.', 'Onde fica a farmácia?', 'É uma emergência!'] },
-    { ico: '🐱', nome: 'Gatinhos', frases: ['Eu amo gatos.', 'O gato está miando.', 'O gatinho está com fome.', 'Meu gato é preto.', 'O gato está dormindo.', 'Você tem animais de estimação?', 'Que gatinho fofo!', 'O gato quer carinho.'] }
+    { ico: '💼', nome: 'Trabalho', frases: ['Tenho uma reunião às dez.', 'Pode me enviar o relatório?', 'Qual é o prazo?', 'Vamos agendar uma chamada.', 'Preciso de mais informações.', 'O projeto está atrasado.', 'Obrigado pelo retorno.', 'Concordo com a proposta.'] }
   ];
 
   const gato = C.gato('gatoEstudo');

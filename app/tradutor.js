@@ -320,6 +320,39 @@
     return g;
   }
   const gatoInicio = gato('gatoInicio'), gatoSala = gato('gatoSala');
+  // ----- Gatinho de corpo inteiro na sala: passeia, dança, pula -----
+  const gatoSalaEl = $('#gatoSala'), salaImg = $('#gatoSala img'), salaVira = $('#viraSala'), luzSala = $('#luzSala');
+  let salaPos = 12, salaTm = null, salaDancando = 0, notasSalaTm = null;
+  const salaAberta = () => $('#salaTela').classList.contains('on');
+  function salaGolpe(cls, ms) { salaImg.classList.remove('pula', 'pulo', 'assente', 'anda'); void salaImg.offsetWidth; salaImg.classList.add(cls); setTimeout(() => salaImg.classList.remove(cls), ms); }
+  function salaPassear() {
+    clearTimeout(salaTm);
+    if (!salaAberta() || salaDancando || gatoSalaEl.classList.contains('ouvindo')) { salaTm = setTimeout(salaPassear, 3000); return; }
+    const larg = gatoSalaEl.parentElement.clientWidth || 360, alvo = 12 + Math.random() * Math.max(40, larg * 0.6);
+    salaVira.classList.toggle('esq', alvo > salaPos); // andando para a esquerda da tela = "right" aumenta
+    salaImg.classList.add('anda'); gatoSalaEl.style.right = alvo + 'px'; salaPos = alvo;
+    salaTm = setTimeout(() => {
+      salaImg.classList.remove('anda');
+      const r = Math.random();
+      if (r < 0.2) salaGolpe('pulo', 800);
+      else if (r < 0.4 && !salaDancando) { salaImg.classList.add('danca'); setTimeout(() => !salaDancando && salaImg.classList.remove('danca'), 1600); }
+      salaTm = setTimeout(salaPassear, 2500 + Math.random() * 3000);
+    }, 1650);
+  }
+  function salaDanca(ligar, ms) { // ligar/desligar a dança (ms = dança por um tempo e para)
+    salaDancando = Math.max(0, salaDancando + (ligar ? 1 : -1));
+    const on = salaDancando > 0;
+    salaImg.classList.toggle('danca', on); luzSala.classList.toggle('on', on);
+    clearInterval(notasSalaTm);
+    if (on) notasSalaTm = setInterval(() => {
+      const r = salaImg.getBoundingClientRect(), n = document.createElement('span'); n.className = 'notaSala';
+      n.textContent = ['🎵', '🎶', '✨', '🐾'][Math.floor(Math.random() * 4)];
+      n.style.left = (r.left + Math.random() * r.width) + 'px'; n.style.top = (r.top + 10) + 'px';
+      document.body.appendChild(n); setTimeout(() => n.remove(), 1500);
+    }, 300);
+    if (ligar && ms) setTimeout(() => salaDanca(false), ms);
+  }
+  salaImg.addEventListener('click', () => salaGolpe('pulo', 800));
   const CORES = ['#facc15', '#fb923c', '#f472b6', '#a78bfa', '#60a5fa', '#34d399', '#f87171', '#2dd4bf'];
   const corDe = (id) => { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CORES[h % CORES.length]; };
   const avatar = (id, nome) => `<span class="avatar" style="background:${corDe(id)}">${esc((nome || '?').trim().charAt(0).toUpperCase() || '?')}</span>`;
@@ -461,7 +494,7 @@
   }
   function evento(f) {
     if (f.tipo === 'emoji') {
-      if (f.nova) { voar(f.emoji); if (!f.eu) gatoSala.dizer(`${f.nome} mandou ${f.emoji}`, 2500); }
+      if (f.nova) { voar(f.emoji); salaDanca(true, 1800); if (!f.eu) gatoSala.dizer(`${f.nome} mandou ${f.emoji}`, 2500); }
     } else if (f.tipo === 'reacao') {
       const m = porId.get(f.alvo); if (!m) return;
       if (!m.reacoes.has(f.emoji)) m.reacoes.set(f.emoji, new Set());
@@ -486,17 +519,16 @@
     inserir(d);
     if (!f.eu && f.nova) {
       plop();
-      const img = $('#gatoSala img'); img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula');
+      salaGolpe('pulo', 800);
       if (Math.random() < 0.3) gatoSala.dizer(/\?\s*$/.test(f.texto) ? 'Hmm, uma pergunta! 🤔 Responda no 🎤' : ['Que legal! 😺', 'Miau, entendi tudo! 🐾', 'Prrr… 💛', 'Conversa boa! 😸'][Math.floor(Math.random() * 4)], 2500);
     }
     const tr = $('.tr', d);
     const pronto = (f.eu || mesma) ? Promise.resolve(f.texto) : traduzir(f.texto, f.lingua, eu.lingua).then((t) => { tr.textContent = t; rolar(); return t; });
     const btn = $('.ouvir', d);
-    const gImg = $('#gatoSala img');
     const lerEsta = (sempre) => pronto.then((t) => falar(t, eu.lingua, {
       sempre,
-      aoComecar: () => { d.classList.add('tocando'); gImg.classList.add('cantando'); },
-      aoTerminar: () => { d.classList.remove('tocando'); if (!msgs.querySelector('.linha.tocando')) gImg.classList.remove('cantando'); }
+      aoComecar: () => { d.classList.add('tocando'); salaDanca(true); },
+      aoTerminar: () => { d.classList.remove('tocando'); salaDanca(false); }
     }));
     if (btn) btn.onclick = () => lerEsta(true);
     if (!f.eu) ultimaRecebida = () => lerEsta(true);
@@ -512,7 +544,7 @@
       : 'Ninguém mais na sala ainda — toque em Convidar';
     const agora = new Map(outros.map((p) => [p.uid, p.nome]));
     if (presentes) {
-      for (const [id, nome] of agora) if (!presentes.has(id)) { sistema('🐾 ' + nome + ' entrou na sala'); if (vozLigada) miau(); gatoSala.dizer('Miau! Oi, ' + nome + '! 👋'); voar('🐾'); }
+      for (const [id, nome] of agora) if (!presentes.has(id)) { sistema('🐾 ' + nome + ' entrou na sala'); if (vozLigada) miau(); salaGolpe('pulo', 800); gatoSala.dizer('Miau! Oi, ' + nome + '! 👋'); voar('🐾'); }
       for (const [id, nome] of presentes) if (!agora.has(id)) sistema('👋 ' + nome + ' saiu da sala');
     }
     presentes = agora;
@@ -545,6 +577,7 @@
     $('#salaCod').textContent = sala;
     msgs.innerHTML = ''; vivos.clear(); porId.clear(); presentes = null; ultimaRecebida = null; $('#avisoSala').hidden = true;
     setTimeout(() => gatoSala.dizer('Miau! Bem-vindo à sala ' + sala + '. Convide alguém e fale no 🎤! 🐾', 5000), 600);
+    salaDancando = 0; salaDanca(false); salaDancando = 0; setTimeout(salaPassear, 4000);
     $('#pessoas').textContent = 'Conectando…';
     mostrarTela('salaTela');
     $('#btVoz').textContent = vozLigada ? '🔊' : '🔇';
@@ -570,7 +603,7 @@
   const ondaForte = (el) => { el.classList.add('forte'); clearTimeout(ondaTm); ondaTm = setTimeout(() => el.classList.remove('forte'), 400); };
   function ligarMicSala() {
     const ok = ouvinte.iniciar(eu.lingua, {
-      parcial: (t) => { $('#digitar').placeholder = t || 'Ouvindo…'; if (t) ondaForte(salaOnda); conexao && conexao.vivo(t); },
+      parcial: (t) => { $('#digitar').placeholder = t || 'Ouvindo…'; if (t) { ondaForte(salaOnda); salaImg.classList.remove('assente'); void salaImg.offsetWidth; salaImg.classList.add('assente'); } conexao && conexao.vivo(t); },
       final: (t) => { enviarTexto(t); if (ouvinte.ativo) $('#digitar').placeholder = 'Ouvindo…'; },
       erro: (m) => alert(m),
       fim: () => { if (mic.classList.contains('on')) bipe(false); mic.classList.remove('on'); salaOnda.classList.remove('on'); gatoSala.ouvindo(false); $('#digitar').placeholder = 'Fale no microfone ou digite…'; conexao && conexao.vivo(''); }

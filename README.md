@@ -30,6 +30,10 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   sintetizado com as vogais m-i-a-u.
 - **⚙️ Ajustes:** segurar para falar (capta melhor em lugar barulhento), modo fone, velocidade da voz,
   ler em voz alta, sons do app, letras grandes e apagar as traduções guardadas.
+- **Áudio da sala:** escolhe a voz mais natural do aparelho para cada idioma, destaca a mensagem que está
+  sendo lida (com barrinhas de som e o gatinho cantando), bipe ao ligar/desligar o 🎤 e 🔁 para repetir a última.
+- **Frente a frente animado:** o gatinho vira para quem fala e escuta, a mensagem atravessa a tela com
+  patinhas até o outro lado e saem notinhas enquanto a tradução é lida.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
 - **Sala animada:** bandeiras dos idiomas, som de mensagem nova, 📋 copiar, comentários do gatinho, avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂

@@ -45,6 +45,11 @@ label{font-size:13px;color:var(--mut);flex:1}
   </div>
 
   <div id="cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+  <div class="card" id="casa" style="border:2px solid var(--bd)">
+    <div class="grid" style="margin-top:0"><div><b id="cEnt">0</b><span>Entraram</span></div><div><b id="cSai">0</b><span>Saíram</span></div><div><b id="cDentro" style="color:var(--ac)">0</b><span>Dentro agora</span></div></div>
+    <div class="row" style="margin-top:10px"><button class="big" id="saida" style="background:#334155;color:#fff">🚶 +1 Saída<small>não mexe no dinheiro</small></button></div>
+    <div class="row" style="justify-content:flex-end;margin-top:6px"><button class="link" id="saidaDesf" hidden>↩️ Desfazer a última saída</button></div>
+  </div>
   <div class="card" id="listaBox" hidden style="border:2px solid var(--ac)">
     <b>📝 Nome na lista</b>
     <input id="listaNome" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Nome da pessoa" style="width:100%;box-sizing:border-box;margin-top:8px;padding:12px;font-size:17px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)">
@@ -136,7 +141,7 @@ const $=s=>document.querySelector(s);
 const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 // A noite vira só às 6h da manhã, para o movimento depois da meia-noite contar na mesma noite
 const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString("sv-SE");
-let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false,me='';
+let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false,me='',saidas=[],unsubSai=null;
 const preco=k=>k==="clan"?0:(Number(precos[k])||0);
 const escN=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -147,6 +152,8 @@ function render(){
   $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan"||(k==="lista"&&!preco(k)))?"Grátis":brl(preco(k))}${k==="lista"?" · com nome":""}</small></button>`).join("");
   const tot=ents.reduce((s,e)=>s+(e.valor||0),0);
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
+  {const sa=saidas.length;$("#cEnt").textContent=ents.length;$("#cSai").textContent=sa;$("#cDentro").textContent=Math.max(0,ents.length-sa);
+   $("#saida").disabled=ver!==noite;$("#saidaDesf").hidden=!sa||ver!==noite}
   $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
   $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(ents.filter(e=>e.pg===k).reduce((s,e)=>s+e.valor,0))}</b><span>${n}</span></div>`).join("");
   $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"||!preco(k)?"Grátis":brl(precos[k]))).join(" · ");
@@ -196,6 +203,13 @@ document.addEventListener("click",async ev=>{
       const en={cat,pg:free?"cortesia":pg,valor:free?0:preco(cat),noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
+    }else if(t.id==="saida"){
+      if(ver!==noite){$("#status").textContent="Você está vendo outra noite. Escolha a data de hoje para lançar saídas.";return}
+      if(navigator.vibrate)navigator.vibrate(15);
+      await db.collection("saidas").add({noite,ts:Date.now(),u:me,quem:(localStorage.getItem("bar-nome")||"").trim()});
+    }else if(t.id==="saidaDesf"){
+      const ult=[...saidas].sort((a,b)=>b.ts-a.ts)[0];
+      if(ult&&conf("desfsai","Desfazer a última saída?"))await db.collection("saidas").doc(ult.id).delete();
     }else if(t.id==="desfazer"&&t.dataset.alvo){
       const e=ents.find(x=>x.id===t.dataset.alvo);
       if(e&&conf("desf"+e.id,"Desfazer a última: "+((CATS.find(x=>x[0]===e.cat)||[0,''])[1])+(e.nome?" · "+e.nome:"")+" · "+brl(e.valor)+"?")){
@@ -239,6 +253,7 @@ document.addEventListener("click",async ev=>{
   const sub=()=>{
     if(unsub)unsub();if(unsubLog)unsubLog();
     unsubLog=db.collection("log").where("noite","==",ver).onSnapshot(s=>{logs=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
+    if(unsubSai)unsubSai();unsubSai=db.collection("saidas").where("noite","==",ver).onSnapshot(s=>{saidas=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
     unsub=db.collection("entradas").where("noite","==",ver).onSnapshot(s=>{
       clearTimeout(timer);$("#status").textContent=NUVEM_BAR?"● Sincronizado ao vivo":"📱 Salvo neste celular";
       ents=s.docs.map(d=>({id:d.id,...d.data()}));render();
@@ -253,7 +268,7 @@ document.addEventListener("click",async ev=>{
    "Restaurar backup" aceita o backup do Caixa ({days, meta}), da Portaria, do Estoque ou o
    dados-do-bar.json, e grava cada parte no banco da aba certa. Só o dono restaura. */
 (function(){
-  const COLS=['entradas','log','config'];
+  const COLS=['entradas','log','config','saidas'];
   const caixaTexto=(v,ro)=>`<textarea id="bkTxt" rows="5" style="width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:13px" ${ro?'readonly':''} placeholder="Cole aqui o backup copiado (Caixa, Portaria ou Estoque) ou o resumo da noite da portaria">${v||''}</textarea>`;
   async function copiarTexto(t){
     try{await navigator.clipboard.writeText(t);return true}catch(e){}
@@ -330,7 +345,7 @@ document.addEventListener("click",async ev=>{
       apps.caixa={cxdays,cxmeta};
     }
     if(ehEstoque)apps.estoque={items:o.items||{},mov:o.mov||{},meta:o.meta||{},price:o.price||{},pg:o.pg||{}};
-    if(o.tipo==='portaria-backup'||o.entradas||o.log||o.config)apps.portaria={entradas:o.entradas||{},log:o.log||{},config:o.config||{}};
+    if(o.tipo==='portaria-backup'||o.entradas||o.log||o.config)apps.portaria={entradas:o.entradas||{},log:o.log||{},config:o.config||{},...(o.saidas?{saidas:o.saidas}:{})};
     return Object.keys(apps).length?apps:null;
   }
   const NOMES={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio'};

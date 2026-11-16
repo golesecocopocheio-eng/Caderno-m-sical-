@@ -103,3 +103,19 @@
   }
   if (abas) { abas.addEventListener('click', () => requestAnimationFrame(corAba)); corAba(); }
 })();
+
+/* Tela de abertura (capa): logo, nome e frase por ~1,3 s; toque para pular. */
+(function () {
+  'use strict';
+  if (sessionStorage.getItem('trad-capa')) return;
+  sessionStorage.setItem('trad-capa', '1');
+  const c = document.createElement('div');
+  c.className = 'capa'; c.setAttribute('aria-hidden', 'true');
+  c.innerHTML = '<div class="capaBrilho"></div><img class="capaLogo" src="icons/claspeak-marca.svg" alt="">' +
+    '<div class="capaNome">Clã <span>Speak</span></div><div class="capaFrase">Tradução de voz em tempo real</div>' +
+    '<div class="capaBarra"><i></i></div>';
+  document.body.appendChild(c);
+  const sair = () => { c.classList.add('sai'); setTimeout(() => c.remove(), 450); };
+  c.addEventListener('click', sair);
+  setTimeout(sair, 1400);
+})();

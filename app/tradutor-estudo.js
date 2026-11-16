@@ -109,11 +109,11 @@
         const b = document.createElement('button'); b.textContent = o;
         b.onclick = () => {
           if (respondeu) return; respondeu = true;
-          if (o === certas) { b.classList.add('certa'); ganhar(5); C.miau(); gato.dizer('Acertou! +5 ⭐ 😺'); setTimeout(proximo, 1200); }
+          if (o === certas) { b.classList.add('certa'); ganhar(5); C.miau(); gato.dancar(1600); gato.dizer('Acertou! +5 ⭐ 😺'); setTimeout(proximo, 1200); }
           else {
             b.classList.add('errada');
             [...box.children].find((x) => x.textContent === certas).classList.add('certa');
-            gato.dizer('Quase! A certa está em verde. Vamos para a próxima 💛');
+            gato.nao(); gato.dizer('Quase! A certa está em verde. Vamos para a próxima 💛');
           }
         };
         box.appendChild(b);
@@ -122,7 +122,7 @@
     }
   }
   const ouvirAlvo = (vel = 0.95) => { const it = itens[pos]; if (it) C.falar(it.alvo, alvoLingua, { sempre: true, vel }); };
-  function proximo() { pos = (pos + 1) % itens.length; if (pos === 0) { ganhar(10); gato.dizer('🎉 Você terminou o tema! +10 ⭐ Miau!'); C.miau(); } mostrar(); }
+  function proximo() { pos = (pos + 1) % itens.length; if (pos === 0) { ganhar(10); gato.dizer('🎉 Você terminou o tema! +10 ⭐ Miau!'); C.miau(); gato.dancar(3200, true); } mostrar(); }
 
   $('#estAlvo').onclick = () => $('#estAlvo').classList.remove('oculto');
   $('#estOuvir').onclick = () => { $('#estAlvo').classList.remove('oculto'); ouvirAlvo(); };
@@ -145,9 +145,9 @@
         const nota = parecido(t, it.alvo);
         $('#estOuvi').textContent = '👂 Ouvi: “' + t + '”';
         $('#estAlvo').classList.remove('oculto');
-        if (nota >= 0.75) { ganhar(10); C.miau(); gato.dizer((nota > 0.92 ? 'Perfeito! ' : 'Muito bem! ') + '+10 ⭐ 😺'); }
-        else if (nota >= 0.5) gato.dizer('Quase lá! Ouça de novo e repita 💪');
-        else gato.dizer('Hmm, não entendi bem. Toque em 🐢 e tente de novo! 🐾');
+        if (nota >= 0.75) { ganhar(10); C.miau(); gato.dancar(nota > 0.92 ? 2600 : 1800, nota > 0.92); gato.dizer((nota > 0.92 ? 'Perfeito! ' : 'Muito bem! ') + '+10 ⭐ 😺'); }
+        else if (nota >= 0.5) { gato.nao(); gato.dizer('Quase lá! Ouça de novo e repita 💪'); }
+        else { gato.nao(); gato.dizer('Hmm, não entendi bem. Toque em 🐢 e tente de novo! 🐾'); }
       },
       erro: (m) => gato.dizer(m),
       fim: () => { falarBtn.classList.remove('ligado'); falarBtn.textContent = '🎤 Repetir'; gato.ouvindo(false); }
@@ -156,6 +156,6 @@
   };
 
   window.ClaSpeakEstudo = {
-    abrir() { mostrarPontos(); if (!tema) gato.dizer(xp ? 'Miau! Você já tem ' + xp + ' ⭐. Vamos estudar mais? 📚' : 'Vamos aprender juntos? Escolha o idioma e um tema! 📚'); }
+    abrir() { mostrarPontos(); setTimeout(() => gato.pular(), 250); if (!tema) gato.dizer(xp ? 'Miau! Você já tem ' + xp + ' ⭐. Vamos estudar mais? 📚' : 'Vamos aprender juntos? Escolha o idioma e um tema! 📚'); }
   };
 })();

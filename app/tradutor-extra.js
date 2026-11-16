@@ -15,7 +15,7 @@
   const de = $('#txDe'), para = $('#txPara'), ent = $('#txEntrada'), saida = $('#txSaida');
   C.preencher(de, localStorage.getItem('trad-tx-de') || C.minhaLingua());
   C.preencher(para, localStorage.getItem('trad-tx-para') || (C.minhaLingua().startsWith('en') ? 'pt-BR' : 'en-US'));
-  let tmTx = null, tmHist = null, ultimaTrad = '';
+  let tmTx = null, tmHist = null, ultimaTrad = '', ultDanca = 0;
   async function traduzTexto() {
     const t = ent.value.trim();
     if (!t) { saida.textContent = ''; ultimaTrad = ''; return; }
@@ -23,6 +23,7 @@
     const r = await C.traduzir(t, de.value, para.value);
     if (ent.value.trim() !== t) return; // já mudou
     saida.textContent = r; saida.style.opacity = '1'; ultimaTrad = r;
+    if (Date.now() - ultDanca > 4000) { ultDanca = Date.now(); gTexto.dancar(1200); }
     clearTimeout(tmHist); tmHist = setTimeout(() => guardarHist(t, r), 1500);
   }
   const agendar = () => { clearTimeout(tmTx); tmTx = setTimeout(traduzTexto, 350); };
@@ -84,7 +85,7 @@
     const orig = ent.value.trim(); if (!orig || !ultimaTrad) return;
     const l = ler('trad-favs', []);
     if (!l.some((r) => r.orig === orig && r.para === para.value)) l.unshift({ de: de.value, para: para.value, orig, trad: ultimaTrad });
-    gravar('trad-favs', l.slice(0, 50)); mostrarListas(); C.miau(); gTexto.dizer('Guardei nas favoritas! ⭐');
+    gravar('trad-favs', l.slice(0, 50)); mostrarListas(); C.miau(); gTexto.pular(); gTexto.dizer('Guardei nas favoritas! ⭐');
   };
   mostrarListas();
   C.ganchosAba.texto = () => {
@@ -161,7 +162,7 @@
     if (!acordado()) return;
     if (pet.energia < 15) { petDizer('Estou cansado demais… 😴'); return; }
     pet.feliz = lim(pet.feliz + 20); pet.energia = lim(pet.energia - 15); pet.barriga = lim(pet.barriga - 5); salvarPet(); desenharPet();
-    soltar('🧶', 'novelo'); setTimeout(() => C.miau(), 500); petDizer(sorteia(['Pega o novelo! 🧶', 'Wiii! Que divertido! 😸', 'De novo, de novo! 🎉']));
+    soltar('🧶', 'novelo'); setTimeout(() => C.miau(), 500); dancaPet(1400, false); petDizer(sorteia(['Pega o novelo! 🧶', 'Wiii! Que divertido! 😸', 'De novo, de novo! 🎉']));
   };
   function carinho() {
     if (!acordado()) return;
@@ -170,6 +171,19 @@
     C.ronrom(1.8); petDizer(sorteia(['Prrrrr… 💛', 'Ronrom ronrom… 😻', 'Mais carinho! 🥰']));
   }
   $('#petCarinho').onclick = carinho;
+  // 💃 Dançar com música: a foto dança, o cartão vira festa e saem notinhas
+  let dancaTm = null;
+  function dancaPet(ms, festa) {
+    clearTimeout(dancaTm); petImg.classList.add('dancaPet'); C.notasDe(petImg, ms);
+    const card = petFoto.closest('.pet'); if (festa) { card.classList.add('festa'); C.musiquinha(); setTimeout(() => C.musiquinha(), 1300); }
+    dancaTm = setTimeout(() => { petImg.classList.remove('dancaPet'); card.classList.remove('festa'); }, ms);
+  }
+  $('#petDancar').onclick = () => {
+    if (!acordado()) return;
+    if (pet.energia < 10) { petDizer('Estou sem energia para dançar… 😴'); return; }
+    pet.feliz = lim(pet.feliz + 15); pet.energia = lim(pet.energia - 10); salvarPet(); desenharPet();
+    dancaPet(2800, true); petDizer(['Olha meu passinho! 💃', 'Dança, gatinho, dança! 🎶', 'Uhuu! Festa! 🎉'][Math.floor(Math.random() * 3)]);
+  };
   petImg.onclick = carinho;
   $('#petDormir').onclick = () => {
     pet.dormindo = !pet.dormindo; salvarPet(); desenharPet();
@@ -226,7 +240,7 @@
   $('#ajFone').onchange = (e) => { C.definirFone(e.target.checked); gAj.dizer(e.target.checked ? '🎧 Modo fone ligado!' : 'Modo fone desligado.'); };
   $('#ajVel').oninput = (e) => { C.velVoz = Number(e.target.value); $('#ajVelTx').textContent = Number(e.target.value).toFixed(1) + '×'; };
   $('#ajVoz').onchange = (e) => { C.vozLigada = e.target.checked; $('#btVoz').textContent = e.target.checked ? '🔊' : '🔇'; };
-  $('#ajSons').onchange = (e) => { C.sons = e.target.checked; if (e.target.checked) C.miau(); gAj.dizer(e.target.checked ? 'Miau! Sons ligados 🔊' : 'Shhh… sons desligados 🤫'); };
+  $('#ajSons').onchange = (e) => { C.sons = e.target.checked; if (e.target.checked) { C.miau(); gAj.dancar(1500, true); } gAj.dizer(e.target.checked ? 'Miau! Sons ligados 🔊' : 'Shhh… sons desligados 🤫'); };
   $('#ajGrande').onchange = (e) => { document.body.classList.toggle('grande', e.target.checked); localStorage.setItem('trad-grande', e.target.checked ? '1' : '0'); };
   $('#ajTestar').onclick = async () => { const t = await C.traduzir('Olá! Eu sou o gatinho do Clã Speak.', 'pt-BR', C.minhaLingua()); C.falar(t, C.minhaLingua(), { sempre: true }); };
   $('#ajLimpar').onclick = () => { if (confirm('Apagar as traduções guardadas? (o app fica um pouco mais lento até guardar de novo)')) { C.limparCache(); mostrarAjustes(); gAj.dizer('Pronto, limpei! 🧹'); } };

@@ -164,10 +164,38 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 .lado .texto .p{color:var(--mu);font-size:.95rem}
 .lado .ctl{display:flex;gap:8px;align-items:center}
 .lado .ctl select{flex:1}
-.meio{display:flex;justify-content:center;gap:6px;padding:6px;background:#0b0b0b;border-top:3px solid var(--c);border-bottom:3px solid var(--c);flex-wrap:wrap}
-.meio button{background:rgba(255,255,255,.12);color:#fff;padding:6px 10px;font-size:.85rem}
+.meio{display:flex;justify-content:center;align-items:center;gap:5px;padding:6px;background:#0b0b0b;border-top:3px solid var(--c);border-bottom:3px solid var(--c);flex-wrap:wrap}
+.meio button{background:rgba(255,255,255,.12);color:#fff;padding:6px 8px;font-size:.78rem}
 .meio button.ligado{background:var(--c);color:#0b0b0b}
-.meio img{width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 2px var(--c);cursor:pointer}
+.meio img{width:52px;height:52px;border-radius:50%;box-shadow:0 0 0 3px var(--c);cursor:pointer;transition:transform .45s cubic-bezier(.3,1.6,.5,1)}
+.meio img.paraCima{transform:rotate(180deg)}
+.meio img.escuta{animation:escuta 1s ease-in-out infinite}
+.meio img.paraCima.escuta{animation:escutaCima 1s ease-in-out infinite}
+@keyframes escuta{0%,100%{box-shadow:0 0 0 3px var(--c),0 0 0 0 rgba(250,204,21,.6)}50%{box-shadow:0 0 0 3px var(--c),0 0 0 14px rgba(250,204,21,0)}}
+@keyframes escutaCima{0%,100%{transform:rotate(180deg);box-shadow:0 0 0 3px var(--c),0 0 0 0 rgba(250,204,21,.6)}50%{transform:rotate(172deg) scale(1.06);box-shadow:0 0 0 3px var(--c),0 0 0 14px rgba(250,204,21,0)}}
+.cantando{animation:canta .5s ease-in-out infinite}
+@keyframes canta{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg) scale(1.05)}}
+.meio img.paraCima.cantando{animation:cantaCima .5s ease-in-out infinite}
+@keyframes cantaCima{0%,100%{transform:rotate(175deg)}50%{transform:rotate(185deg) scale(1.05)}}
+.palco{position:fixed;inset:0;pointer-events:none;z-index:15;overflow:hidden}
+.carta{position:absolute;left:50%;top:50%;margin:-26px 0 0 -70px;width:140px;background:var(--c);color:#0b0b0b;font-weight:800;border-radius:18px;padding:8px 10px;text-align:center;font-size:.85rem;box-shadow:0 6px 20px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.carta.desce{animation:desce 1s cubic-bezier(.5,0,.3,1) forwards}
+.carta.sobe{animation:sobeCarta 1s cubic-bezier(.5,0,.3,1) forwards}
+@keyframes desce{0%{transform:translateY(-34vh) rotate(180deg) scale(.6);opacity:0}15%{opacity:1}50%{transform:translateY(0) rotate(90deg) scale(1.1)}100%{transform:translateY(34vh) rotate(0) scale(.7);opacity:0}}
+@keyframes sobeCarta{0%{transform:translateY(34vh) scale(.6);opacity:0}15%{opacity:1}50%{transform:translateY(0) rotate(90deg) scale(1.1)}100%{transform:translateY(-34vh) rotate(180deg) scale(.7);opacity:0}}
+.pegada{position:absolute;font-size:1.3rem;opacity:0;animation:pegada 1.2s ease-out forwards}
+@keyframes pegada{0%{opacity:0;transform:scale(.4)}25%{opacity:.9;transform:scale(1)}100%{opacity:0}}
+.nota{position:absolute;left:50%;top:50%;font-size:1.6rem;animation:notaDesce 1.4s ease-out forwards}
+.nota.sobe{animation-name:notaSobe}
+@keyframes notaDesce{from{opacity:1;transform:translate(0,0)}to{opacity:0;transform:translate(var(--dx),30vh) rotate(25deg)}}
+@keyframes notaSobe{from{opacity:1;transform:translate(0,0) rotate(180deg)}to{opacity:0;transform:translate(var(--dx),-30vh) rotate(155deg)}}
+/* Sala: mensagem sendo lida */
+.linha.tocando .msg{box-shadow:0 0 0 2px var(--c),0 0 18px rgba(250,204,21,.35)}
+.eq{display:none;gap:2px;align-items:flex-end;height:12px;margin-left:6px;vertical-align:middle}
+.linha.tocando .eq{display:inline-flex}
+.eq i{width:3px;background:var(--c);border-radius:1px;animation:eq .6s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.15s}.eq i:nth-child(3){animation-delay:.3s}
+@keyframes eq{0%,100%{height:3px}50%{height:12px}}
 .msg .acoes button.copiar{color:var(--mu)}
 </style>
 </head>
@@ -346,7 +374,7 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
   <div id="avisoSala" class="aviso" hidden style="margin:10px 12px 0"></div>
   <div id="msgs"></div>
   <div class="gatinho mini" id="gatoSala"><img src="icons/tradutor-gato.png" alt="Gatinho"><div class="fala"></div></div>
-  <div class="emojis" id="emojis"></div>
+  <div class="emojis" id="emojis"><button id="btRepetir" title="Repetir a última">🔁</button></div>
   <div class="barra">
     <input id="digitar" placeholder="Fale no microfone ou digite…" enterkeyhint="send">
     <div class="onda" id="salaOnda"><i></i><i></i><i></i><i></i><i></i></div>
@@ -360,6 +388,7 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
     <div class="texto"></div>
     <div class="ctl"><select></select><button class="mic">🎤</button></div>
   </div>
+  <div class="palco" id="palco"></div>
   <div class="meio"><img src="icons/tradutor-gato.png" alt="Gatinho" id="f2fGato"><button id="f2fVoz">🔊 Voz: ligada</button><button id="f2fFone">🎧 Fone</button><button id="f2fLimpar">Limpar</button><button id="f2fSair">Sair</button></div>
   <div class="lado" data-lado="a">
     <div class="texto"></div>

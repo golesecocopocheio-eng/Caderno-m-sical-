@@ -41,7 +41,7 @@ pre{white-space:pre-wrap;font:inherit;margin:0}
 <script src="vendor/qrcode.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let db,user,me=null,adm=false,wr=true,items=[],movs=[],glist=[],price={},pgs=[],tab=(()=>{const t=sessionStorage.getItem('est-aba');return t==='buy'?'cp':(t||'est')})(),flt='all',bflt='low',cbv={},cont={},conts=[],ctMsg='',qrAberto=false,pend={},tm={},names={},rq=0,fv={n:'',g:'',ng:'',h:'',m:'',p:''},fo=false;
+let db,user,me=null,adm=false,wr=true,items=[],movs=[],glist=[],price={},pgs=[],tab=(()=>{const t=sessionStorage.getItem('est-aba');return t==='buy'?'cp':(t||'est')})(),flt='all',bflt='low',cbv={},cont={},conts=[],ctMsg='',qrAberto=false,donoReal=false,eqCompleto=true,pend={},tm={},names={},rq=0,fv={n:'',g:'',ng:'',h:'',m:'',p:''},fo=false;
 const nv=v=>{let s=String(v??'').trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s);return isNaN(n)?0:n};
 const R=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -111,7 +111,7 @@ if(conts.length)h+=`<details class="g"><summary>Contagens feitas <span class="mu
 else{const L=[...movs].sort((x,y)=>y.t-x.t).slice(0,80);who(L.map(m=>m.u));const nm={};items.forEach(i=>nm[i.id]=i.n);h+=L.length?L.map(m=>`<div class="it r"><span>${esc(nm[m.i]||'(item apagado)')}<div class="mu">${fmt(m.t)} · ${esc(names[m.u]||'…')}</div></span><b class="${m.d<0?'chip bad':''}">${m.k==='a'?(m.cont?'contagem → ':'ajuste → ')+m.v:m.k==='p'?'compra +'+m.d:(m.d>0?'+':'')+m.d}</b></div>`).join(''):'<p class="mu">Nenhuma movimentação ainda.</p>'}
 // 📱 QR Code para a equipe: em todas as telas do Estoque (como na Portaria). Quem abre vê e lança ao vivo.
 if(!(window.parent!==window&&(()=>{try{return /contagem\.html/.test(window.parent.location.pathname)}catch(e){return false}})()))
-h+=`<details class="g" id="qrEq" ${qrAberto?'open':''} style="border:2px solid #1d4ed8"><summary>📱 QR Code para a equipe <span class="mu">· estoque ao vivo</span></summary><p class="mu">A pessoa aponta a câmera (iPhone ou Android), abre <b>só o Estoque</b>, digita o nome e já vê tudo <b>ao vivo</b>: dar baixa (− / +), fazer a <b>Contagem</b> e ver o que falta comprar. O que ela lança aparece na hora aqui.</p><div style="text-align:center"><div id="qrImg" style="display:inline-block;background:#fff;padding:12px;border-radius:12px"></div><div class="mu" id="qrLink" style="word-break:break-all;margin-top:6px"></div></div><div class="row"><button id="qrShare" style="flex:1">📤 Compartilhar link</button></div></details>`;
+h+=`<details class="g" id="qrEq" ${qrAberto?'open':''} style="border:2px solid #1d4ed8"><summary>📱 QR Code para a equipe <span class="mu">· estoque ao vivo</span></summary><p class="mu">A pessoa aponta a câmera (iPhone ou Android), abre <b>só o Estoque</b>, digita o nome e usa o <b>Estoque completo ao vivo</b>: lançar bebidas, compras, dar baixa (− / +) e fazer a <b>Contagem</b>. O que ela lança aparece na hora aqui.</p><div style="text-align:center"><div id="qrImg" style="display:inline-block;background:#fff;padding:12px;border-radius:12px"></div><div class="mu" id="qrLink" style="word-break:break-all;margin-top:6px"></div></div><div class="row"><button id="qrShare" style="flex:1">📤 Compartilhar link</button></div>${donoReal?`<label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px"><input type="checkbox" id="eqCompleto" ${eqCompleto?'checked':''} style="width:22px;height:22px;flex:none;margin-top:2px"><span><b>Acesso completo para a equipe</b><br><span class="mu">Quem abrir pelo QR Code pode lançar bebidas novas, compras (Comprei / PG), preços, estoque ideal, editar e fazer contagem. Desmarque para deixar só dar baixa e contar.</span></span></label>`:''}</details>`;
 $('#app').innerHTML=h;
 if(!adm)document.querySelectorAll('input[data-k="pu"],input[data-k="pc"],input[data-k="uc"]').forEach(i=>{i.readOnly=true});
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;sessionStorage.setItem('est-aba',tab);draw()});
@@ -128,6 +128,7 @@ q('#ctSalvar',async()=>{const b=$('#ctSalvar');b.disabled=true;const t=Date.now(
     cont={};ctMsg='✅ Contagem salva: '+lista.length+' itens, '+dif+' com diferença (estoque acertado).';toast('Contagem salva');draw()}
   catch(e){b.disabled=false;toast('Não consegui salvar: '+(e.message||e))}});
 {const d=$('#qrEq');const gerar=()=>{const L=linkContagem();try{const qr=qrcode(0,'M');qr.addData(L);qr.make();$('#qrImg').innerHTML=qr.createImgTag(6,0);const im=$('#qrImg img');im.style.width='220px';im.style.height='220px';im.style.imageRendering='pixelated'}catch(e){$('#qrImg').textContent='Não foi possível gerar o QR Code.'}$('#qrLink').textContent=L+(nuvemBar()?'':' — atenção: a sincronização (nuvem) não está ligada; o que a pessoa lançar ficaria só no celular dela.')};if(d){d.ontoggle=()=>{qrAberto=d.open;if(d.open)gerar()};if(d.open)gerar()}}
+{const ck=$('#eqCompleto');if(ck)ck.onchange=()=>db.doc('meta/equipe').set({completo:ck.checked,t:Date.now()}).then(()=>toast(ck.checked?'Equipe com acesso completo ao estoque':'Equipe: só baixa e contagem')).catch(()=>toast('Sem permissão'))}
 q('#qrShare',async()=>{const u=linkContagem();try{if(navigator.share){await navigator.share({title:'Contagem do estoque',text:'Abra para fazer a contagem do estoque:',url:u});return}}catch(e){if(e&&e.name==='AbortError')return}copy(u)});q('#ce',()=>copy(estTxt()));q('#se',()=>send(estTxt()));q('#cb',()=>copy(buyTxt()));q('#sb',()=>send(buyTxt()));
 if(!adm)return;
 const w=f=>f().catch(()=>toast('Sem permissão')),it=id=>items.find(z=>z.id===id);
@@ -152,11 +153,13 @@ const ng=$('#ng');if(ng)ng.onclick=()=>{const n=$('input[data-k="g"]').value.tri
 document.querySelectorAll('input[data-k]').forEach(i=>i.onblur=()=>setTimeout(render,1500))}
 (async()=>{try{db=await claude.use('db');user=await claude.use('user')}catch(e){}
 if(!db){$('#app').innerHTML='<h1>📦 Estoque do Bar</h1><p class="mu">Não foi possível abrir o estoque compartilhado. Abra pelo link, com a conta logada.</p>';return}
-if(user){try{me=await user.id();adm=!!user.canEdit();wr=user.can('data.write')!==false}catch(e){}}
+if(user){try{me=await user.id();donoReal=!!user.canEdit();adm=donoReal||eqCompleto;wr=user.can('data.write')!==false}catch(e){}}
 const er=e=>{if(e&&e.code==='revoked')$('#app').innerHTML='<p class="mu">Acesso removido.</p>'};
 db.collection('items').onSnapshot(s=>{items=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);
 db.collection('mov').onSnapshot(s=>{movs=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);
 db.doc('meta/groups').onSnapshot(s=>{glist=(s.data()||{}).list||[];render()},er);
+// acesso da equipe ao estoque (o dono escolhe no cartão do QR Code); padrão: completo
+db.doc('meta/equipe').onSnapshot(s=>{const d=s.exists&&s.data();eqCompleto=d?d.completo!==false:true;adm=donoReal||eqCompleto;render()},er);
 db.collection('price').onSnapshot(s=>{price={};s.docs.forEach(d=>{price[d.id]=d.data()});render()},er);
 db.collection('pg').onSnapshot(s=>{pgs=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);
 db.collection('cont').onSnapshot(s=>{conts=s.docs.map(d=>({id:d.id,...d.data()}));render()},er)})();

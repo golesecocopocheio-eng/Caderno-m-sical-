@@ -162,6 +162,25 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 .lado.cima{transform:rotate(180deg);background:#141204}
 .lado .texto{flex:1;overflow-y:auto;background:var(--card);border:1px solid #2a2a2a;border-radius:14px;padding:12px;font-size:1.35rem;line-height:1.4}
 .lado .texto .p{color:var(--mu);font-size:.95rem}
+.lado .texto{position:relative;padding-bottom:84px}
+.escrita{white-space:pre-wrap;word-break:break-word}
+.escrita.ao-vivo{color:var(--mu);font-size:1.15rem}
+.escrita .cursor{display:inline-block;width:3px;height:1.1em;background:var(--c);margin-left:2px;vertical-align:-3px;animation:pisca .8s steps(1) infinite}
+@keyframes pisca{50%{opacity:0}}
+.dica{color:var(--mu);font-size:1.05rem;text-align:center;margin-top:18px}
+.dica b{color:var(--c)}
+.gatoCaixa{position:absolute;right:10px;bottom:6px;height:78px;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 0 3px rgba(250,204,21,.8));transform-origin:50% 100%;transition:right .5s}
+.gatoCaixa.acena{animation:acena 1.6s ease-in-out infinite}
+@keyframes acena{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}}
+.gatoCaixa.atento{animation:atento .9s ease-in-out infinite}
+@keyframes atento{0%,100%{transform:scale(1)}50%{transform:scale(1.06) translateY(-3px)}}
+.gatoCaixa.escreve{animation:escreve .22s ease-in-out infinite}
+@keyframes escreve{0%,100%{transform:rotate(-3deg) translateY(0)}50%{transform:rotate(3deg) translateY(-4px)}}
+.gatoCaixa.feliz{animation:feliz .6s ease-out}
+@keyframes feliz{0%{transform:none}40%{transform:translateY(-22px) rotate(-10deg)}100%{transform:none}}
+.lapis{position:absolute;right:66px;bottom:46px;font-size:1.5rem;opacity:0;transition:opacity .2s;pointer-events:none}
+.lapis.on{opacity:1;animation:rabisca .3s ease-in-out infinite}
+@keyframes rabisca{0%,100%{transform:translate(0,0) rotate(-10deg)}50%{transform:translate(-8px,3px) rotate(8deg)}}
 .lado .ctl{display:flex;gap:8px;align-items:center}
 .lado .ctl select{flex:1}
 .meio{display:flex;justify-content:center;align-items:center;gap:5px;padding:6px;flex-wrap:nowrap;background:#0b0b0b;border-top:3px solid var(--c);border-bottom:3px solid var(--c);flex-wrap:wrap}

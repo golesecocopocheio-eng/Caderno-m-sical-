@@ -659,10 +659,37 @@
   // ---------- Frente a frente ----------
   const lados = {};
   document.querySelectorAll('#f2f .lado').forEach((el) => { lados[el.dataset.lado] = { el, sel: $('select', el), txt: $('.texto', el), mic: $('.mic', el) }; });
+  // Cada caixa tem um gatinho que acena quando está vazia, fica atento enquanto a pessoa fala
+  // e "escreve" a tradução letra por letra
+  Object.values(lados).forEach((l) => {
+    l.txt.innerHTML = '<div class="escrita"></div><span class="lapis">✍️</span><img class="gatoCaixa" src="icons/gato-corpo.png" alt="Gatinho">';
+    l.escrita = $('.escrita', l.txt); l.lapis = $('.lapis', l.txt); l.gato = $('.gatoCaixa', l.txt);
+    l.gato.onclick = () => { miau(true); l.gato.classList.remove('feliz'); void l.gato.offsetWidth; l.gato.classList.add('feliz'); };
+    l.estado = (cls) => { l.gato.classList.remove('acena', 'atento', 'escreve', 'feliz'); if (cls) l.gato.classList.add(cls); l.lapis.classList.toggle('on', cls === 'escreve'); };
+    l.vazio = () => {
+      clearInterval(l.digTm);
+      l.escrita.className = 'escrita';
+      l.escrita.innerHTML = '<div class="dica">🐾 Toque no <b>🎤</b> e fale em<br><b>' + esc(bandeira(l.sel.value) + ' ' + nomeLingua(l.sel.value)) + '</b></div>';
+      l.estado('acena');
+    };
+    l.aoVivo = (t, ouvindo) => { clearInterval(l.digTm); l.escrita.className = 'escrita ao-vivo'; l.escrita.textContent = t; l.estado(ouvindo ? 'atento' : ''); l.txt.scrollTop = l.txt.scrollHeight; };
+    l.mostrar = (t) => { clearInterval(l.digTm); l.escrita.className = 'escrita'; l.escrita.textContent = t; l.estado(''); };
+    l.digitar = (t, pronto) => { // máquina de escrever, no máximo ~1,4 s por frase
+      clearInterval(l.digTm); l.escrita.className = 'escrita'; l.escrita.innerHTML = '';
+      const txt = document.createTextNode(''), cur = document.createElement('span'); cur.className = 'cursor';
+      l.escrita.append(txt, cur); l.estado('escreve');
+      const passo = Math.max(1, Math.ceil(t.length / 45)); let i = 0;
+      l.digTm = setInterval(() => {
+        i = Math.min(t.length, i + passo); txt.data = t.slice(0, i); l.txt.scrollTop = l.txt.scrollHeight;
+        if (i >= t.length) { clearInterval(l.digTm); cur.remove(); l.estado('feliz'); setTimeout(() => l.gato.classList.remove('feliz'), 650); pronto && pronto(); }
+      }, 30);
+    };
+    l.vazio();
+  });
   preencher(lados.a.sel, localStorage.getItem('trad-f2f-a') || linguaEl.value);
   preencher(lados.b.sel, localStorage.getItem('trad-f2f-b') || (linguaEl.value.startsWith('en') ? 'es-ES' : 'en-US'));
   Object.entries(lados).forEach(([k, l]) => {
-    l.sel.onchange = () => localStorage.setItem('trad-f2f-' + k, l.sel.value);
+    l.sel.onchange = () => { localStorage.setItem('trad-f2f-' + k, l.sel.value); if (!l.escrita.textContent.trim() || l.escrita.querySelector('.dica')) l.vazio(); };
     l.mic.onclick = () => {
       const outro = lados[k === 'a' ? 'b' : 'a'];
       if (ouvinte.ativo && l.mic.classList.contains('on')) { ouvinte.parar(); return; }
@@ -671,32 +698,36 @@
       const ok = ouvinte.iniciar(l.sel.value, {
         parcial: (t) => {
           if (t) gatoOuveFala(k, t);
-          l.txt.innerHTML = '<span class="p">' + esc(t || 'Ouvindo…') + '</span>';
+          l.aoVivo(t || 'Ouvindo…', true);
           clearTimeout(tm);
-          if (t) tm = setTimeout(() => traduzir(t, l.sel.value, outro.sel.value).then((r) => { outro.txt.innerHTML = '<span class="p">' + esc(r) + '</span>'; }), 250);
+          if (t) tm = setTimeout(() => traduzir(t, l.sel.value, outro.sel.value).then((r) => { outro.aoVivo(r, false); outro.estado('atento'); }), 250);
         },
         final: async (t) => {
           clearTimeout(tm);
           t = arrumar(t);
-          l.txt.textContent = t;
+          l.mostrar(t); if (ouvinte.ativo) l.estado('atento');
           const r = await traduzir(t, l.sel.value, outro.sel.value);
           entregar(k, r);
           setTimeout(() => {
-            outro.txt.textContent = r;
+            outro.digitar(r);
             pulaF2f();
             const para = k === 'a' ? 'b' : 'a';
             if (vozLigada && !r.startsWith('⚠️')) falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => notas(para, false) });
           }, 650);
         },
         erro: (m) => alert(m),
-        fim: () => { l.mic.classList.remove('on'); ator.soltar(); bipe(false); }
+        fim: () => {
+          l.mic.classList.remove('on'); ator.soltar(); bipe(false);
+          if (l.escrita.classList.contains('ao-vivo') && l.escrita.textContent === 'Ouvindo…') l.vazio();
+          else if (l.gato.classList.contains('atento')) l.estado('');
+        }
       });
       if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); ator.escutar(k); bipe(true); }
     };
   });
   $('#abrirF2f').onclick = () => { mostrarTela('f2f'); ator.parar(); setTimeout(passear, 700); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
-  $('#f2fLimpar').onclick = () => { lados.a.txt.textContent = ''; lados.b.txt.textContent = ''; };
+  $('#f2fLimpar').onclick = () => { lados.a.vazio(); lados.b.vazio(); };
   $('#f2fFone').onclick = () => definirFone(!fone);
   // ----- Gatinho de corpo inteiro no palco do frente a frente -----
   const pista = $('#pista'), atorEl = $('#ator'), vira = $('#vira'), corpo = $('#corpo'), palco = $('#palco');

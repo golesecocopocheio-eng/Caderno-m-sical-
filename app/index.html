@@ -401,18 +401,27 @@ function mostrarHistorico(){
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   lista.innerHTML=itens.map(({e,i})=>{const dt=new Date(e.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     let bt=e.dados&&e.dados!=='null'?`<button data-h="${i}">Voltar</button>`:'';
-    if(e.app==='caixa'&&e.col==='cxdays'&&bt){const {atual,mud}=diasMudados(e,i);if(mud.length)bt=`<span style="display:flex;flex-direction:column;gap:4px">${mud.slice(0,4).map(k=>`<button data-h="${i}" data-dia="${k}" title="Volta só este dia como estava nesse momento">↩️ ${dm(k)}${atual[k]?'':' (apagar)'}</button>`).join('')}</span>`}
-    return `<div class="hs"><div><b>${esc(descrever(e,i))}</b><small>${NOMEAPP[e.app]||e.app} · ${dt} · ${esc(e.quem||'')}</small>${e.app==='caixa'&&e.col==='cxdays'?(()=>{const {atual,mud}=diasMudados(e,i);return mud.slice(0,2).map(k=>atual[k]?`<small style="color:#667085">${dm(k)}: bar ${brl(['bd','bc','bp'].reduce((s,x)=>s+numBr(atual[k][x]),0))} · portaria ${brl(['pd','pc','pp'].reduce((s,x)=>s+numBr(atual[k][x]),0))}</small>`:'').join('')})():''}</div>${bt}</div>`}).join('');
+    if(e.app==='caixa'&&e.col==='cxdays'&&bt){const {atual,mud}=diasMudados(e,i),nd=Object.keys(atual).length;bt=`<span style="display:flex;flex-direction:column;gap:4px">${nd?`<button data-h="${i}" data-mes="1" title="Traz de volta todos os dias deste registro">↩️ Mês todo (${nd} ${nd>1?'dias':'dia'})</button>`:''}${mud.slice(0,4).map(k=>`<button data-h="${i}" data-dia="${k}" title="Volta só este dia como estava nesse momento">↩️ ${dm(k)}${atual[k]?'':' (apagar)'}</button>`).join('')}</span>`}
+    return `<div class="hs"><div><b>${esc(descrever(e,i))}</b><small>${NOMEAPP[e.app]||e.app} · ${dt} · ${esc(e.quem||'')}</small>${e.app==='caixa'&&e.col==='cxdays'?(()=>{const {atual,mud}=diasMudados(e,i);const ks=Object.keys(atual),tb=ks.reduce((s,k)=>s+['bd','bc','bp'].reduce((a,x)=>a+numBr(atual[k][x]),0),0),tp=ks.reduce((s,k)=>s+['pd','pc','pp'].reduce((a,x)=>a+numBr(atual[k][x]),0),0);return `<small style="color:#6d28d9;font-weight:600">${e.id.slice(5)}/${e.id.slice(0,4)}: ${ks.length} dias lançados · bar ${brl(tb)} · portaria ${brl(tp)}</small>`+mud.slice(0,2).map(k=>atual[k]?`<small style="color:#667085">${dm(k)}: bar ${brl(['bd','bc','bp'].reduce((s,x)=>s+numBr(atual[k][x]),0))} · portaria ${brl(['pd','pc','pp'].reduce((s,x)=>s+numBr(atual[k][x]),0))}</small>`:'').join('')})():''}</div>${bt}</div>`}).join('');
 }
 document.querySelectorAll('#hsFiltro [data-f]').forEach(b=>b.onclick=()=>{hsFiltro=b.dataset.f;mostrarHistorico()});
 $('#hsLista').addEventListener('click',async ev=>{
   const b=ev.target.closest('[data-h]');if(!b)return;
   const e=hsItens[+b.dataset.h],msg=$('#hsMsg');
   if(!hsDono){msg.textContent='Somente o dono pode voltar versões.';return}
-  if(!b.classList.contains('arm')){document.querySelectorAll('#hsLista .arm').forEach(x=>{x.classList.remove('arm');x.textContent=x.dataset.txt||'Voltar'});b.dataset.txt=b.textContent;b.classList.add('arm');b.textContent='Confirmar?';msg.textContent='Toque em "Confirmar?" para devolver '+(b.dataset.dia?'o dia '+dm(b.dataset.dia)+' como estava em':descrever(e,+b.dataset.h)+' ·')+' '+new Date(e.t).toLocaleString('pt-BR')+'.';return}
+  if(!b.classList.contains('arm')){document.querySelectorAll('#hsLista .arm').forEach(x=>{x.classList.remove('arm');x.textContent=x.dataset.txt||'Voltar'});b.dataset.txt=b.textContent;b.classList.add('arm');b.textContent='Confirmar?';msg.textContent='Toque em "Confirmar?" para devolver '+(b.dataset.mes?'todos os dias de '+e.id.slice(5)+'/'+e.id.slice(0,4)+' como estavam em':b.dataset.dia?'o dia '+dm(b.dataset.dia)+' como estava em':descrever(e,+b.dataset.h)+' ·')+' '+new Date(e.t).toLocaleString('pt-BR')+'.';return}
   b.disabled=true;msg.textContent='Voltando…';
   try{
     const dados=JSON.parse(e.dados);
+    if(b.dataset.mes){ // Caixa: traz de volta todos os dias do registro (não apaga dias lançados depois)
+      const versao=JSON.parse(dados.j||'{}');let dias={};try{dias=JSON.parse(localStorage.getItem('caixa-bar')||'{}')}catch(x){}
+      const ks=Object.keys(versao);ks.forEach(k=>dias[k]=versao[k]);
+      localStorage.setItem('caixa-bar',JSON.stringify(dias));
+      const mes={};Object.keys(dias).filter(x=>x.slice(0,7)===e.id).forEach(x=>mes[x]=dias[x]);
+      await window.__barImportar({apps:{caixa:{cxdays:{[e.id]:{j:JSON.stringify(mes),t:Date.now()}}}}});
+      const f=document.getElementById('f-caixa');if(f&&f.src)f.contentWindow.location.reload();
+      msg.textContent='✅ Voltaram '+ks.length+' dias de '+e.id.slice(5)+'/'+e.id.slice(0,4)+' como estavam em '+new Date(e.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'. Dias lançados depois foram mantidos. Abra o Caixa para conferir.';
+      setTimeout(carregarHistorico,1200);return}
     if(b.dataset.dia){ // Caixa: volta só aquele dia, sem mexer nos outros dias do mês
       const k=b.dataset.dia,versao=JSON.parse(dados.j||'{}');let dias={};try{dias=JSON.parse(localStorage.getItem('caixa-bar')||'{}')}catch(x){}
       if(versao[k])dias[k]=versao[k];else delete dias[k];

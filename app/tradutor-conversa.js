@@ -78,12 +78,12 @@
 
   let cena = null, falas = [], passo = 0, tentativas = 0, estrelas = [], tradMinha = [];
   const chat = $('#cvChat'), rolar = () => { const r = $('#cvRolar'); r.scrollTop = r.scrollHeight; };
-  const avatar = '<img class="av" src="icons/gato-rosto.png" alt="">';
+  const avatar = '<span class="av">T</span>'; // T = tutor de conversação
   function bolhaGato(tx, tr) {
     const d = document.createElement('div'); d.className = 'cvM';
     d.innerHTML = avatar + '<div class="bal"><div class="tx"></div><div class="tr"></div></div>';
     $('.tx', d).textContent = tx; $('.tr', d).textContent = tr || '';
-    const b = document.createElement('button'); b.textContent = '🔊'; b.title = 'Ouvir'; b.onclick = () => C.falar(tx, lingua.value, { sempre: true, vel: 0.9 });
+    const b = document.createElement('button'); b.innerHTML = window.ClaSpeakIcone ? '<span class="icw">' + window.ClaSpeakIcone('som') + '</span>' : '🔊'; b.title = 'Ouvir'; b.onclick = () => C.falar(tx, lingua.value, { sempre: true, vel: 0.9 });
     $('.tx', d).appendChild(b); chat.appendChild(d); rolar(); return d;
   }
   function bolhaEu(tx, nota) {
@@ -119,7 +119,7 @@
   }
   function sugestoes(rs) {
     const box = $('#cvSug'); box.hidden = false;
-    box.innerHTML = '<span class="rot">💡 Você pode dizer:</span>' + rs.map((r, i) => '<button data-i="' + i + '">' + C.esc(r.tx) + (mostrarTrad ? '<small>' + C.esc(r.tr) + '</small>' : '') + '</button>').join('');
+    box.innerHTML = '<span class="rot">Sugestões</span>' + rs.map((r, i) => '<button data-i="' + i + '">' + C.esc(r.tx) + (mostrarTrad ? '<small>' + C.esc(r.tr) + '</small>' : '') + '</button>').join('');
     box.querySelectorAll('button').forEach((b) => { b.onclick = () => C.falar(rs[Number(b.dataset.i)].tx, lingua.value, { sempre: true, vel: 0.85 }); });
   }
   function responder(txt) {
@@ -161,7 +161,7 @@
       parcial: (t) => { $('#cvTexto').placeholder = t || 'Ouvindo…'; if (t) { onda.classList.add('forte'); setTimeout(() => onda.classList.remove('forte'), 300); } },
       final: (t) => { C.ouvinte.parar(); responder(t); },
       erro: (m) => alert(m),
-      fim: () => { mic.classList.remove('on'); onda.classList.remove('on'); $('#cvTexto').placeholder = 'Responda aqui ou toque no 🎤…'; }
+      fim: () => { mic.classList.remove('on'); onda.classList.remove('on'); $('#cvTexto').placeholder = 'Responda aqui ou toque no microfone…'; }
     });
     if (okM) { mic.classList.add('on'); onda.classList.add('on'); $('#cvTexto').placeholder = 'Ouvindo… fale em ' + C.nomeLingua(lingua.value); }
   };

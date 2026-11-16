@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clã Speak</title>
-<meta name="theme-color" content="#0b0b0b">
+<meta name="theme-color" content="#0A0A0B">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="tradutor.webmanifest">
 <link rel="preload" as="image" href="icons/gato-danca.webp">
@@ -424,6 +424,153 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 .eq i:nth-child(2){animation-delay:.15s}.eq i:nth-child(3){animation-delay:.3s}
 @keyframes eq{0%,100%{height:3px}50%{height:12px}}
 .msg .acoes button.copiar{color:var(--mu)}
+
+/* ==================================================================
+   TEMA CORPORATIVO (Linear/Stripe/Vercel): neutro, 1px, um acento
+   ================================================================== */
+:root{--bg:#0A0A0B;--card:#111113;--card2:#18181B;--borda:#26262B;--borda2:#2E2E35;--tx:#EDEDEF;--mu:#8B8D98;
+  --c:#5E6AD2;--c2:#7C85E0;--c-tx:#FFFFFF;--eu:#15172A;--ok:#30A46C;--erro:#E5484D;--raio:10px}
+html,body{font-family:Inter,"SF Pro Text",-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;font-size:15px;letter-spacing:-.005em;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--tx)}
+body.grande{font-size:17px}
+::selection{background:rgba(94,106,210,.35)}
+.ic{width:1.15em;height:1.15em;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;flex:none}
+.icw{display:inline-flex;align-items:center;margin-right:.35em}
+.icw:last-child{margin-right:0}
+button .icw:only-child,.mic .icw{margin:0}
+/* Cabeçalho */
+header{background:rgba(10,10,11,.85);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--borda);padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;gap:8px}
+header h1,.marca{font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--tx)}
+.marca{gap:10px}
+.marca img{display:none}
+.marca::before{content:"";width:22px;height:22px;border-radius:6px;flex:none;background:linear-gradient(135deg,#7C85E0,#5E6AD2 55%,#3E47A8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+header button{background:transparent;color:var(--mu);border:1px solid var(--borda);padding:6px 10px;font-size:13px;font-weight:500;border-radius:8px}
+header button:hover{color:var(--tx);border-color:var(--borda2)}
+header button.ligado{background:rgba(94,106,210,.15);color:var(--c2);border-color:rgba(94,106,210,.45)}
+.xp{color:var(--mu)!important;font-weight:500!important;font-size:13px;gap:12px!important}
+/* Botões */
+button{background:var(--c);color:var(--c-tx);border:1px solid transparent;border-radius:8px;padding:9px 14px;font-weight:500;font-size:14px;line-height:1.2;transition:background .15s,border-color .15s,color .15s,box-shadow .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:hover{background:var(--c2)}
+button:active{transform:none;opacity:.9}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg),0 0 0 4px rgba(94,106,210,.6)}
+button.sec,.botaoLink,.sec{background:var(--card2);color:var(--tx);border:1px solid var(--borda)}
+button.sec:hover,.botaoLink:hover{background:#1E1E22;border-color:var(--borda2)}
+button.ligado{background:rgba(94,106,210,.15)!important;color:var(--c2)!important;border-color:rgba(94,106,210,.45)!important}
+/* Superfícies */
+.card{background:var(--card);border:1px solid var(--borda);border-radius:12px;padding:16px;box-shadow:none}
+.card > b{font-size:14px;font-weight:600;letter-spacing:-.01em;display:inline-flex;align-items:center}
+.mu{color:var(--mu);font-size:13px;line-height:1.5}
+label{font-size:12px;font-weight:500;color:var(--mu);letter-spacing:.01em;margin:14px 0 6px}
+select,input,textarea{background:#0E0E10;border:1px solid var(--borda);border-radius:8px;color:var(--tx);padding:10px 12px;font-size:14px;transition:border-color .15s}
+select:hover,input:hover,textarea:hover{border-color:var(--borda2)}
+input::placeholder,textarea::placeholder{color:#5B5D66}
+.aviso{background:rgba(229,72,77,.06);border:1px solid rgba(229,72,77,.25);color:#F2A6A8;border-radius:8px;font-size:13px}
+.status{max-width:520px;margin:0 auto 12px;font-size:13px;color:var(--mu);border:1px solid var(--borda);background:var(--card);border-radius:8px;padding:0 12px;max-height:0;opacity:0;overflow:hidden;transition:all .2s ease}
+.status.on{max-height:80px;opacity:1;padding:9px 12px}
+.box > .status{margin-bottom:12px}
+.chave{font-size:14px}
+.chave input{transform:none;width:18px;height:18px;accent-color:var(--c)}
+/* Abas */
+.abas{background:rgba(10,10,11,.92);backdrop-filter:blur(12px);border-top:1px solid var(--borda);padding:6px 4px calc(env(safe-area-inset-bottom) + 6px)}
+.abas button{background:none;color:var(--mu);font-size:11px;font-weight:500;padding:6px 2px;gap:4px;border:0;border-radius:8px}
+.abas button b{font-size:0;display:flex;height:22px;align-items:center}
+.abas button b .icw{font-size:20px;margin:0}
+.abas button.on{color:var(--tx)}
+.abas button.on b{transform:none;color:var(--c2)}
+.abas button:hover{background:transparent;color:var(--tx)}
+/* Animações: só o essencial */
+.tela.on,#f2f.on{animation:aparece .18s ease-out}
+@keyframes aparece{from{opacity:0}to{opacity:1}}
+.confete,.notaSala,.voador,.emoBadge,.nota,.pegada,.onda2,.carta,.coracao,.novelo,.palco,.luzSala,.combo,.gesto,.balaoM,#gatoSala,.gatoCaixa,.lapis,.gatinho,.ator,#f2fGato{display:none!important}
+.pista.festa,.card.gatinho.festa,.pet.festa{animation:none!important}
+/* Microfone */
+.mic{width:52px;height:52px;border-radius:50%;background:var(--c);font-size:18px;box-shadow:0 1px 0 rgba(255,255,255,.08) inset}
+.mic .icw{font-size:22px}
+.mic.on{background:var(--erro);animation:pulsaPro 1.6s ease-out infinite}
+@keyframes pulsaPro{0%{box-shadow:0 0 0 0 rgba(229,72,77,.35)}100%{box-shadow:0 0 0 12px rgba(229,72,77,0)}}
+.onda i{background:var(--c2);width:3px}
+/* Tradutor de texto */
+.resultado{color:var(--tx);font-weight:500;font-size:17px;border-left:2px solid var(--c);padding:4px 0 4px 12px;margin:12px 0 4px}
+.idiomas button{padding:9px 11px}
+.txMais summary{font-size:13px}
+.lista .item{background:#0E0E10;border:1px solid var(--borda);border-radius:8px;font-size:14px;animation:none}
+.lista .item small{font-size:12px}
+/* Sala */
+#msgs{background:var(--bg);background-image:none}
+.msg{background:var(--card);border:1px solid var(--borda);border-radius:12px;box-shadow:none}
+.linha.eu .msg{background:var(--eu);border-color:#262A4A}
+.msg .tr{font-size:16px;line-height:1.45}
+.msg .quem{font-size:12px}
+.msg .acoes button{background:transparent;color:var(--mu);padding:3px 6px;font-size:12px;border:0}
+.msg .acoes button:hover{color:var(--tx);background:var(--card2)}
+.linha.tocando .msg{box-shadow:0 0 0 1px rgba(94,106,210,.6)}
+.eq i{background:var(--c2)}
+.avatar{background:var(--card2)!important;color:var(--tx);border:1px solid var(--borda);font-weight:600;font-size:12px}
+.sistema{background:transparent;border:0;color:var(--mu);font-size:12px;padding:2px 0}
+#pessoas{color:var(--mu);font-size:12px}
+.reacoes{background:var(--card2);border:1px solid var(--borda)}
+.emojis{background:var(--bg);border-top:1px solid var(--borda);padding:8px 12px 0}
+.emojis button{background:var(--card);border:1px solid var(--borda);border-radius:8px;font-size:15px;padding:5px 9px;color:var(--tx)}
+.barra{background:var(--bg);border-top:1px solid var(--borda)}
+.vivo .msg{border-style:dashed;border-color:var(--borda2)}
+#qrBox img{background:#fff}
+/* Frente a frente */
+.lado.cima{background:#0D0D0F}
+.lado .texto{background:var(--card);border:1px solid var(--borda);border-radius:12px;font-size:20px;line-height:1.45;padding-bottom:12px}
+.lado .texto .p{color:var(--mu)}
+.dica{color:var(--mu);font-size:14px;margin-top:10px}
+.dica b{color:var(--tx);font-weight:600}
+.escrita .cursor{background:var(--c2)}
+.pista{height:auto!important;min-height:56px;background:var(--bg)!important;border-top:1px solid var(--borda)!important;border-bottom:1px solid var(--borda)!important}
+.pista::after,.pista::before{display:none}
+.pista .meio{position:static;padding:8px 4px;justify-content:center;gap:4px;flex-wrap:nowrap}
+.meio button{background:var(--card2);color:var(--tx);border:1px solid var(--borda);border-radius:8px;font-size:12.5px;padding:6px 7px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.meio button.ligado{background:rgba(94,106,210,.15);color:var(--c2);border-color:rgba(94,106,210,.45)}
+.vez{position:static;transform:none!important;display:block;margin:0 auto 8px;background:rgba(94,106,210,.12);color:var(--c2);border:1px solid rgba(94,106,210,.35);font-size:12px;font-weight:500;animation:none!important;width:max-content}
+.vez:not(.on){display:none}
+/* Estudar */
+.temas button,.sbChips button{background:var(--card);border:1px solid var(--borda);color:var(--tx);border-radius:10px;font-weight:500}
+.temas button b,.sbChips button b{display:none}
+.temas button,.sbChips button{min-height:46px;font-size:13px}
+.flash .alvo{color:var(--c2)}
+.flash .alvo.oculto{text-shadow:0 0 14px rgba(124,133,224,.6)}
+.barraProg{background:var(--card2);height:4px}
+.barraProg div{background:var(--c)}
+.opcoes button{background:#0E0E10;border:1px solid var(--borda);color:var(--tx);justify-content:flex-start;font-weight:500}
+.opcoes button.certa{background:rgba(48,164,108,.12);border-color:rgba(48,164,108,.6)}
+.opcoes button.errada{background:rgba(229,72,77,.1);border-color:rgba(229,72,77,.55)}
+/* Karaokê */
+.kl.on{background:rgba(94,106,210,.08);box-shadow:0 0 0 1px rgba(94,106,210,.3)}
+.kl.on .o span.lit{color:var(--c2);text-shadow:none}
+.kl.on .t{color:var(--mu)}
+#kMarcar{animation:none}
+#kCantar.ligado{background:var(--erro)!important;color:#fff!important}
+.yt{border:1px solid var(--borda)}
+/* Conversar */
+.cvTopo{background:var(--bg);border-bottom:1px solid var(--borda)}
+.cvProg{background:var(--card2);height:2px}.cvProg div{background:var(--c)}
+.cvCenas button{background:var(--card);border:1px solid var(--borda);border-radius:12px}
+.cvCenas button b{font-size:0}
+.cvCenas button span{font-weight:600;font-size:14px}
+.cvCenas button .feito{color:var(--c2)}
+.cvM .av{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--card2);border:1px solid var(--borda);color:var(--mu);font-size:12px;font-weight:600;box-shadow:none}
+.cvM .bal{background:var(--card);border:1px solid var(--borda);border-radius:12px}
+.cvM.eu .bal{background:var(--eu);border-color:#262A4A}
+.cvM .bal .cvNota{color:var(--mu)}
+.cvSug{background:var(--bg);border-top:1px solid var(--borda)}
+.cvSug button{background:var(--card);border:1px solid var(--borda);border-radius:8px;font-weight:500;font-size:13px}
+.cvSug button small{font-size:11px}
+.cvFim{border:1px solid var(--borda);background:var(--card)}
+.cvFim .grande{color:var(--tx);font-size:28px;font-weight:600}
+/* Saber */
+.sbAssuntos button{background:var(--card);border:1px solid var(--borda);border-radius:999px;font-weight:500;font-size:13px}
+.sbCab img{border:1px solid var(--borda);border-radius:10px}
+.sbCab b{color:var(--tx);font-size:18px;font-weight:600}
+.sbTexto .fr.lendo{background:rgba(94,106,210,.18);color:var(--tx)}
+.sbVocab button{background:#0E0E10;border:1px solid var(--borda);border-radius:8px;font-weight:500}
+.sbVocab button small{color:var(--c2)}
+.sbQuizFrase .lacuna{border-bottom-color:var(--c);color:var(--c2)}
+#sbHoje .item b{color:var(--c2)}
+#sbVeja a{color:var(--c2)}
 </style>
 </head>
 <body>
@@ -432,7 +579,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <section id="inicio" class="tela on">
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Clã Speak</h1></header>
   <div class="rolavel"><div class="box">
-    <div class="card gatinho" id="gatoInicio"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho" title="Toque em mim"><div class="fala">Miau! Eu sou o gatinho do Clã Speak. Toque em mim! 🐾</div></div>
+    <div class="status" id="gatoInicio" role="status" aria-live="polite"></div>
     <div class="card">
       <label for="nome">Seu nome</label>
       <input id="nome" placeholder="Ex.: Maria" maxlength="30">
@@ -473,7 +620,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <section id="estudo" class="tela">
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Estudar</h1><div class="xp"><span id="xpTotal">⭐ 0</span><span id="xpSeq">🔥 0</span></div></header>
   <div class="rolavel"><div class="box">
-    <div class="card gatinho" id="gatoEstudo"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Vamos aprender juntos? Escolha o idioma e um tema! 📚</div></div>
+    <div class="status" id="gatoEstudo" role="status" aria-live="polite"></div>
     <div id="estTemas">
       <div class="card">
         <label for="estLingua" style="margin-top:0">Quero aprender</label>
@@ -517,7 +664,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <section id="saber" class="tela">
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Saber</h1></header>
   <div class="rolavel"><div class="box">
-    <div class="card gatinho" id="gatoSaber"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Pergunte o que quiser: literatura, artes, história, ciência… Eu procuro pra você! 🎓</div></div>
+    <div class="status" id="gatoSaber" role="status" aria-live="polite"></div>
     <div class="card">
       <div class="row"><input id="sbPergunta" placeholder="Faça uma pergunta… ex.: Quem pintou a Mona Lisa?" enterkeyhint="search"><button class="sec" id="sbMic" style="flex:none" title="Perguntar falando">🎤</button></div>
       <button id="sbPerguntar" style="width:100%;margin-top:8px">🔎 Perguntar</button>
@@ -562,14 +709,14 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
   <div class="cvProg"><div id="cvProg"></div></div>
   <div class="rolavel" id="cvRolar">
     <div class="box" id="cvInicio">
-      <div class="card gatinho" id="gatoConv"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Vamos praticar conversação? Escolha uma situação e responda falando ou escrevendo! 💬</div></div>
+      <div class="status" id="gatoConv" role="status" aria-live="polite"></div>
       <div class="cvCenas" id="cvCenas"></div>
     </div>
     <div class="cvChat" id="cvChat" hidden></div>
   </div>
   <div class="cvSug" id="cvSug" hidden></div>
   <div class="barra" id="cvBarra" hidden>
-    <input id="cvTexto" placeholder="Responda aqui ou toque no 🎤…" enterkeyhint="send">
+    <input id="cvTexto" placeholder="Responda aqui ou toque no microfone…" enterkeyhint="send">
     <div class="onda" id="cvOnda"><i></i><i></i><i></i><i></i><i></i></div>
     <button class="mic" id="cvMic" title="Responder falando">🎤</button>
   </div>
@@ -579,7 +726,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <section id="musica" class="tela">
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Karaokê</h1><div class="xp"><span id="kPontos">⭐ 0</span></div></header>
   <div class="rolavel"><div class="box">
-    <div class="card gatinho" id="gatoKara"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Cole o link da música e a letra: a gente canta junto e treina o idioma! 🎤</div></div>
+    <div class="status" id="gatoKara" role="status" aria-live="polite"></div>
     <div class="card" id="ytCard">
       <b>🎬 Vídeo do YouTube</b>
       <div class="row" style="margin-top:8px"><input id="ytLink" placeholder="Cole aqui o link: https://youtu.be/…" inputmode="url"><button id="ytCarregar" style="flex:none">▶ Abrir</button></div>
@@ -614,7 +761,24 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <section id="ajustes" class="tela">
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Ajustes</h1></header>
   <div class="rolavel"><div class="box">
-    <div class="card gatinho" id="gatoAjustes"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Aqui você deixa o app do seu jeito! ⚙️</div></div>
+    <div class="status" id="gatoAjustes" role="status" aria-live="polite"></div>
+    <div class="card" id="cardMotor">
+      <b>Motor de tradução</b>
+      <p class="mu">O motor Padrão usa o Google Tradutor (rápido e gratuito). O Executivo usa o Claude da Anthropic: precisão terminológica por setor, registro formal/técnico e saída limpa. Prévias ao vivo continuam no motor Padrão.</p>
+      <label for="ajMotor">Motor</label>
+      <select id="ajMotor"><option value="padrao">Padrão — Google Tradutor</option><option value="executivo">Executivo — Claude (Anthropic)</option></select>
+      <div id="ajExecutivo">
+        <label for="ajChave">Chave da API da Anthropic</label>
+        <div class="row"><input id="ajChave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"><button class="sec" id="ajVerChave" style="flex:none">Mostrar</button></div>
+        <p class="mu">A chave fica guardada só neste aparelho e é enviada apenas para a API da Anthropic. O uso é cobrado na sua conta da Anthropic.</p>
+        <div class="row">
+          <div><label for="ajSetor">Setor</label><select id="ajSetor"><option>Geral</option><option>Jurídico</option><option>Médico e saúde</option><option>Financeiro e contábil</option><option>Tecnologia da informação</option><option>Engenharia</option><option>Comercial e negócios</option><option>Marketing</option><option>Acadêmico e científico</option><option>Governo e diplomacia</option></select></div>
+          <div><label for="ajRegistro">Registro</label><select id="ajRegistro"><option>Formal</option><option>Técnico</option><option>Neutro</option></select></div>
+        </div>
+        <button class="sec" id="ajTestarMotor" style="margin-top:10px">Testar conexão</button>
+        <p class="mu" id="ajMotorStatus"></p>
+      </div>
+    </div>
     <div class="card">
       <b>🎤 Microfone</b>
       <div class="chave"><span>Segurar para falar<br><span class="mu">Fale enquanto segura o 🎤 e solte para enviar. Capta melhor em lugar barulhento.</span></span><input type="checkbox" id="ajSegurar"></div>
@@ -625,14 +789,14 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
       <label for="ajVel">Velocidade da voz: <span id="ajVelTx">1.0×</span></label>
       <input type="range" id="ajVel" min="0.6" max="1.4" step="0.1" value="1">
       <div class="chave"><span>Ler as traduções em voz alta</span><input type="checkbox" id="ajVoz"></div>
-      <div class="chave"><span>Sons do app (miado, bolhas)</span><input type="checkbox" id="ajSons"></div>
+      <div class="chave"><span>Sons de interface</span><input type="checkbox" id="ajSons"></div>
       <button class="sec" id="ajTestar" style="margin-top:10px">▶ Testar a voz</button>
     </div>
     <div class="card">
       <b>👀 Tela</b>
       <div class="chave"><span>Letras grandes</span><input type="checkbox" id="ajGrande"></div>
     </div>
-    <div class="card">
+    <div class="card" hidden>
       <b>🎙️ Miado de verdade</b>
       <p class="mu">Grave o miado do seu gato (ou escolha um áudio do celular). Ele vira o miado do gatinho no app inteiro.</p>
       <div class="botoes" style="justify-content:flex-start">
@@ -716,6 +880,6 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <script src="tradutor-musica.js"></script>
 <script src="tradutor-conversa.js"></script>
 <script src="tradutor-saber.js"></script>
-<script src="tradutor-emocao.js"></script>
+<script src="tradutor-ui.js"></script>
 </body>
 </html>

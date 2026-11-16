@@ -41,6 +41,9 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **🎶 Batida de reggae original:** feita pelo próprio app (sem áudio de terceiros, sem direitos autorais):
+  bumbo e caixa no tempo 3 (one drop), chimbal, guitarrinha no contratempo e baixo em Lá menor → Ré, a 80 bpm.
+  Toca no 💃 Dançar e no botão 🎶 Som de reggae da aba Gatinho (sem parar até desligar) e nas festas do Estudar.
 - **Gatinho rasta:** o mascote do app é o gatinho preto de gorro reggae do GIF enviado. Os 9 passos de dança
   foram recortados do fundo (`app/icons/gato-danca.webp`, animado; `gato-corpo.png`, parado;
   `gato-rosto.png` e `gato-rosto-danca.webp`, redondos). Sempre que o gatinho dança ou anda, toca a dança

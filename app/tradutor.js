@@ -320,45 +320,61 @@
   // Batida de reggae original (feita pelo app, sem direitos autorais): one drop, chimbal,
   // guitarrinha no contratempo e baixo em Lá menor → Ré. Toca "compassos" de 3 s; devolve uma função para parar.
   let reggaeAtual = null;
-  function reggae(compassos = 2, aoFim) {
-    if (!sons) return () => {};
-    if (reggaeAtual) reggaeAtual();
-    let ctx; try { ctx = ctxAudio(); } catch (e) { return () => {}; }
-    const mestre = ctx.createGain(); mestre.gain.value = 0.55; mestre.connect(ctx.destination);
+  // opc.ctx = contexto de áudio "offline" (para gerar arquivo de amostra); sem ele toca no aparelho
+  function reggae(compassos = 2, aoFim, opc = {}) {
+    if (!sons && !opc.ctx) return () => {};
+    if (reggaeAtual && !opc.ctx) reggaeAtual();
+    let ctx; try { ctx = opc.ctx || ctxAudio(); } catch (e) { return () => {}; }
+    // mixagem: compressor no fim e eco "dub" para o teclado
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.2;
+    const mestre = ctx.createGain(); mestre.gain.value = 0.8; mestre.connect(comp); comp.connect(ctx.destination);
+    const eco = ctx.createDelay(1); eco.delayTime.value = 0.5625; const ecoG = ctx.createGain(); ecoG.gain.value = 0.32;
+    const ecoF = ctx.createBiquadFilter(); ecoF.type = 'lowpass'; ecoF.frequency.value = 1800;
+    eco.connect(ecoF); ecoF.connect(ecoG); ecoG.connect(eco); ecoG.connect(mestre);
     const ruido = (() => { const n = ctx.sampleRate * 0.3, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; })();
-    const tom = (tipo, f, t, dur, vol, filtro) => {
-      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo; o.frequency.setValueAtTime(f, t);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      let saida = g;
-      if (filtro) { const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = filtro; g.connect(lp); saida = lp; }
-      o.connect(g); saida.connect(mestre); o.start(t); o.stop(t + dur + 0.02); return o;
+    const env = (g, t, ataque, vol, dur) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + ataque); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); };
+    const bumbo = (t) => { // macio: seno que cai de 95 para 45 Hz
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine';
+      o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.18);
+      env(g, t, 0.005, 0.85, 0.42); o.connect(g); g.connect(mestre); o.start(t); o.stop(t + 0.45);
     };
-    const bumbo = (t) => { const o = tom('sine', 120, t, 0.35, 0.9); o.frequency.exponentialRampToValueAtTime(42, t + 0.25); };
-    const aro = (t) => { // caixa de aro (rimshot)
-      const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido; hp.type = 'highpass'; hp.frequency.value = 1800;
-      g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08); s.connect(hp); hp.connect(g); g.connect(mestre); s.start(t); s.stop(t + 0.1);
-      tom('triangle', 420, t, 0.06, 0.25);
+    const aro = (t) => { // caixa de aro curtinha
+      const s = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido;
+      bp.type = 'bandpass'; bp.frequency.value = 2600; bp.Q.value = 1.4; env(g, t, 0.002, 0.28, 0.07);
+      s.connect(bp); bp.connect(g); g.connect(mestre); s.start(t); s.stop(t + 0.09);
+      const o = ctx.createOscillator(), go = ctx.createGain(); o.type = 'triangle'; o.frequency.value = 330; env(go, t, 0.002, 0.12, 0.05);
+      o.connect(go); go.connect(mestre); o.start(t); o.stop(t + 0.07);
     };
     const chimbal = (t, v) => {
-      const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido; hp.type = 'highpass'; hp.frequency.value = 7500;
-      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05); s.connect(hp); hp.connect(g); g.connect(mestre); s.start(t); s.stop(t + 0.06);
+      const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido;
+      hp.type = 'highpass'; hp.frequency.value = 9000; env(g, t, 0.002, v, 0.045);
+      s.connect(hp); hp.connect(g); g.connect(mestre); s.start(t); s.stop(t + 0.06);
     };
-    const acorde = (fs, t) => fs.forEach((f) => { tom('square', f, t, 0.11, 0.05, 2600); tom('triangle', f * 2, t, 0.08, 0.025); });
-    const baixo = (f, t, dur = 0.32) => tom('triangle', f, t, dur, 0.5, 500);
+    const orgao = (fs, t, vol, dur) => fs.forEach((f) => { // teclado tipo órgão: fundamental + 2 harmônicos
+      const lp = ctx.createBiquadFilter(), g = ctx.createGain(); lp.type = 'lowpass'; lp.frequency.value = 3200;
+      env(g, t, 0.006, vol, dur); g.connect(lp); lp.connect(mestre); lp.connect(eco);
+      [[1, 1], [2, 0.45], [3, 0.2]].forEach(([m, a]) => { const o = ctx.createOscillator(), ga = ctx.createGain(); o.type = 'sine'; o.frequency.value = f * m; ga.gain.value = a; o.connect(ga); ga.connect(g); o.start(t); o.stop(t + dur + 0.02); });
+    });
+    const baixo = (f, t, dur = 0.5) => { // baixo redondo: seno + um pouco de oitava, filtrado
+      const lp = ctx.createBiquadFilter(), g = ctx.createGain(); lp.type = 'lowpass'; lp.frequency.value = 280;
+      env(g, t, 0.02, 0.75, dur); g.connect(lp); lp.connect(mestre);
+      [[1, 1, 'sine'], [2, 0.25, 'triangle']].forEach(([m, a, tipo]) => { const o = ctx.createOscillator(), ga = ctx.createGain(); o.type = tipo; o.frequency.value = f * m; ga.gain.value = a; o.connect(ga); ga.connect(g); o.start(t); o.stop(t + dur + 0.03); });
+    };
     const BAT = 0.75, BAR = BAT * 4; // 80 batidas por minuto
-    const AM = { acorde: [220, 261.6, 329.6], baixo: [[0.5, 110], [1, 110], [2, 82.4], [3, 98], [3.5, 110]] };
-    const RE = { acorde: [293.7, 370, 440], baixo: [[0.5, 73.4], [1, 73.4], [2, 110], [3, 92.5], [3.5, 73.4]] };
+    const AM = { acorde: [220, 261.6, 329.6], baixo: [[0, 110, 0.6], [1, 110, 0.35], [1.5, 130.8, 0.3], [2.5, 82.4, 0.45], [3.25, 98, 0.3], [3.5, 110, 0.4]] };
+    const RE = { acorde: [293.7, 370, 440], baixo: [[0, 73.4, 0.6], [1, 73.4, 0.35], [1.5, 92.5, 0.3], [2.5, 110, 0.45], [3.25, 98, 0.3], [3.5, 73.4, 0.4]] };
     const t0 = ctx.currentTime + 0.05;
     for (let c = 0; c < compassos; c++) {
       const b = t0 + c * BAR, h = c % 2 ? RE : AM;
-      bumbo(b + 2 * BAT); aro(b + 2 * BAT);                                 // one drop no tempo 3
-      for (let i = 0; i < 8; i++) chimbal(b + i * BAT / 2 + (i % 2 ? 0.05 : 0), i % 2 ? 0.07 : 0.035); // chimbal com balanço
-      acorde(h.acorde, b + 1 * BAT); acorde(h.acorde, b + 3 * BAT);            // guitarrinha nos tempos 2 e 4
-      acorde(h.acorde, b + 1.5 * BAT); acorde(h.acorde, b + 3.5 * BAT);
-      h.baixo.forEach(([bt, f]) => baixo(f, b + bt * BAT));
+      bumbo(b + 2 * BAT); aro(b + 2 * BAT);                                              // one drop no tempo 3
+      for (let i = 0; i < 8; i++) chimbal(b + i * BAT / 2 + (i % 2 ? 0.06 : 0), i % 2 ? 0.05 : 0.022); // chimbal com balanço
+      orgao(h.acorde, b + 1 * BAT, 0.06, 0.16); orgao(h.acorde, b + 3 * BAT, 0.06, 0.16);  // contratempo (tempos 2 e 4)
+      [0.5, 1.5, 2.5, 3.5].forEach((x) => orgao(h.acorde.map((f) => f / 2), b + x * BAT + 0.06, 0.018, 0.09)); // "bolha" do órgão
+      h.baixo.forEach(([bt, f, d]) => baixo(f, b + bt * BAT, d));
     }
+    if (opc.ctx) return () => {};
     const fimT = setTimeout(() => { if (reggaeAtual === parar) reggaeAtual = null; aoFim && aoFim(); }, compassos * BAR * 1000 + 100);
-    function parar() { clearTimeout(fimT); try { mestre.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05); setTimeout(() => mestre.disconnect(), 300); } catch (e) {} if (reggaeAtual === parar) reggaeAtual = null; }
+    function parar() { clearTimeout(fimT); try { mestre.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05); ecoG.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05); setTimeout(() => { mestre.disconnect(); ecoG.disconnect(); }, 400); } catch (e) {} if (reggaeAtual === parar) reggaeAtual = null; }
     reggaeAtual = parar;
     return parar;
   }
@@ -797,44 +813,26 @@
   // Cada caixa tem um gatinho que acena quando está vazia, fica atento enquanto a pessoa fala
   // e "escreve" a tradução letra por letra
   Object.values(lados).forEach((l) => {
-    l.txt.innerHTML = '<div class="hist"></div><span class="lapis">✍️</span><img class="gatoCaixa" src="icons/gato-corpo.png" alt="Gatinho">';
-    l.hist = $('.hist', l.txt); l.lapis = $('.lapis', l.txt); l.gato = $('.gatoCaixa', l.txt); l.est = $('.estado', l.el);
-    l.escrita = l.hist; // compatibilidade
+    l.txt.innerHTML = '<div class="escrita"></div><span class="lapis">✍️</span><img class="gatoCaixa" src="icons/gato-corpo.png" alt="Gatinho">';
+    l.escrita = $('.escrita', l.txt); l.lapis = $('.lapis', l.txt); l.gato = $('.gatoCaixa', l.txt);
     l.gato.onclick = () => { miau(true); l.gato.classList.remove('feliz'); void l.gato.offsetWidth; l.gato.classList.add('feliz'); };
     l.estado = (cls) => { l.gato.classList.remove('acena', 'atento', 'escreve', 'feliz'); if (cls) l.gato.classList.add(cls); l.lapis.classList.toggle('on', cls === 'escreve'); };
-    l.status = (t, ativo) => { l.est.textContent = t; l.est.classList.toggle('ativo', !!ativo); };
-    const rolarL = () => { l.txt.scrollTop = l.txt.scrollHeight; };
-    const vivoEl = () => { let v = $('.item.vivo', l.hist); if (!v) { v = document.createElement('div'); v.className = 'item vivo'; l.hist.appendChild(v); } return v; };
     l.vazio = () => {
-      clearInterval(l.digTm); l.txt.classList.remove('cheio');
-      l.hist.innerHTML = '<div class="dica">🐾 Toque em <b>🎤 Toque para falar</b><br>e fale em <b>' + esc(bandeira(l.sel.value) + ' ' + nomeLingua(l.sel.value)) + '</b></div>';
-      l.estado('acena'); l.status(bandeira(l.sel.value) + ' pronto');
+      clearInterval(l.digTm);
+      l.escrita.className = 'escrita';
+      l.escrita.innerHTML = '<div class="dica">🐾 Toque no <b>🎤</b> e fale em<br><b>' + esc(bandeira(l.sel.value) + ' ' + nomeLingua(l.sel.value)) + '</b></div>';
+      l.estado('acena');
     };
-    const tirarDica = () => { const d = $('.dica', l.hist); if (d) d.remove(); l.txt.classList.add('cheio'); };
-    l.aoVivo = (t, ouvindo) => {
-      tirarDica(); const v = vivoEl(); v.classList.toggle('trad', !ouvindo); v.textContent = (ouvindo ? '🎤 ' : '… ') + t;
-      l.estado(ouvindo ? 'atento' : ''); l.status(ouvindo ? '🎤 Ouvindo…' : '✍️ Traduzindo…', true); rolarL();
-    };
-    l.mostrar = (t) => { // o que esta pessoa falou
-      tirarDica(); const v = $('.item.vivo', l.hist); if (v) v.remove();
-      const d = document.createElement('div'); d.className = 'item eu'; d.innerHTML = '<small>🗣️ Você disse</small>' + esc(t);
-      l.hist.appendChild(d); l.estado(''); l.status('✓ Traduzido'); rolarL();
-    };
-    l.digitar = (t, pronto, orig) => { // tradução chegando para esta pessoa, letra por letra
-      clearInterval(l.digTm); tirarDica(); const v = $('.item.vivo', l.hist); if (v) v.remove();
-      const d = document.createElement('div'); d.className = 'item outro';
-      const txt = document.createElement('span'), cur = document.createElement('span'); cur.className = 'cursor';
-      d.append(txt, cur); l.hist.appendChild(d); l.estado('escreve'); l.status('✍️ Recebendo…', true);
+    l.aoVivo = (t, ouvindo) => { clearInterval(l.digTm); l.escrita.className = 'escrita ao-vivo'; l.escrita.textContent = t; l.estado(ouvindo ? 'atento' : ''); l.txt.scrollTop = l.txt.scrollHeight; };
+    l.mostrar = (t) => { clearInterval(l.digTm); l.escrita.className = 'escrita'; l.escrita.textContent = t; l.estado(''); };
+    l.digitar = (t, pronto) => { // máquina de escrever, no máximo ~1,4 s por frase
+      clearInterval(l.digTm); l.escrita.className = 'escrita'; l.escrita.innerHTML = '';
+      const txt = document.createTextNode(''), cur = document.createElement('span'); cur.className = 'cursor';
+      l.escrita.append(txt, cur); l.estado('escreve');
       const passo = Math.max(1, Math.ceil(t.length / 45)); let i = 0;
       l.digTm = setInterval(() => {
-        i = Math.min(t.length, i + passo); txt.textContent = t.slice(0, i); rolarL();
-        if (i >= t.length) {
-          clearInterval(l.digTm); cur.remove();
-          const b = document.createElement('button'); b.textContent = '🔊'; b.title = 'Ouvir de novo';
-          b.onclick = () => falar(t, l.sel.value, { sempre: true }); d.appendChild(b);
-          if (orig) { const o = document.createElement('div'); o.className = 'orig'; o.textContent = orig; d.appendChild(o); }
-          l.estado('feliz'); setTimeout(() => l.gato.classList.remove('feliz'), 650); l.status('✓ Pronto'); rolarL(); pronto && pronto();
-        }
+        i = Math.min(t.length, i + passo); txt.data = t.slice(0, i); l.txt.scrollTop = l.txt.scrollHeight;
+        if (i >= t.length) { clearInterval(l.digTm); cur.remove(); l.estado('feliz'); setTimeout(() => l.gato.classList.remove('feliz'), 650); pronto && pronto(); }
       }, 30);
     };
     l.vazio();
@@ -842,10 +840,11 @@
   preencher(lados.a.sel, localStorage.getItem('trad-f2f-a') || linguaEl.value);
   preencher(lados.b.sel, localStorage.getItem('trad-f2f-b') || (linguaEl.value.startsWith('en') ? 'es-ES' : 'en-US'));
   Object.entries(lados).forEach(([k, l]) => {
-    l.sel.onchange = () => { localStorage.setItem('trad-f2f-' + k, l.sel.value); if (l.hist.querySelector('.dica') || !l.hist.children.length) l.vazio(); else l.status(bandeira(l.sel.value) + ' pronto'); };
+    l.sel.onchange = () => { localStorage.setItem('trad-f2f-' + k, l.sel.value); if (!l.escrita.textContent.trim() || l.escrita.querySelector('.dica')) l.vazio(); };
     l.mic.onclick = () => {
       const outro = lados[k === 'a' ? 'b' : 'a'];
-      if (ouvinte.ativo && l.mic.classList.contains('on')) { ouvinte.parar(); return; }
+      if (ouvinte.ativo && l.mic.classList.contains('on')) { if (autoF2f) definirAuto(false); ouvinte.parar(); return; }
+      let falou = false;
       ouvinte.parar();
       let tm = null;
       const ok = ouvinte.iniciar(l.sel.value, {
@@ -857,43 +856,50 @@
         },
         final: async (t) => {
           clearTimeout(tm);
-          t = arrumar(t);
+          t = arrumar(t); falou = true;
+          if (autoF2f) ouvinte.parar(); // no automático, cada um fala uma frase e passa a vez
           l.mostrar(t); if (ouvinte.ativo) l.estado('atento');
           const r = await traduzir(t, l.sel.value, outro.sel.value);
           entregar(k, r);
           setTimeout(() => {
-            outro.digitar(r, null, t);
+            outro.digitar(r);
             pulaF2f();
             const para = k === 'a' ? 'b' : 'a';
-            if (vozLigada && !r.startsWith('⚠️')) falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => notas(para, false) });
+            const passaVez = () => { if (autoF2f) setTimeout(() => autoF2f && !ouvinte.ativo && iniciarLado(para), 350); };
+            festaEntrega(para);
+            if (vozLigada && !r.startsWith('⚠️')) falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => { notas(para, false); passaVez(); } });
+            else setTimeout(passaVez, 1200);
           }, 650);
         },
-        erro: (m) => alert(m),
+        erro: (m) => { definirAuto(false); alert(m); },
         fim: () => {
           l.mic.classList.remove('on'); ator.soltar(); bipe(false);
-          l.mic.innerHTML = '🎤 <span>Toque para falar</span>';
-          const v = $('.item.vivo', l.hist); if (v && /Ouvindo…$/.test(v.textContent)) { v.remove(); if (!l.hist.children.length) l.vazio(); }
-          if (l.gato.classList.contains('atento')) l.estado('');
-          if (/Ouvindo/.test(l.est.textContent)) l.status(bandeira(l.sel.value) + ' pronto');
+          if (autoF2f && !falou) setTimeout(() => autoF2f && !ouvinte.ativo && iniciarLado(k), 400); // silêncio: continua ouvindo o mesmo lado
+          if (l.escrita.classList.contains('ao-vivo') && l.escrita.textContent === 'Ouvindo…') l.vazio();
+          else if (l.gato.classList.contains('atento')) l.estado('');
         }
       });
-      if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); l.mic.innerHTML = '⏹ <span>Ouvindo… toque para parar</span>'; l.status('🎤 Ouvindo…', true); ator.escutar(k); bipe(true); }
+      if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); ator.escutar(k); bipe(true); mostrarVez(k); }
     };
   });
-  $('#abrirF2f').onclick = () => { mostrarTela('f2f'); ator.parar(); setTimeout(passear, 700); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
+  // ----- 🔄 Automático: o app passa a vez sozinho (fala um, traduz, fala o outro…) -----
+  let autoF2f = false;
+  const iniciarLado = (k) => { if ($('#f2f').classList.contains('on')) lados[k].mic.onclick(); };
+  function mostrarVez(k) {
+    const v = $('#f2fVez'); if (!autoF2f) { v.classList.remove('on'); return; }
+    v.textContent = (k === 'b' ? '⬆ ' : '⬇ ') + 'Vez de ' + bandeira(lados[k].sel.value) + ' ' + nomeLingua(lados[k].sel.value).split(' (')[0];
+    v.classList.toggle('cima', k === 'b'); v.classList.add('on');
+  }
+  function definirAuto(v) {
+    autoF2f = v; $('#f2fAuto').classList.toggle('ligado', v);
+    $('#f2fAuto').innerHTML = '🔄<span> Auto' + (v ? ' ✓' : '') + '</span>';
+    if (v) { if (!ouvinte.ativo) iniciarLado('a'); else mostrarVez(lados.b.mic.classList.contains('on') ? 'b' : 'a'); }
+    else $('#f2fVez').classList.remove('on');
+  }
+  $('#f2fAuto').onclick = () => definirAuto(!autoF2f);
+  $('#abrirF2f').onclick = () => { mostrarTela('f2f'); ator.parar(); definirAuto(false); setTimeout(passear, 700); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fLimpar').onclick = () => { lados.a.vazio(); lados.b.vazio(); };
-  // ⇄ troca os idiomas dos dois lados
-  $('#f2fTroca').onclick = () => {
-    const a = lados.a.sel.value; lados.a.sel.value = lados.b.sel.value; lados.b.sel.value = a;
-    ['a', 'b'].forEach((k) => { localStorage.setItem('trad-f2f-' + k, lados[k].sel.value); lados[k].sel.onchange(); });
-  };
-  // Aa: tamanho da letra das conversas
-  const FONTES = ['1.2rem', '1.35rem', '1.6rem', '1.9rem'];
-  let fonteI = Number(localStorage.getItem('trad-f2f-fonte') || 1);
-  const aplicarFonte = () => $('#f2f').style.setProperty('--fonte', FONTES[fonteI]);
-  aplicarFonte();
-  $('#f2fFonte').onclick = () => { fonteI = (fonteI + 1) % FONTES.length; localStorage.setItem('trad-f2f-fonte', fonteI); aplicarFonte(); };
   $('#f2fFone').onclick = () => definirFone(!fone);
   // ----- Gatinho de corpo inteiro no palco do frente a frente -----
   const pista = $('#pista'), atorEl = $('#ator'), vira = $('#vira'), corpo = $('#corpo'), palco = $('#palco');
@@ -960,6 +966,20 @@
     o.style.setProperty('--dx', (Math.random() * 140 - 70) + 'px'); o.style.setProperty('--dy', (y - inicio) + 'px');
     soltarNoPalco(o, 850);
   }
+  // Tradução entregue: explosão de confete no palco e o gatinho da caixa comemora
+  function festaEntrega(para) {
+    const r = corpo.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 3;
+    for (let i = 0; i < 16; i++) {
+      const c = document.createElement('span'); c.className = 'confete';
+      c.textContent = ['🎉', '⭐', '✨', '💬', '🐾', '💛'][i % 6];
+      const ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 110;
+      c.style.left = cx + 'px'; c.style.top = cy + 'px';
+      c.style.setProperty('--dx', Math.cos(ang) * dist + 'px'); c.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+      c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+      document.body.appendChild(c); setTimeout(() => c.remove(), 1400);
+    }
+    const g = lados[para].gato; g.classList.remove('feliz'); void g.offsetWidth; g.classList.add('feliz');
+  }
   // Enquanto a tradução é lida: o gatinho dança e o palco vira pista de dança
   let notasTm = null;
   function notas(para, ligar) {
@@ -979,7 +999,7 @@
       soltarNoPalco(n, 1500);
     }, 240);
   }
-  $('#f2fSair').onclick = () => { ouvinte.parar(); ator.parar(); mostrarTela('inicio'); };
+  $('#f2fSair').onclick = () => { definirAuto(false); ouvinte.parar(); ator.parar(); mostrarTela('inicio'); };
 
   // Adianta o que demora: a nuvem e a tradução já começam a se preparar com o app aberto
   const ocioso = window.requestIdleCallback || ((f) => setTimeout(f, 1200));

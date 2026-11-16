@@ -43,16 +43,18 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
 - **🎶 Aba Música** (`app/tradutor-musica.js`): 3 músicas de reggae originais do Clã Speak ("Miau Reggae",
   "Clã da Paz", "Patinhas no Chão"), com a letra no estilo karaokê (palavras acendendo no ritmo) e a tradução
-  embaixo no idioma escolhido. O gatinho canta a letra (ou a tradução), dança no palco, anda, quica em cada
+  embaixo no idioma escolhido. O gatinho dança no palco, anda, quica em cada
   batida e faz um gesto a cada verso (acena, aponta, gira, pula, solta corações e mia quando a letra diz "miau").
 - **🎬 Treinar com YouTube** (aba Música): cola-se o link de um vídeo e ele toca pelo **player oficial incorporado
   do YouTube** (nada é baixado). Botões de treino: ⏪ 5 s, 🐢 0,75×/0,5×, marcar A e B e 🔁 repetir o trecho.
   A frase ouvida é escrita, traduzida, falada e pode ser repetida com conferência da pronúncia. Vídeos cujo dono
   bloqueou a reprodução fora do YouTube mostram "Abrir no YouTube".
-- **Frente a frente profissional:** histórico da conversa nos dois lados (tradução em destaque, original pequeno,
-  🔊 para ouvir de novo), botão grande "🎤 Toque para falar" com o estado, ⇄ trocar idiomas e Aa tamanho da letra.
+- **Frente a frente 🔄 Automático:** com o botão Auto ligado, o app passa a vez sozinho: ouve um lado, traduz, lê a
+  tradução e já liga o microfone do outro lado (mostrando "Vez de 🇧🇷/🇺🇸"); no silêncio continua ouvindo. Cada
+  tradução entregue solta confete no palco.
 - **🎶 Batida de reggae original:** feita pelo próprio app (sem áudio de terceiros, sem direitos autorais):
-  bumbo e caixa no tempo 3 (one drop), chimbal, guitarrinha no contratempo e baixo em Lá menor → Ré, a 80 bpm.
+  bumbo macio e aro no tempo 3 (one drop), chimbal suave, órgão no contratempo com eco dub e baixo redondo
+  em Lá menor → Ré, a 80 bpm, com compressor na mixagem.
   Toca no 💃 Dançar e no botão 🎶 Som de reggae da aba Gatinho (sem parar até desligar) e nas festas do Estudar.
 - **Gatinho rasta:** o mascote do app é o gatinho preto de gorro reggae do GIF enviado. Os 9 passos de dança
   foram recortados do fundo (`app/icons/gato-danca.webp`, animado; `gato-corpo.png`, parado;

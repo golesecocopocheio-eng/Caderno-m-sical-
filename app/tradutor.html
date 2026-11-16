@@ -280,29 +280,14 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 /* Gatinho rasta: dançando/andando mostra a dança de verdade (9 passos do GIF) */
 .corpo.danca img,.corpo.anda img,.gatinho.mini img.danca,.gatinho.mini img.anda,.gatinho img.corpoCard.danca,.gatoCaixa.escreve,.gatoCaixa.acena{content:url(icons/gato-danca.webp)}
 .pet .foto img.dancaPet{content:url(icons/gato-rosto-danca.webp)}
-/* Frente a frente profissional */
-#f2f{--fonte:1.35rem}
-#f2f .pista{height:126px}
-#f2f .ator{width:52px;height:96px;bottom:6px}
-.lado .cab{display:flex;gap:8px;align-items:center}
-.lado .cab select{flex:1;padding:9px 10px}
-.lado .estado{font-size:.78rem;color:var(--mu);white-space:nowrap;max-width:42%;overflow:hidden;text-overflow:ellipsis}
-.lado .estado.ativo{color:var(--c);font-weight:700}
-.lado .texto{padding-bottom:12px}
-.hist{display:flex;flex-direction:column;gap:10px}
-.hist .item{animation:entra .25s}
-.hist .item.eu{align-self:flex-end;max-width:90%;background:#1f1a05;border:1px solid #4a3d0a;border-radius:14px 14px 4px 14px;padding:6px 10px;font-size:calc(var(--fonte) * .72);color:#fde68a}
-.hist .item small{display:block;font-size:.7rem;color:var(--mu);font-weight:500;font-style:normal}
-.hist .item.outro{max-width:96%;font-size:var(--fonte);font-weight:650;line-height:1.35}
-.hist .item.outro .orig{font-size:.78rem;color:var(--mu);font-weight:400;font-style:italic;margin-top:3px}
-.hist .item.outro button{background:none;color:var(--c);padding:0 4px;font-size:.9rem;vertical-align:middle}
-.hist .item.vivo{color:var(--mu);font-style:italic;font-size:calc(var(--fonte) * .8)}
-.hist .item.vivo.trad{color:#fde68a;opacity:.75}
-.lado .texto .gatoCaixa{height:58px}
-.lado .texto.cheio .gatoCaixa{opacity:0;pointer-events:none}
-.lado .texto.cheio .gatoCaixa.escreve{opacity:1}
-.mic.grande{width:100%;height:54px;border-radius:16px;font-size:1.05rem;display:flex;align-items:center;justify-content:center;gap:8px;flex:none}
-.mic.grande.on{background:#dc2626;color:#fff;animation:pulsa 1.2s infinite}
+/* Frente a frente: vez no automático */
+.vez{position:absolute;left:50%;top:44px;transform:translateX(-50%);z-index:3;background:var(--c);color:#0b0b0b;font-weight:800;font-size:.85rem;border-radius:14px;padding:4px 12px;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none}
+.vez.on{opacity:1;animation:vez 1.2s ease-in-out infinite}
+.vez.cima{transform:translateX(-50%) rotate(180deg)}
+.vez.on.cima{animation:vezCima 1.2s ease-in-out infinite}
+@keyframes vez{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(5px)}}
+@keyframes vezCima{0%,100%{transform:translateX(-50%) rotate(180deg) translateY(0)}50%{transform:translateX(-50%) rotate(180deg) translateY(5px)}}
+#f2fAuto.ligado{background:var(--c);color:#0b0b0b}
 /* Música */
 .yt{position:relative;width:100%;aspect-ratio:16/9;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;border:2px solid var(--c)}
 .yt iframe,.yt>div{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -494,8 +479,6 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
       <div class="row" style="margin-top:10px;align-items:center">
         <label style="margin:0;flex:none">Tradução</label><select id="mLingua"></select>
       </div>
-      <div class="chave" style="margin-top:8px"><span>🗣️ O gatinho canta a letra</span><input type="checkbox" id="mCanta" checked></div>
-      <div class="chave"><span>🌍 Cantar na tradução</span><input type="checkbox" id="mCantaTrad"></div>
     </div>
     <div class="card letra" id="mLetra"><p class="mu" style="text-align:center">🎶 Toque em ▶ para ouvir. A letra aparece aqui, com a tradução.</p></div>
     <div class="card" id="ytCard">
@@ -581,19 +564,18 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 <!-- Frente a frente -->
 <section id="f2f">
   <div class="lado cima" data-lado="b">
-    <div class="cab"><select></select><span class="estado"></span></div>
     <div class="texto"></div>
-    <button class="mic grande">🎤 <span>Toque para falar</span></button>
+    <div class="ctl"><select></select><button class="mic">🎤</button></div>
   </div>
   <div class="palco" id="palco"></div>
   <div class="pista" id="pista">
+    <div class="vez" id="f2fVez"></div>
     <div class="ator" id="ator"><div class="vira" id="vira"><div class="corpo" id="corpo"><img src="icons/gato-corpo.png" alt="Gatinho" id="f2fGato"></div></div></div>
-    <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><button id="f2fTroca" title="Trocar os idiomas">⇄</button><button id="f2fFonte" title="Tamanho da letra">Aa</button><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
+    <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><button id="f2fAuto" title="Automático: passa a vez sozinho">🔄<span> Auto</span></button><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
   </div>
   <div class="lado" data-lado="a">
-    <div class="cab"><select></select><span class="estado"></span></div>
     <div class="texto"></div>
-    <button class="mic grande">🎤 <span>Toque para falar</span></button>
+    <div class="ctl"><select></select><button class="mic">🎤</button></div>
   </div>
 </section>
 

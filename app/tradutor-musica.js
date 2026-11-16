@@ -88,10 +88,6 @@
     const [texto, g] = atual.linhas[k];
     (GESTOS[g] || GESTOS.danca)();
     if (/miau/i.test(texto) && g !== 'miau') setTimeout(() => C.miau(), 600);
-    if ($('#mCanta').checked) {
-      const naTrad = $('#mCantaTrad').checked && traducoes[k] && C.codTrad(linguaSel.value) !== 'pt';
-      C.falar(naTrad ? traducoes[k] : texto, naTrad ? linguaSel.value : 'pt-BR', { sempre: true, vel: 0.92, tom: 1.25 });
-    }
     irPara(25 + Math.random() * 50);
   }
 

@@ -45,6 +45,8 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   corpo inteiro, que dança e pula sozinho de vez em quando e dança ao ser tocado; no Texto dança quando a
   tradução aparece; no Estudar comemora os acertos, balança a cabeça nos erros e faz festa com música ao
   terminar um tema; na aba Gatinho há o botão 💃 Dançar com música.
+  No Estudar ele também dança enquanto a frase é falada (🔊/🐢), pula ao trocar de cartão e tem **combo**:
+  3 ou mais acertos seguidos fazem festa com música, confete e "🔥 Combo xN!".
 - **Gatinho dançarino na sala:** o gatinho de corpo inteiro passeia pela parte de baixo da conversa, dança
   com luzes de festa e notinhas enquanto uma tradução é lida, dança junto com os emojis, pula quando alguém
   entra e fica atento (balançando a cada palavra) com o microfone ligado.

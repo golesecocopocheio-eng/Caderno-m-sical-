@@ -346,6 +346,23 @@
         if (festa) { musiquinha(); el.classList.add('festa'); setTimeout(() => el.classList.remove('festa'), ms); }
       },
       pular() { if (corpo) solta('pulo', 800); },
+      dancando(sim) { // dança enquanto durar (ex.: enquanto a frase é falada)
+        if (!corpo) return;
+        if (sim) { img.classList.remove('pula', 'pulo', 'nao'); img.classList.add('danca'); ocupado = Date.now() + 60000; g._notas = setInterval(() => notasDe(img, 300), 300); }
+        else { img.classList.remove('danca'); ocupado = 0; clearInterval(g._notas); }
+      },
+      confete(n = 18) { // explosão de confete saindo do gatinho
+        const r = img.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 3;
+        for (let i = 0; i < n; i++) {
+          const c = document.createElement('span'); c.className = 'confete';
+          c.textContent = ['🎉', '⭐', '✨', '🎊', '💛', '🐾'][i % 6];
+          const ang = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 120;
+          c.style.left = cx + 'px'; c.style.top = cy + 'px';
+          c.style.setProperty('--dx', Math.cos(ang) * dist + 'px'); c.style.setProperty('--dy', Math.sin(ang) * dist + 60 + 'px');
+          c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+          document.body.appendChild(c); setTimeout(() => c.remove(), 1400);
+        }
+      },
       nao() { if (corpo) solta('nao', 700); }
     };
     img.addEventListener('click', () => { miau(true); g.dancar(1600); g.dizer(FRASES_GATO[Math.floor(Math.random() * FRASES_GATO.length)]); });
@@ -354,7 +371,7 @@
       if (!el.offsetParent || Date.now() < ocupado || el.classList.contains('ouvindo')) return;
       const r = Math.random();
       if (r < 0.35) g.pular(); else if (r < 0.7) g.dancar(1300);
-    }, 7000 + Math.random() * 3000);
+    }, (id === 'gatoEstudo' ? 4000 : 7000) + Math.random() * 3000);
     return g;
   }
   const gatoInicio = gato('gatoInicio'), gatoSala = gato('gatoSala');

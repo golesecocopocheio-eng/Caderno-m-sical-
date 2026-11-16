@@ -169,6 +169,12 @@ textarea{width:100%;min-height:110px;padding:12px;border:1px solid var(--borda);
 .card.gatinho{transition:box-shadow .3s}
 .card.gatinho.festa{box-shadow:0 0 0 2px var(--c),0 0 26px rgba(250,204,21,.35);animation:festaCard 1.2s linear infinite}
 @keyframes festaCard{0%{background-color:#1d1430}33%{background-color:#2a2207}66%{background-color:#0c1e33}100%{background-color:#1d1430}}
+.combo{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:30;pointer-events:none;font-size:2.2rem;font-weight:900;color:var(--c);
+  text-shadow:0 0 18px rgba(250,204,21,.7),0 3px 0 #0b0b0b;animation:combo 1.3s ease-out forwards;white-space:nowrap}
+@keyframes combo{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-10deg)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(4deg)}70%{opacity:1;transform:translate(-50%,-55%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}
+.confete{position:fixed;pointer-events:none;z-index:25;font-size:1.4rem;animation:confete 1.3s cubic-bezier(.2,.8,.4,1) forwards}
+@keyframes confete{from{opacity:1;transform:translate(0,0) rotate(0)}to{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot))}}
+#gatoEstudo img.corpoCard{height:128px}
 .pet.festa{box-shadow:0 0 0 2px var(--c),0 0 30px rgba(250,204,21,.4);animation:festaCard 1.2s linear infinite}
 .pet .foto img.dancaPet{animation:dancaPet .5s ease-in-out infinite}
 @keyframes dancaPet{0%,100%{transform:rotate(-10deg) translateY(0)}25%{transform:translateY(-14px) scale(1.04)}50%{transform:rotate(10deg)}75%{transform:translateY(-14px) scale(1.04)}}

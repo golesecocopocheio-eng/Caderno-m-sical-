@@ -41,6 +41,12 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **💬 Aba Conversar** (`app/tradutor-conversa.js`): prática de conversação com o gatinho, em tela de bate-papo.
+  Situações: ☕ Cafeteria, ✈️ Aeroporto, 🏨 Hotel, 🛍️ Compras, 🤝 Fazer amigos e 💼 Entrevista. Os diálogos são
+  traduzidos na hora para o idioma praticado; o gatinho fala (texto + voz), a pessoa responde falando 🎤 ou digitando,
+  com sugestões de resposta (com tradução, tocar para ouvir). O app compara com as respostas possíveis e dá ⭐ de 0 a 3
+  (ou pede para tentar de novo), e no fim mostra o resumo; a melhor nota de cada situação fica guardada e as ⭐ somam
+  nos pontos do Estudar. (Substitui o antigo bichinho virtual; o 🎙️ Miado de verdade foi para os Ajustes.)
 - **🎤 Aba Karaokê** (`app/tradutor-musica.js`): cola-se o link de uma música do YouTube (toca pelo **player oficial
   incorporado**, nada é baixado) e a letra (um verso por linha). A letra é traduzida verso por verso e aparece no estilo
   karaokê, com as palavras acendendo. O tempo de cada verso é marcado tocando em "👆" enquanto o vídeo toca (ou
@@ -53,7 +59,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **🎶 Batida de reggae original:** feita pelo próprio app (sem áudio de terceiros, sem direitos autorais):
   bumbo macio e aro no tempo 3 (one drop), chimbal suave, órgão no contratempo com eco dub e baixo redondo
   em Lá menor → Ré, a 80 bpm, com compressor na mixagem.
-  Toca no 💃 Dançar da aba Gatinho e nas festas do Estudar.
+  Toca nas festas do Estudar.
 - **Emoções do gatinho** (`app/tradutor-emocao.js`): feliz, canta (melodia de miados), dança, assustado, triste,
   apaixonado, surpreso, tonto, bravo e sono, cada uma com animação, emojis e som próprio. Gestos: um toque
   (feliz/canta/surpreso ou a ação de sempre), 3 toques rápidos (susto ou bravo), segurar o dedo (carinho →
@@ -66,7 +72,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Gatinho dançarino em todas as abas:** nos cartões de Traduzir, Texto, Estudar e Ajustes aparece o gatinho de
   corpo inteiro, que dança e pula sozinho de vez em quando e dança ao ser tocado; no Texto dança quando a
   tradução aparece; no Estudar comemora os acertos, balança a cabeça nos erros e faz festa com música ao
-  terminar um tema; na aba Gatinho há o botão 💃 Dançar com música.
+  terminar um tema.
   No Estudar ele também dança enquanto a frase é falada (🔊/🐢), pula ao trocar de cartão e tem **combo**:
   3 ou mais acertos seguidos fazem festa com música, confete e "🔥 Combo xN!".
 - **Gatinho dançarino na sala:** o gatinho de corpo inteiro passeia pela parte de baixo da conversa, dança

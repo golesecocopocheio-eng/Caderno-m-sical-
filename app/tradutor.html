@@ -16,6 +16,7 @@
 <style>
 :root{--c:#facc15;--c2:#eab308;--bg:#0b0b0b;--card:#181818;--card2:#222;--borda:#333;--tx:#f5f5f4;--mu:#a8a29e;--eu:#3a3205}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
 body{display:flex;flex-direction:column}
 body.grande{font-size:118%}
@@ -309,6 +310,36 @@ body .emo-bravo{animation:emoBravo .12s linear 10 !important;filter:drop-shadow(
 @keyframes emoBravo{0%,100%{transform:translateX(0)}50%{transform:translateX(4px) scale(1.04)}}
 body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.7) !important}
 @keyframes emoSono{0%,100%{transform:none}40%,80%{transform:translateY(5px) rotate(4deg) scale(.96,.94)}}
+/* Conversar */
+.cvTopo{display:flex;gap:6px;padding:8px 12px;background:#111;border-bottom:1px solid #262626}
+.cvTopo select{flex:1;padding:9px}
+.cvTopo button{padding:8px 10px;flex:none}
+.cvTopo button.ligado{background:var(--c);color:#0b0b0b}
+.cvProg{height:4px;background:#1f1f1f}.cvProg div{height:100%;width:0;background:var(--c);transition:width .4s}
+.cvCenas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cvCenas button{background:var(--card);color:var(--tx);border:1px solid #2a2a2a;border-radius:16px;padding:14px 10px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.cvCenas button b{font-size:1.8rem}
+.cvCenas button span{font-weight:800}
+.cvCenas button small{color:var(--mu);font-weight:500;font-size:.75rem}
+.cvCenas button .feito{color:var(--c);font-size:.75rem}
+.cvChat{padding:12px 12px 20px;display:flex;flex-direction:column;gap:12px;max-width:620px;margin:0 auto}
+.cvM{display:flex;gap:8px;align-items:flex-end;animation:entra .3s ease-out}
+.cvM.eu{flex-direction:row-reverse}
+.cvM .av{width:36px;height:36px;border-radius:50%;flex:none;box-shadow:0 0 0 2px var(--c)}
+.cvM .bal{max-width:78%;background:var(--card);border:1px solid #2a2a2a;border-radius:16px 16px 16px 4px;padding:9px 12px}
+.cvM.eu .bal{background:var(--eu);border-color:#5a4d0a;border-radius:16px 16px 4px 16px}
+.cvM .bal .tx{font-size:1.08rem;line-height:1.35}
+.cvM .bal .tr{color:var(--mu);font-size:.85rem;margin-top:3px;font-style:italic}
+.cvChat.semTrad .tr{display:none}
+.cvM .bal .cvNota{font-size:.8rem;margin-top:4px;color:#fde68a}
+.cvM .bal button{background:none;color:var(--c);padding:0 4px;font-size:.9rem}
+.cvM.digitando .bal{color:var(--mu)}
+.cvFim{background:var(--card);border:1px solid var(--c);border-radius:16px;padding:16px;text-align:center;animation:entra .3s}
+.cvFim .grande{font-size:2rem;font-weight:900;color:var(--c)}
+.cvSug{display:flex;gap:6px;overflow-x:auto;padding:8px 12px 0;background:#111}
+.cvSug button{flex:none;background:var(--card2);color:var(--tx);border:1px solid var(--borda);border-radius:14px;padding:6px 10px;text-align:left;font-weight:600;max-width:240px;white-space:normal}
+.cvSug button small{display:block;color:var(--mu);font-weight:500;font-size:.72rem}
+.cvSug .rot{flex:none;align-self:center;color:var(--mu);font-size:.75rem}
 /* Karaokê */
 .kLinhas{max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
 .kl{padding:8px 10px;border-radius:12px;opacity:.42;transition:all .25s;cursor:pointer}
@@ -464,37 +495,28 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
   </div></div>
 </section>
 
-<!-- Gatinho (bichinho virtual) -->
-<section id="gato" class="tela">
-  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Meu gatinho</h1><div class="xp"><span id="petNivel">Nível 1</span></div></header>
-  <div class="rolavel"><div class="box">
-    <div class="card pet">
-      <div class="gatinho" id="gatoPet" style="justify-content:center"><div class="fala">Miau! Cuida de mim? 🥺</div></div>
-      <div class="foto" id="petFoto"><img src="icons/gato-rosto.png" alt="Gatinho" id="petImg"><span class="acess" id="petAcess"></span></div>
-      <div class="medidor"><span>😺 Felicidade</span><div class="barraProg"><div id="petFeliz"></div></div></div>
-      <div class="medidor"><span>🍗 Barriga</span><div class="barraProg"><div id="petFome"></div></div></div>
-      <div class="medidor"><span>⚡ Energia</span><div class="barraProg"><div id="petEnergia"></div></div></div>
-      <div class="acoesPet">
-        <button id="petComer">🍗 Dar comida</button><button id="petBrincar">🧶 Brincar</button>
-        <button id="petCarinho">✋ Fazer carinho</button><button id="petDormir">😴 Dormir</button>
-        <button id="petDancar">💃 Dançar com música</button>
-        <button id="petSom">🎶 Ouvir músicas com o gatinho</button>
-      </div>
+<!-- Conversar (prática de conversação com o gatinho) -->
+<section id="conversa" class="tela">
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Conversar</h1><div class="xp"><span id="cvPontos">⭐ 0</span></div></header>
+  <div class="cvTopo">
+    <select id="cvLingua" title="Idioma para praticar"></select>
+    <button class="sec" id="cvTradBt" title="Mostrar tradução">🌐</button>
+    <button class="sec" id="cvTemas" title="Escolher outra situação">☰ Temas</button>
+  </div>
+  <div class="cvProg"><div id="cvProg"></div></div>
+  <div class="rolavel" id="cvRolar">
+    <div class="box" id="cvInicio">
+      <div class="card gatinho" id="gatoConv"><img class="corpoCard" src="icons/gato-corpo.png" alt="Gatinho"><div class="fala">Vamos praticar conversação? Escolha uma situação e responda falando ou escrevendo! 💬</div></div>
+      <div class="cvCenas" id="cvCenas"></div>
     </div>
-    <div class="card"><b>🛍️ Acessórios</b> <span class="mu">(ganhe ⭐ estudando)</span><div class="loja" id="petLoja"></div></div>
-    <div class="card">
-      <b>🎙️ Miado de verdade</b>
-      <p class="mu">Grave o miado do seu gato (ou escolha um áudio do celular). Ele vira o miado do app inteiro.</p>
-      <div class="botoes" style="justify-content:flex-start">
-        <button id="miauGravar">⏺ Gravar</button>
-        <button class="sec" id="miauArquivo">📁 Escolher áudio</button>
-        <button class="sec" id="miauTestar">▶ Ouvir</button>
-        <button class="sec" id="miauPadrao">↺ Padrão</button>
-      </div>
-      <input type="file" id="miauInput" accept="audio/*" hidden>
-      <p class="mu" id="miauInfo"></p>
-    </div>
-  </div></div>
+    <div class="cvChat" id="cvChat" hidden></div>
+  </div>
+  <div class="cvSug" id="cvSug" hidden></div>
+  <div class="barra" id="cvBarra" hidden>
+    <input id="cvTexto" placeholder="Responda aqui ou toque no 🎤…" enterkeyhint="send">
+    <div class="onda" id="cvOnda"><i></i><i></i><i></i><i></i><i></i></div>
+    <button class="mic" id="cvMic" title="Responder falando">🎤</button>
+  </div>
 </section>
 
 <!-- Karaokê (aba Música) -->
@@ -553,6 +575,18 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
     <div class="card">
       <b>👀 Tela</b>
       <div class="chave"><span>Letras grandes</span><input type="checkbox" id="ajGrande"></div>
+    </div>
+    <div class="card">
+      <b>🎙️ Miado de verdade</b>
+      <p class="mu">Grave o miado do seu gato (ou escolha um áudio do celular). Ele vira o miado do gatinho no app inteiro.</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button id="miauGravar">⏺ Gravar</button>
+        <button class="sec" id="miauArquivo">📁 Escolher áudio</button>
+        <button class="sec" id="miauTestar">▶ Ouvir</button>
+        <button class="sec" id="miauPadrao">↺ Padrão</button>
+      </div>
+      <input type="file" id="miauInput" accept="audio/*" hidden>
+      <p class="mu" id="miauInfo"></p>
     </div>
     <div class="card">
       <b>🧹 Dados</b>
@@ -614,7 +648,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
   <button data-aba="texto"><b>✍️</b>Texto</button>
   <button data-aba="estudo"><b>📚</b>Estudar</button>
   <button data-aba="musica"><b>🎤</b>Karaokê</button>
-  <button data-aba="gato"><b>🐱</b>Gatinho</button>
+  <button data-aba="conversa"><b>💬</b>Conversar</button>
   <button data-aba="ajustes"><b>⚙️</b>Ajustes</button>
 </nav>
 
@@ -624,6 +658,7 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 <script src="tradutor-estudo.js"></script>
 <script src="tradutor-extra.js"></script>
 <script src="tradutor-musica.js"></script>
+<script src="tradutor-conversa.js"></script>
 <script src="tradutor-emocao.js"></script>
 </body>
 </html>

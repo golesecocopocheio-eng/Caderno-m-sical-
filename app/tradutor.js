@@ -685,24 +685,54 @@
             outro.txt.textContent = r;
             pulaF2f();
             const para = k === 'a' ? 'b' : 'a';
-            if (vozLigada && !r.startsWith('⚠️')) falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => { notas(para, false); if (ouvinte.ativo) virarGato(k); } });
+            if (vozLigada && !r.startsWith('⚠️')) falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => notas(para, false) });
           }, 650);
         },
         erro: (m) => alert(m),
-        fim: () => { l.mic.classList.remove('on'); f2fGato.classList.remove('escuta'); bipe(false); }
+        fim: () => { l.mic.classList.remove('on'); ator.soltar(); bipe(false); }
       });
-      if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); virarGato(k); f2fGato.classList.add('escuta'); bipe(true); }
+      if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); ator.escutar(k); bipe(true); }
     };
   });
-  $('#abrirF2f').onclick = () => { mostrarTela('f2f'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
+  $('#abrirF2f').onclick = () => { mostrarTela('f2f'); ator.parar(); setTimeout(passear, 700); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fLimpar').onclick = () => { lados.a.txt.textContent = ''; lados.b.txt.textContent = ''; };
   $('#f2fFone').onclick = () => definirFone(!fone);
-  const f2fGato = $('#f2fGato'), palco = $('#palco');
-  const pulaF2f = () => { f2fGato.classList.remove('pula'); void f2fGato.offsetWidth; f2fGato.classList.add('pula'); };
-  f2fGato.onclick = () => { miau(true); pulaF2f(); };
-  // O gatinho olha para quem fala (lado "b" fica em cima, de cabeça para baixo)
-  const virarGato = (lado) => f2fGato.classList.toggle('paraCima', lado === 'b');
+  // ----- Gatinho de corpo inteiro no palco do frente a frente -----
+  const pista = $('#pista'), atorEl = $('#ator'), vira = $('#vira'), corpo = $('#corpo'), palco = $('#palco');
+  let estado = 'livre', passeioTm = null, pos = 50, ladoOuvindo = 'a';
+  const ANIMS = ['anda', 'escuta', 'danca'];
+  function anima(cls) { corpo.classList.remove(...ANIMS); if (cls) corpo.classList.add(cls); }
+  function golpe(cls, ms) { // animação de uma vez só (pulo, aceno), depois volta ao que fazia
+    const antes = ANIMS.find((c) => corpo.classList.contains(c));
+    corpo.classList.remove(...ANIMS, 'pulo', 'assente'); void corpo.offsetWidth; corpo.classList.add(cls);
+    setTimeout(() => { corpo.classList.remove(cls); if (antes && !ANIMS.some((c) => corpo.classList.contains(c))) corpo.classList.add(antes); }, ms);
+  }
+  function irPara(p, ms = 1600) { // anda até p% da largura, virado para onde vai
+    vira.classList.toggle('esq', p < pos);
+    atorEl.style.transitionDuration = ms + 'ms'; atorEl.style.left = 'calc(' + p + '% - 32px)'; pos = p;
+  }
+  const virarGato = (lado) => vira.classList.toggle('cima', lado === 'b'); // lado de cima vê o gato de frente
+  function passear() { // quando ninguém fala, o gatinho passeia, às vezes pula ou dança
+    clearTimeout(passeioTm);
+    if (estado !== 'livre' || !$('#f2f').classList.contains('on')) return;
+    anima('anda'); irPara(12 + Math.random() * 76, 1600);
+    passeioTm = setTimeout(() => {
+      if (estado !== 'livre') return;
+      anima('');
+      const r = Math.random();
+      if (r < 0.2) golpe('pulo', 800);
+      else if (r < 0.4) { anima('danca'); setTimeout(() => estado === 'livre' && anima(''), 1600); }
+      passeioTm = setTimeout(passear, 1600 + Math.random() * 1800);
+    }, 1650);
+  }
+  const ator = {
+    escutar(k) { estado = 'escuta'; ladoOuvindo = k; clearTimeout(passeioTm); irPara(50, 450); vira.classList.remove('esq'); virarGato(k); anima('escuta'); },
+    soltar() { if (estado !== 'escuta') return; estado = 'livre'; anima(''); vira.classList.remove('cima'); passeioTm = setTimeout(passear, 1200); },
+    parar() { estado = 'livre'; clearTimeout(passeioTm); clearInterval(notasTm); anima(''); pista.classList.remove('festa'); vira.className = 'vira'; }
+  };
+  const pulaF2f = () => golpe('pulo', 800);
+  atorEl.onclick = () => { miau(true); golpe('pulo', 800); };
   function soltarNoPalco(el, ms) { palco.appendChild(el); setTimeout(() => el.remove(), ms); }
   // A mensagem atravessa a tela de quem falou para quem ouve, deixando patinhas
   function entregar(de, texto) {
@@ -716,35 +746,43 @@
       soltarNoPalco(p, 1200 + i * 140);
     }
   }
-  // Enquanto a pessoa fala: o gatinho balança a cabeça a cada palavra e ondinhas vão até ele
+  // Enquanto a pessoa fala: o gatinho balança a cada palavra e ondinhas vão até ele
   let ultimaPalavras = 0, ultimaOnda = 0;
   function gatoOuveFala(lado, texto) {
     const n = (texto.trim().match(/\S+/g) || []).length;
     if (n === ultimaPalavras) return;
     ultimaPalavras = n;
-    f2fGato.classList.remove('assente'); void f2fGato.offsetWidth; f2fGato.classList.add('assente');
+    if (estado === 'escuta') golpe('assente', 300);
     const ag = Date.now(); if (ag - ultimaOnda < 160) return; ultimaOnda = ag;
     const o = document.createElement('span'); o.className = 'onda2';
     o.textContent = ['🎶', '🎵', '💬', '🔉'][Math.floor(Math.random() * 4)];
-    const meio = f2fGato.getBoundingClientRect(), y = meio.top + meio.height / 2;
+    const r = corpo.getBoundingClientRect(), y = r.top + r.height / 2;
     const deCima = lado === 'b', inicio = deCima ? y * 0.45 : y + (innerHeight - y) * 0.55;
-    o.style.top = inicio + 'px'; if (deCima) o.style.transform = 'rotate(180deg)';
+    o.style.top = inicio + 'px'; o.style.left = (r.left + r.width / 2) + 'px'; o.style.marginLeft = '-.65em';
+    if (deCima) o.style.transform = 'rotate(180deg)';
     o.style.setProperty('--dx', (Math.random() * 140 - 70) + 'px'); o.style.setProperty('--dy', (y - inicio) + 'px');
     soltarNoPalco(o, 850);
   }
+  // Enquanto a tradução é lida: o gatinho dança e o palco vira pista de dança
   let notasTm = null;
-  function notas(para, ligar) { // notinhas saindo do gatinho para quem está ouvindo
+  function notas(para, ligar) {
     clearInterval(notasTm);
-    if (!ligar) { f2fGato.classList.remove('cantando'); return; }
-    virarGato(para); f2fGato.classList.add('cantando');
+    if (!ligar) {
+      pista.classList.remove('festa');
+      if (ouvinte.ativo) { estado = 'escuta'; virarGato(ladoOuvindo); anima('escuta'); }
+      else { estado = 'livre'; anima(''); vira.classList.remove('cima'); passeioTm = setTimeout(passear, 1000); }
+      return;
+    }
+    estado = 'danca'; clearTimeout(passeioTm); irPara(50, 400); vira.classList.remove('esq');
+    virarGato(para); anima('danca'); pista.classList.add('festa');
     notasTm = setInterval(() => {
       const n = document.createElement('span'); n.className = 'nota' + (para === 'b' ? ' sobe' : '');
-      n.textContent = ['🎵', '🎶', '♪', '🐾'][Math.floor(Math.random() * 4)];
-      n.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px');
+      n.textContent = ['🎵', '🎶', '♪', '🐾', '✨'][Math.floor(Math.random() * 5)];
+      n.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px');
       soltarNoPalco(n, 1500);
-    }, 260);
+    }, 240);
   }
-  $('#f2fSair').onclick = () => { ouvinte.parar(); mostrarTela('inicio'); };
+  $('#f2fSair').onclick = () => { ouvinte.parar(); ator.parar(); mostrarTela('inicio'); };
 
   // Adianta o que demora: a nuvem e a tradução já começam a se preparar com o app aberto
   const ocioso = window.requestIdleCallback || ((f) => setTimeout(f, 1200));

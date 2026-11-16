@@ -326,6 +326,14 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
 .sbLinguaSel{width:auto;padding:8px;flex:none}
 .sbFonte{font-size:.72rem;margin:8px 0 0}
 #sbVeja a{color:var(--c)}
+.sbTexto .fr{transition:background .2s,color .2s;border-radius:4px}
+.sbTexto .fr.lendo{background:#3a3205;color:var(--c)}
+.sbVocab{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sbVocab button{background:var(--card2);color:var(--tx);border:1px solid var(--borda);border-radius:14px;padding:6px 10px;text-align:left;font-weight:700}
+.sbVocab button small{display:block;color:var(--c);font-weight:600}
+.sbQuizFrase{font-size:1.1rem;line-height:1.45;margin:10px 0}
+.sbQuizFrase .lacuna{display:inline-block;min-width:70px;border-bottom:3px solid var(--c);color:var(--c);text-align:center}
+#sbHoje .item b{color:var(--c);margin-right:6px}
 .txMais{margin-top:10px}.txMais summary{color:var(--mu);cursor:pointer}
 /* Conversar */
 .cvTopo{display:flex;gap:6px;padding:8px 12px;background:#111;border-bottom:1px solid #262626}
@@ -521,13 +529,24 @@ body .emo-sono{animation:emoSono 2.2s ease-in-out !important;filter:brightness(.
       <div class="sbCab"><img id="sbImg" alt="" hidden><div><b id="sbTitulo"></b><div class="mu" id="sbDesc"></div></div></div>
       <div class="sbTexto" id="sbTexto"></div>
       <div class="botoes" style="justify-content:flex-start">
-        <button id="sbOuvir">🔊 Ouvir</button>
+        <button id="sbOuvir">▶ Leitura guiada</button><button class="sec" id="sbFav">☆ Salvar</button>
         <button class="sec" id="sbOutra">🌍 Ler em…</button><select id="sbLingua" class="sbLinguaSel"></select>
         <button class="sec" id="sbCopiar">📋</button><a class="sec botaoLink" id="sbMais" target="_blank" rel="noopener">🔗 Ler mais</a>
       </div>
       <div class="mu" id="sbVeja"></div>
       <p class="mu sbFonte">Fonte: Wikipédia (CC BY-SA)</p>
     </div>
+    <div class="card" id="sbVocabCard" hidden>
+      <b>📝 Vocabulário</b> <span class="mu" id="sbVocabLingua"></span>
+      <div class="sbVocab" id="sbVocab"></div>
+    </div>
+    <div class="card" id="sbQuizCard" hidden>
+      <div class="row" style="align-items:center"><b>🧩 Teste o que aprendeu</b><span class="mu" id="sbQuizConta" style="text-align:right"></span></div>
+      <div class="sbQuizFrase" id="sbQuizFrase"></div>
+      <div class="opcoes" id="sbQuizOps"></div>
+    </div>
+    <div class="card" id="sbHojeCard" hidden><b>📅 Hoje na história</b> <span class="mu" id="sbHojeData"></span><div class="lista" id="sbHoje" style="margin-top:8px"></div></div>
+    <div class="card" id="sbFavsCard" hidden><b>⭐ Artigos salvos</b><div class="lista" id="sbFavs" style="margin-top:8px"></div></div>
     <div class="card"><b>🕘 Suas últimas perguntas</b><div class="lista" id="sbHist" style="margin-top:8px"></div></div>
   </div></div>
 </section>

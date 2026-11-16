@@ -46,6 +46,9 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   🔊 ouvir, 🌍 ler o mesmo artigo em outro idioma (para treinar leitura), copiar e "ler mais". Temas prontos: 📚 Literatura,
   🎨 Artes, 🏛️ História, 🔬 Ciência, 🌍 Geografia, 🎵 Música, 🤔 Filosofia e ⚽ Esportes, além de 🎲 curiosidade aleatória
   e histórico das perguntas. O tradutor de texto (antiga aba Texto) agora é o cartão "✍️ Traduzir texto" da aba Traduzir.
+  Recursos de estudo em cada artigo: **▶ leitura guiada** (lê frase por frase, destacando a frase lida), **📝 vocabulário**
+  (palavras importantes traduzidas para o idioma estudado, tocar para ouvir), **🧩 teste "complete a frase"** gerado com o
+  próprio texto (vale ⭐), **⭐ artigos salvos** e **📅 Hoje na história** (fatos do dia, do feed da Wikipédia).
 - **💬 Aba Conversar** (`app/tradutor-conversa.js`): prática de conversação com o gatinho, em tela de bate-papo.
   Situações: ☕ Cafeteria, ✈️ Aeroporto, 🏨 Hotel, 🛍️ Compras, 🤝 Fazer amigos e 💼 Entrevista. Os diálogos são
   traduzidos na hora para o idioma praticado; o gatinho fala (texto + voz), a pessoa responde falando 🎤 ou digitando,

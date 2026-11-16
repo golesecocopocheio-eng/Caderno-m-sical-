@@ -41,7 +41,7 @@ pre{white-space:pre-wrap;font:inherit;margin:0}
 <script src="vendor/qrcode.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let db,user,me=null,adm=false,wr=true,items=[],movs=[],glist=[],price={},pgs=[],tab=(()=>{const t=sessionStorage.getItem('est-aba');return t==='buy'?'cp':(t||'est')})(),flt='all',bflt='low',cbv={},cont={},conts=[],ctMsg='',qrAberto=false,donoReal=false,eqCompleto=true,pend={},tm={},names={},rq=0,fv={n:'',g:'',ng:'',h:'',m:'',p:''},fo=false;
+let db,user,me=null,adm=false,wr=true,items=[],movs=[],glist=[],price={},pgs=[],tab=(()=>{const t=sessionStorage.getItem('est-aba');return t==='buy'?'cp':(t||'est')})(),flt='all',bflt='low',cbv={},cont={},conts=[],ctMsg='',qrAberto=false,donoReal=false,eqCompleto=true,lista=[],lsAberta=true,pend={},tm={},names={},rq=0,fv={n:'',g:'',ng:'',h:'',m:'',p:''},fo=false;
 const nv=v=>{let s=String(v??'').trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s);return isNaN(n)?0:n};
 const R=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -81,7 +81,18 @@ G.forEach(g=>{const a=items.filter(i=>i.g===g&&(flt==='all'||isLow(i))).sort(byN
 h+=`<details class="g" open><summary>${esc(g)} <span class="mu">· ${a.length}</span> ${fg?`<span class="chip bad">${fg} abaixo</span>`:''}</summary>${a.map(row).join('')}${adm&&flt==='all'?`<div class="row"><input data-k="n" placeholder="Novo item em ${esc(g)}"><button data-a="${esc(g)}">Adicionar</button></div>`:''}</details>`});
 if(adm&&flt==='all')h+='<div class="row"><input data-k="g" placeholder="Novo grupo"><button id="ng">Criar grupo</button></div>';
 h+='<div class="row"><button id="ce" style="flex:1">Copiar estoque atual</button><button id="se" style="flex:1">Enviar</button></div>'}
-else if(tab==='cp'){{const G=groups(),semId=items.filter(i=>!ideal(i)).length;
+else if(tab==='cp'){
+{const tot=lista.reduce((s,l)=>s+nv(l.q)*nv(l.p),0),feitos=lista.filter(l=>l.ok),totOk=feitos.reduce((s,l)=>s+nv(l.q)*nv(l.p),0),falta=items.filter(i=>short(i)>0&&!lista.some(l=>l.i===i.id)).length;
+h+=`<details class="g" id="lsBox" ${lsAberta?'open':''} style="border:2px solid var(--ac)"><summary>📝 Lista de compras <span class="mu">· ${lista.length} ${lista.length===1?'item':'itens'}${lista.length?' · '+feitos.length+' comprados · ≈ '+R(tot):''}</span></summary>
+<p class="mu">Monte a lista com o que falta e o que precisar (gelo, limão…). Quem estiver comprando marca ✓ no celular e todo mundo vê <b>ao vivo</b>. No fim, <b>Lançar no estoque</b> registra os comprados de uma vez.</p>
+<div class="row"><button id="lsPuxar" class="pri" style="flex:1" ${falta?'':'disabled'}>➕ Puxar o que falta${falta?' ('+falta+')':''}</button></div>
+${lista.length?lista.map((l,k)=>`<div class="it r" style="gap:8px;${l.ok?'opacity:.6':''}"><input type="checkbox" data-lsok="${k}" ${l.ok?'checked':''} style="width:24px;height:24px;flex:none;min-width:24px"><span style="flex:1;min-width:0">${l.ok?'<s>':''}<b>${esc(l.n)}</b>${l.ok?'</s>':''}<div class="mu">${l.i?'do estoque':'avulso'}${nv(l.p)?' · ≈ '+R(nv(l.q)*nv(l.p)):''}${l.quem&&l.ok?' · ✓ '+esc(l.quem):''}</div></span><input data-k="lsq" data-ls="${k}" inputmode="decimal" value="${esc(String(l.q??''))}" title="quantidade" style="width:54px;text-align:center"><input data-k="lsp" data-ls="${k}" inputmode="decimal" placeholder="R$ un" value="${nv(l.p)?String(l.p).replace('.',','):''}" title="preço por unidade" style="width:70px;text-align:right"><button data-lsx="${k}" aria-label="Tirar da lista" style="flex:none">✕</button></div>`).join(''):'<p class="mu" style="text-align:center">Lista vazia.</p>'}
+<div class="row" style="margin-top:8px"><input data-k="lsn" id="lsN" placeholder="Item avulso (ex.: gelo, limão)" style="flex:2"><input data-k="lsnq" id="lsQ" inputmode="decimal" placeholder="Qtd" style="flex:1;max-width:70px;text-align:center"><button id="lsAdd">Adicionar</button></div>
+${lista.length?`<div class="r big" style="margin-top:8px"><span>Total estimado</span><b>${R(tot)}</b></div>${feitos.length?`<div class="r"><span>Comprados (${feitos.length})</span><b>${R(totOk)}</b></div>`:''}
+<div class="row"><button id="lsEnviar" style="flex:1">📤 Enviar lista</button><button id="lsCopiar" style="flex:1">📋 Copiar</button></div>
+<div class="row"><button id="lsLancar" class="pri" style="flex:2" ${feitos.length?'':'disabled'}>✅ Lançar no estoque${feitos.length?' ('+feitos.length+')':''}</button><button id="lsLimpar" style="flex:1">🗑️ Limpar</button></div>`:''}
+</details>`}
+{const G=groups(),semId=items.filter(i=>!ideal(i)).length;
 h+='<p class="mu">Quanto falta para chegar no <b>estoque ideal</b> de cada item (ideal − o que tem agora).'+(adm?' Ajuste o ideal aqui mesmo e toque em <b>✅ Comprei</b> quando a compra chegar: entra no estoque e nas Compras.':'')+'</p>';
 h+=`<div class="tabs"><button data-bf="low" class="${bflt==='low'?'on':''}">Só o que falta</button><button data-bf="all" class="${bflt==='all'?'on':''}">Todos os itens</button></div>`;
 if(semId&&bflt==='low')h+=`<p class="mu">⚠️ ${semId} ${semId>1?'itens estão':'item está'} sem estoque ideal e não ${semId>1?'entram':'entra'} na lista. Toque em <b>Todos os itens</b> para definir.</p>`;
@@ -97,7 +108,7 @@ h+='<h2 style="margin:20px 2px 8px;font-size:16px">💲 Preços, caixas e pagame
 {const lp=id=>{const a=pgs.filter(p=>p.i===id).sort((x,y)=>y.t-x.t)[0];return a?`<div class="mu">Última compra: ${fmt(a.t)} · ${R(nv(a.v))}${a.nf?' · '+esc(a.nf):''}</div>`:''},G=groups(),d0=new Date(),mk0=d0.getFullYear()*12+d0.getMonth(),pm=pgs.filter(p=>{const d=new Date(p.t);return d.getFullYear()*12+d.getMonth()===mk0}).reduce((s,p)=>s+nv(p.v),0),nm={};items.forEach(i=>nm[i.id]=i.n);
 h+=`<details class="g" open><summary>Valor do estoque · ${R(val)}</summary>${G.map(g=>`<div class="it r"><span>${esc(g)}</span><b>${R(items.filter(i=>i.g===g).reduce((s,i)=>s+cur(i)*up(i.id),0))}</b></div>`).join('')}</details>`;
 G.forEach(g=>{h+=`<details class="g"><summary>${esc(g)}</summary>`+items.filter(i=>i.g===g).sort(byN).map(i=>{const p=price[i.id]||{};const id=ideal(i),f=short(i);return `<div class="it"><div class="r"><b>${esc(i.n)}</b><span class="mu">${cur(i)} un · ${R(cur(i)*up(i.id))}</span></div><div class="mu">ideal <b>${id||'—'}</b> ${id?`<span class="chip ${f?'bad':'ok'}">${f?'falta '+f:'ok'}</span>`:'<span class="chip">sem ideal</span>'}</div>${lp(i.id)}<div class="row"><label class="lb">R$ unidade<input data-k="pu" data-id="${i.id}" inputmode="decimal" value="${esc(p.pu??'')}"></label><label class="lb">R$ caixa<input data-k="pc" data-id="${i.id}" inputmode="decimal" value="${esc(p.pc??'')}"></label><label class="lb">un/caixa<input data-k="uc" data-id="${i.id}" inputmode="numeric" value="${esc(p.uc??'')}"></label></div>${adm?`<div class="row"><label class="lb">Caixas compradas<input data-k="bq" inputmode="numeric"></label><label class="lb">R$ pago<input data-k="bv" inputmode="decimal"></label><button data-pg="${i.id}">PG</button></div>`:''}</div>`}).join('')+'</details>'});
-h+=`<details class="g" open><summary>Pagamentos (PG) · mês ${R(pm)}</summary>${[...pgs].sort((x,y)=>y.t-x.t).slice(0,40).map(p=>`<div class="it r"><span>${esc(nm[p.i]||'(item apagado)')}<div class="mu">${fmt(p.t)} · ${p.nf?esc(p.nf)+' · ':''}${p.u} un</div></span><b>${R(nv(p.v))}</b></div>`).join('')||'<p class="mu">Nenhum pagamento registrado.</p>'}</details><p class="mu">Todos com acesso veem isto ao vivo; só dono/editor altera. Ao registrar PG, as unidades entram em "Comprado".</p>`}}
+h+=`<details class="g" open><summary>Pagamentos (PG) · mês ${R(pm)}</summary>${[...pgs].sort((x,y)=>y.t-x.t).slice(0,40).map(p=>`<div class="it r"><span>${esc(nm[p.i]||p.n||'(item apagado)')}<div class="mu">${fmt(p.t)} · ${p.nf?esc(p.nf)+' · ':''}${p.u} un${p.lista?' · lista de compras':''}</div></span><b>${R(nv(p.v))}</b></div>`).join('')||'<p class="mu">Nenhum pagamento registrado.</p>'}</details><p class="mu">Todos com acesso veem isto ao vivo; só dono/editor altera. Ao registrar PG, as unidades entram em "Comprado".</p>`}}
 else if(tab==='cont'){const G=groups(),n=Object.keys(cont).filter(k=>cont[k]!=='').length;
 h+=`<p class="mu">Conte o que tem de cada item e digite o número. O app mostra a diferença para o sistema. Ao tocar em <b>Salvar contagem</b>, o estoque é acertado e fica no Histórico com o seu nome e a hora.</p>`;
 if(ctMsg)h+=`<div class="it" style="border:0"><b style="color:var(--ok)">${esc(ctMsg)}</b></div>`;
@@ -119,6 +130,25 @@ document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;
 document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{bflt=b.dataset.bf;draw()});
 document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>bump(b.dataset.d,+b.dataset.v));
 const q=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+// 📝 lista de compras (meta/lista), compartilhada ao vivo
+const salvaLista=()=>db.doc('meta/lista').set({itens:JSON.parse(JSON.stringify(lista)),t:Date.now()}).catch(()=>toast('Sem permissão'));
+{const d=$('#lsBox');if(d)d.ontoggle=()=>{lsAberta=d.open}}
+q('#lsPuxar',()=>{items.filter(i=>short(i)>0&&!lista.some(l=>l.i===i.id)).sort(byN).forEach(i=>lista.push({k:rid('l'),i:i.id,n:i.n,q:short(i),p:up(i.id)||0,ok:false}));salvaLista();toast('Lista com o que falta')});
+q('#lsAdd',()=>{const n=($('#lsN').value||'').trim();if(!n){toast('Digite o item');return}const it=items.find(i=>i.n.toLowerCase()===n.toLowerCase());lista.push({k:rid('l'),i:it?it.id:null,n:it?it.n:n,q:nv($('#lsQ').value)||1,p:it?up(it.id)||0:0,ok:false});salvaLista()});
+document.querySelectorAll('[data-lsok]').forEach(c=>c.onchange=()=>{const l=lista[+c.dataset.lsok];if(!l)return;l.ok=c.checked;l.quem=c.checked?(localStorage.getItem('bar-nome')||'').trim():'';salvaLista()});
+document.querySelectorAll('[data-lsx]').forEach(b=>b.onclick=()=>{lista.splice(+b.dataset.lsx,1);salvaLista()});
+document.querySelectorAll('input[data-k="lsq"],input[data-k="lsp"]').forEach(e=>e.onchange=()=>{const l=lista[+e.dataset.ls];if(!l)return;if(e.dataset.k==='lsq')l.q=nv(e.value);else l.p=nv(e.value);salvaLista()});
+const listaTxt=()=>{const L=['*LISTA DE COMPRAS - '+dt()+'*',''];lista.forEach(l=>L.push((l.ok?'✅ ':'⬜ ')+l.n+': '+String(nv(l.q)).replace('.',',')+(nv(l.p)?' (≈ '+R(nv(l.q)*nv(l.p))+')':'')));L.push('','_Total estimado_: '+R(lista.reduce((s,l)=>s+nv(l.q)*nv(l.p),0)));return L.join('\n')};
+q('#lsEnviar',()=>send(listaTxt()));q('#lsCopiar',()=>copy(listaTxt()));
+q('#lsLimpar',()=>{const b=$('#lsLimpar');if(!b.dataset.s){b.dataset.s=1;b.textContent='Limpar tudo?';setTimeout(()=>{b.dataset.s='';b.textContent='🗑️ Limpar'},2500);return}lista=[];salvaLista()});
+q('#lsLancar',async()=>{const b=$('#lsLancar');b.disabled=true;const t=Date.now(),feitos=lista.filter(l=>l.ok);let n=0;
+  try{for(const l of feitos){const u=nv(l.q),v=Math.round(u*nv(l.p)*100)/100;
+      if(l.i&&items.some(i=>i.id===l.i)&&u){const p=price[l.i]||{};await db.doc('pg/'+rid('p')).set({i:l.i,q:nv(p.uc)?u/nv(p.uc):u,u,v,t,by:me,lista:true});await db.doc('mov/'+rid('m')).set({i:l.i,d:u,k:'p',t,u:me});
+        if(v&&u&&!nv(p.pc))await db.doc('price/'+l.i).set({...p,pu:String(Math.round(v/u*100)/100).replace('.',',')})}
+      else if(v)await db.doc('pg/'+rid('p')).set({i:null,n:l.n,q:u,u,v,t,by:me,lista:true});
+      n++}
+    lista=lista.filter(l=>!l.ok);await salvaLista();toast('✅ '+n+' itens lançados no estoque')}
+  catch(e){b.disabled=false;toast('Não consegui lançar: '+(e.message||e))}});
 document.querySelectorAll('input[data-k="ct"]').forEach(e=>e.oninput=()=>{cont[e.dataset.id]=e.value.trim();const b=$('#ctSalvar'),n=Object.keys(cont).filter(k=>cont[k]!=='').length;if(b){b.disabled=!n||!wr;b.textContent='✅ Salvar contagem'+(n?' ('+n+')':'')}['#ctCopiar','#ctLimpar'].forEach(x=>{const c=$(x);if(c)c.disabled=!n})});
 q('#ctLimpar',()=>{cont={};ctMsg='';draw()});
 q('#ctCopiar',()=>copy(contTxt()));
@@ -159,6 +189,7 @@ db.collection('items').onSnapshot(s=>{items=s.docs.map(d=>({id:d.id,...d.data()}
 db.collection('mov').onSnapshot(s=>{movs=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);
 db.doc('meta/groups').onSnapshot(s=>{glist=(s.data()||{}).list||[];render()},er);
 // acesso da equipe ao estoque (o dono escolhe no cartão do QR Code); padrão: completo
+db.doc('meta/lista').onSnapshot(s=>{lista=((s.exists&&s.data())||{}).itens||[];render()},er);
 db.doc('meta/equipe').onSnapshot(s=>{const d=s.exists&&s.data();eqCompleto=d?d.completo!==false:true;adm=donoReal||eqCompleto;render()},er);
 db.collection('price').onSnapshot(s=>{price={};s.docs.forEach(d=>{price[d.id]=d.data()});render()},er);
 db.collection('pg').onSnapshot(s=>{pgs=s.docs.map(d=>({id:d.id,...d.data()}));render()},er);

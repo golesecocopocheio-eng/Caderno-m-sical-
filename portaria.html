@@ -62,6 +62,7 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="tot" id="total">R$ 0,00</div>
     <div class="grid" id="resumo"></div>
     <div class="grid" id="resumoPg"></div>
+    <div class="msg" id="confere" style="margin:10px 0 0;font-weight:600;font-size:13px"></div>
   </div>
 
   <div class="card" id="envCard" hidden style="border:2px solid var(--ac)">
@@ -138,7 +139,10 @@ window.linkPortaria=()=>{const base="https://golesecocopocheio-eng.github.io/Cad
 const CATS=[["turista","Turista"],["morador","Morador"],["clan","Clã"],["lista","Lista"]];
 const PGS=[["dinheiro","Dinheiro"],["pix","Pix"],["cartao","Cartão"],["cortesia","Cortesia"]];
 const $=s=>document.querySelector(s);
-const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const brl=n=>(Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+// soma exata em centavos (evita erro de arredondamento e valor salvo como texto)
+const cent=v=>Math.round((Number(String(v??0).replace(',','.'))||0)*100);
+const soma=a=>a.reduce((s,e)=>s+cent(e.valor),0)/100;
 // A noite vira só às 6h da manhã, para o movimento depois da meia-noite contar na mesma noite
 const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString("sv-SE");
 let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false,me='',saidas=[],unsubSai=null;
@@ -150,12 +154,19 @@ function render(){
   $("#dia").value=ver;
   $("#pgs").innerHTML=PGS.map(([k,n])=>`<button data-pg="${k}" class="${k===pg?"on":""}">${n}</button>`).join("");
   $("#cats").innerHTML=CATS.map(([k,n])=>`<button class="big" data-cat="${k}">+1 ${n}<small>${(pg==="cortesia"||k==="clan"||(k==="lista"&&!preco(k)))?"Grátis":brl(preco(k))}${k==="lista"?" · com nome":""}</small></button>`).join("");
-  const tot=ents.reduce((s,e)=>s+(e.valor||0),0);
+  const tot=soma(ents);
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
   {const sa=saidas.length;$("#cEnt").textContent=ents.length;$("#cSai").textContent=sa;$("#cDentro").textContent=Math.max(0,ents.length-sa);
    $("#saida").disabled=ver!==noite;$("#saidaDesf").hidden=!sa||ver!==noite}
-  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(l.reduce((s,e)=>s+e.valor,0))}</span></div>`}).join("");
-  $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(ents.filter(e=>e.pg===k).reduce((s,e)=>s+e.valor,0))}</b><span>${n}</span></div>`).join("");
+  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(soma(l))}</span></div>`}).join("");
+  $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(soma(ents.filter(e=>e.pg===k)))}</b><span>${n}</span></div>`).join("");
+  {// ✅ conferência: total = categorias = formas de pagamento; pessoas = categorias
+   const tc=cent(tot),porCat=CATS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.cat===k))*100),0),porPg=PGS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.pg===k))*100),0);
+   const pessoas=CATS.reduce((s,[k])=>s+ents.filter(e=>e.cat===k).length,0),semPg=ents.filter(e=>!PGS.some(([k])=>k===e.pg)),cortesiaVal=soma(ents.filter(e=>e.pg==="cortesia"));
+   const ok=tc===porCat&&tc===porPg&&pessoas===ents.length&&!semPg.length&&!cortesiaVal;
+   $("#confere").innerHTML=ok?`✅ Conferido: Dinheiro + Pix + Cartão = ${brl(tot)} · ${ents.length} pessoas = soma das categorias`
+     :`⚠️ Conferência: total ${brl(tot)}, categorias ${brl(porCat/100)}, formas de pagamento ${brl(porPg/100)}${pessoas!==ents.length?' · '+(ents.length-pessoas)+' entrada(s) sem categoria':''}${semPg.length?' · '+semPg.length+' sem forma de pagamento':''}${cortesiaVal?' · cortesia com valor '+brl(cortesiaVal):''}`;
+   $("#confere").style.color=ok?"var(--ok)":"#b45309"}
   $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"||!preco(k)?"Grátis":brl(precos[k]))).join(" · ");
   const ls=ents.filter(e=>e.cat==="lista").sort((a,b)=>a.ts-b.ts);
   $("#listaCard").hidden=!ls.length;
@@ -167,7 +178,7 @@ function render(){
     const c=CATS.find(x=>x[0]===e.cat)[1],p=PGS.find(x=>x[0]===e.pg)[1];
     return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} <button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button></span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
-  const sm=a=>a.reduce((s,l)=>s+(l.valor||0),0);
+  const sm=a=>soma(a);
   $("#audit").innerHTML=`<div><b>${lan.length}</b><span>Lançadas · ${brl(sm(lan))}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(sm(lan)-sm(apg))}</b><span>Saldo</span></div>`;
   $("#apagadas").innerHTML=apg.sort((a,b)=>b.ts-a.ts).slice(0,10).map(l=>{const h=new Date(l.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});const c=(CATS.find(x=>x[0]===l.cat)||[0,"?"])[1];return `<div class="item"><span>🗑 ${h} · ${c}${l.nome?" · "+escN(l.nome):""}${l.quem?" · por <b>"+escN(l.quem)+"</b>":""}</span><span>${brl(l.valor)}</span></div>`}).join("");
   document.querySelectorAll(".dono").forEach(el=>el.hidden=!owner);
@@ -200,7 +211,7 @@ document.addEventListener("click",async ev=>{
         $("#listaBox").hidden=true;$("#listaAviso").textContent="";
       }
       const free=cat==="clan"||pg==="cortesia"||(cat==="lista"&&!preco(cat));
-      const en={cat,pg:free?"cortesia":pg,valor:free?0:preco(cat),noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
+      const en={cat,pg:free?"cortesia":pg,valor:free?0:cent(preco(cat))/100,noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
     }else if(t.id==="saida"){

@@ -175,14 +175,30 @@
   let dancaTm = null;
   function dancaPet(ms, festa) {
     clearTimeout(dancaTm); petImg.classList.add('dancaPet'); C.notasDe(petImg, ms);
-    const card = petFoto.closest('.pet'); if (festa) { card.classList.add('festa'); C.musiquinha(); setTimeout(() => C.musiquinha(), 1300); }
+    const card = petFoto.closest('.pet'); if (festa) { card.classList.add('festa'); C.reggae(Math.ceil(ms / 3000)); }
     dancaTm = setTimeout(() => { petImg.classList.remove('dancaPet'); card.classList.remove('festa'); }, ms);
   }
+  // 🎶 Som de reggae: toca sem parar (até tocar de novo ou sair da aba) e o gatinho dança junto
+  let somLigado = false, pararSom = null, notasSom = null;
+  function compasso() { if (!somLigado) return; pararSom = C.reggae(4, compasso); }
+  function somReggae(ligar) {
+    somLigado = ligar; const bt = $('#petSom');
+    if (ligar) {
+      if (!C.sons) { petDizer('Ligue os sons nos ⚙️ Ajustes para ouvir! 🔇'); somLigado = false; return; }
+      compasso(); petImg.classList.add('dancaPet'); petFoto.closest('.pet').classList.add('festa');
+      notasSom = C.notasDe(petImg, 600000); bt.textContent = '⏹ Parar o reggae'; petDizer('Good vibes! 🎶🇯🇲');
+    } else {
+      pararSom && pararSom(); clearInterval(notasSom); clearTimeout(dancaTm); petImg.classList.remove('dancaPet'); petFoto.closest('.pet').classList.remove('festa');
+      bt.textContent = '🎶 Som de reggae';
+    }
+  }
+  $('#petSom').onclick = () => somReggae(!somLigado);
+  document.querySelectorAll('#abas button').forEach((b) => b.addEventListener('click', () => { if (somLigado && b.dataset.aba !== 'gato') somReggae(false); }));
   $('#petDancar').onclick = () => {
     if (!acordado()) return;
     if (pet.energia < 10) { petDizer('Estou sem energia para dançar… 😴'); return; }
     pet.feliz = lim(pet.feliz + 15); pet.energia = lim(pet.energia - 10); salvarPet(); desenharPet();
-    dancaPet(2800, true); petDizer(['Olha meu passinho! 💃', 'Dança, gatinho, dança! 🎶', 'Uhuu! Festa! 🎉'][Math.floor(Math.random() * 3)]);
+    dancaPet(6000, true); petDizer(['Olha meu passinho! 💃', 'Dança, gatinho, dança! 🎶', 'Uhuu! Festa! 🎉'][Math.floor(Math.random() * 3)]);
   };
   petImg.onclick = carinho;
   $('#petDormir').onclick = () => {

@@ -315,6 +315,52 @@
       n.style.left = (r.left + Math.random() * r.width) + 'px'; n.style.top = (r.top + 6) + 'px';
       document.body.appendChild(n); setTimeout(() => n.remove(), 1500);
     }, 280);
+    return tm;
+  }
+  // Batida de reggae original (feita pelo app, sem direitos autorais): one drop, chimbal,
+  // guitarrinha no contratempo e baixo em Lá menor → Ré. Toca "compassos" de 3 s; devolve uma função para parar.
+  let reggaeAtual = null;
+  function reggae(compassos = 2, aoFim) {
+    if (!sons) return () => {};
+    if (reggaeAtual) reggaeAtual();
+    let ctx; try { ctx = ctxAudio(); } catch (e) { return () => {}; }
+    const mestre = ctx.createGain(); mestre.gain.value = 0.55; mestre.connect(ctx.destination);
+    const ruido = (() => { const n = ctx.sampleRate * 0.3, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; })();
+    const tom = (tipo, f, t, dur, vol, filtro) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo; o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      let saida = g;
+      if (filtro) { const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = filtro; g.connect(lp); saida = lp; }
+      o.connect(g); saida.connect(mestre); o.start(t); o.stop(t + dur + 0.02); return o;
+    };
+    const bumbo = (t) => { const o = tom('sine', 120, t, 0.35, 0.9); o.frequency.exponentialRampToValueAtTime(42, t + 0.25); };
+    const aro = (t) => { // caixa de aro (rimshot)
+      const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido; hp.type = 'highpass'; hp.frequency.value = 1800;
+      g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08); s.connect(hp); hp.connect(g); g.connect(mestre); s.start(t); s.stop(t + 0.1);
+      tom('triangle', 420, t, 0.06, 0.25);
+    };
+    const chimbal = (t, v) => {
+      const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido; hp.type = 'highpass'; hp.frequency.value = 7500;
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05); s.connect(hp); hp.connect(g); g.connect(mestre); s.start(t); s.stop(t + 0.06);
+    };
+    const acorde = (fs, t) => fs.forEach((f) => { tom('square', f, t, 0.11, 0.05, 2600); tom('triangle', f * 2, t, 0.08, 0.025); });
+    const baixo = (f, t, dur = 0.32) => tom('triangle', f, t, dur, 0.5, 500);
+    const BAT = 0.75, BAR = BAT * 4; // 80 batidas por minuto
+    const AM = { acorde: [220, 261.6, 329.6], baixo: [[0.5, 110], [1, 110], [2, 82.4], [3, 98], [3.5, 110]] };
+    const RE = { acorde: [293.7, 370, 440], baixo: [[0.5, 73.4], [1, 73.4], [2, 110], [3, 92.5], [3.5, 73.4]] };
+    const t0 = ctx.currentTime + 0.05;
+    for (let c = 0; c < compassos; c++) {
+      const b = t0 + c * BAR, h = c % 2 ? RE : AM;
+      bumbo(b + 2 * BAT); aro(b + 2 * BAT);                                 // one drop no tempo 3
+      for (let i = 0; i < 8; i++) chimbal(b + i * BAT / 2 + (i % 2 ? 0.05 : 0), i % 2 ? 0.07 : 0.035); // chimbal com balanço
+      acorde(h.acorde, b + 1 * BAT); acorde(h.acorde, b + 3 * BAT);            // guitarrinha nos tempos 2 e 4
+      acorde(h.acorde, b + 1.5 * BAT); acorde(h.acorde, b + 3.5 * BAT);
+      h.baixo.forEach(([bt, f]) => baixo(f, b + bt * BAT));
+    }
+    const fimT = setTimeout(() => { if (reggaeAtual === parar) reggaeAtual = null; aoFim && aoFim(); }, compassos * BAR * 1000 + 100);
+    function parar() { clearTimeout(fimT); try { mestre.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05); setTimeout(() => mestre.disconnect(), 300); } catch (e) {} if (reggaeAtual === parar) reggaeAtual = null; }
+    reggaeAtual = parar;
+    return parar;
   }
   function musiquinha() { // melodia curtinha de festa
     if (!sons) return;
@@ -343,7 +389,7 @@
       dancar(ms = 1800, festa) { // dança por um tempo; festa = com música e luzes no cartão
         if (!corpo) return;
         solta('danca', ms); notasDe(img, ms);
-        if (festa) { musiquinha(); el.classList.add('festa'); setTimeout(() => el.classList.remove('festa'), ms); }
+        if (festa) { reggae(Math.max(1, Math.round(ms / 3000))); el.classList.add('festa'); setTimeout(() => el.classList.remove('festa'), ms); }
       },
       pular() { if (corpo) solta('pulo', 800); },
       dancando(sim) { // dança enquanto durar (ex.: enquanto a frase é falada)
@@ -737,7 +783,7 @@
 
   // Para a aba Estudar (tradutor-estudo.js)
   window.ClaSpeak = {
-    traduzir, traduzirVarias, falar, melhorVoz, ronrom, musiquinha, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
+    traduzir, traduzirVarias, falar, melhorVoz, ronrom, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
     get fone() { return fone; },
     get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },
     get sons() { return sons; }, set sons(v) { sons = v; localStorage.setItem('trad-sons', v ? '1' : '0'); },

@@ -21,7 +21,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Aba 📚 Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
   Compras, Números, Emergência, Gatinhos) traduzidas na hora, com 🔊 ouvir, 🐢 devagar, 🎤 repetir (o app
   confere a pronúncia) e 🧩 quiz. Pontos ⭐ e dias seguidos 🔥 ficam guardados no aparelho.
-- **5 abas** na barra de baixo: 🌐 Traduzir (sala e frente a frente), ✍️ Texto, 📚 Estudar, 🐱 Gatinho e ⚙️ Ajustes
+- **6 abas** na barra de baixo: 🌐 Traduzir (sala, frente a frente e texto), 🎓 Saber, 📚 Estudar, 🎤 Karaokê, 💬 Conversar e ⚙️ Ajustes
   (`app/tradutor-extra.js`), com animação ao trocar de tela e o gatinho em todas elas.
 - **✍️ Texto:** traduz enquanto digita, ditado pelo 🎤, ⇄ inverter idiomas, ouvir, copiar, ⭐ favoritas e recentes.
 - **🐱 Gatinho:** bichinho virtual (felicidade, barriga, energia que mudam com o tempo; dar comida, brincar,
@@ -41,6 +41,11 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **🎓 Aba Saber** (`app/tradutor-saber.js`): cultura e dúvidas. A pessoa pergunta (escrevendo ou falando) e o app
+  busca na **Wikipédia** (API pública, conteúdo CC BY-SA) o artigo mais relevante: título, imagem, resumo, "veja também",
+  🔊 ouvir, 🌍 ler o mesmo artigo em outro idioma (para treinar leitura), copiar e "ler mais". Temas prontos: 📚 Literatura,
+  🎨 Artes, 🏛️ História, 🔬 Ciência, 🌍 Geografia, 🎵 Música, 🤔 Filosofia e ⚽ Esportes, além de 🎲 curiosidade aleatória
+  e histórico das perguntas. O tradutor de texto (antiga aba Texto) agora é o cartão "✍️ Traduzir texto" da aba Traduzir.
 - **💬 Aba Conversar** (`app/tradutor-conversa.js`): prática de conversação com o gatinho, em tela de bate-papo.
   Situações: ☕ Cafeteria, ✈️ Aeroporto, 🏨 Hotel, 🛍️ Compras, 🤝 Fazer amigos e 💼 Entrevista. Os diálogos são
   traduzidos na hora para o idioma praticado; o gatinho fala (texto + voz), a pessoa responde falando 🎤 ou digitando,

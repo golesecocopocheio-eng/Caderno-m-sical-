@@ -11,7 +11,7 @@
   // =====================================================================
   // ✍️ TEXTO: traduz enquanto digita, ditado, favoritas e recentes
   // =====================================================================
-  const gTexto = C.gato('gatoTexto');
+  const gTexto = C.gatoInicio; // o tradutor de texto agora fica na aba Traduzir
   const de = $('#txDe'), para = $('#txPara'), ent = $('#txEntrada'), saida = $('#txSaida');
   C.preencher(de, localStorage.getItem('trad-tx-de') || C.minhaLingua());
   C.preencher(para, localStorage.getItem('trad-tx-para') || (C.minhaLingua().startsWith('en') ? 'pt-BR' : 'en-US'));

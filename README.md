@@ -21,8 +21,18 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Aba 📚 Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
   Compras, Números, Emergência, Gatinhos) traduzidas na hora, com 🔊 ouvir, 🐢 devagar, 🎤 repetir (o app
   confere a pronúncia) e 🧩 quiz. Pontos ⭐ e dias seguidos 🔥 ficam guardados no aparelho.
+- **5 abas** na barra de baixo: 🌐 Traduzir (sala e frente a frente), ✍️ Texto, 📚 Estudar, 🐱 Gatinho e ⚙️ Ajustes
+  (`app/tradutor-extra.js`), com animação ao trocar de tela e o gatinho em todas elas.
+- **✍️ Texto:** traduz enquanto digita, ditado pelo 🎤, ⇄ inverter idiomas, ouvir, copiar, ⭐ favoritas e recentes.
+- **🐱 Gatinho:** bichinho virtual (felicidade, barriga, energia que mudam com o tempo; dar comida, brincar,
+  carinho com ronronar, dormir) e acessórios liberados com as ⭐ dos estudos. **Miado de verdade:** grave o
+  miado do seu gato ou escolha um áudio, e ele vira o miado do app. Sem gravação, o app usa um miado
+  sintetizado com as vogais m-i-a-u.
+- **⚙️ Ajustes:** segurar para falar (capta melhor em lugar barulhento), modo fone, velocidade da voz,
+  ler em voz alta, sons do app, letras grandes e apagar as traduções guardadas.
+- **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
-- **Sala animada:** avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂
+- **Sala animada:** bandeiras dos idiomas, som de mensagem nova, 📋 copiar, comentários do gatinho, avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂
   nas mensagens (ou toque duas vezes) e "fulano está falando..." com pontinhos.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
 - **APK Android próprio ("Clã Speak", logo com a foto de um gatinho preto miando, balão "Miau!" e o nome, em amarelo e preto):** o workflow `.github/workflows/apk-tradutor.yml` gera o

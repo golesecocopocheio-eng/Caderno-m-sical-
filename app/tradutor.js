@@ -16,9 +16,10 @@
     ['th-TH', 'ไทย'], ['pt-PT', 'Português (Portugal)'], ['es-MX', 'Español (México)'], ['en-GB', 'English (UK)']
   ];
   const nomeLingua = (c) => (LINGUAS.find((l) => l[0] === c) || [c, c])[1];
+  const bandeira = (c) => { const r = String(c).split('-')[1]; return r && r.length === 2 ? String.fromCodePoint(...[...r.toUpperCase()].map((ch) => 0x1F1E6 + ch.charCodeAt(0) - 65)) : '🌐'; };
   const codTrad = (c) => (/^zh-/.test(c) ? c : c.split('-')[0]);
   const preencher = (sel, valor) => {
-    sel.innerHTML = LINGUAS.map(([c, n]) => `<option value="${c}">${n}</option>`).join('');
+    sel.innerHTML = LINGUAS.map(([c, n]) => `<option value="${c}">${bandeira(c)} ${n}</option>`).join('');
     sel.value = valor;
   };
   const linguaPadrao = () => {
@@ -145,10 +146,12 @@
   let vozLigada = localStorage.getItem('trad-voz') !== '0';
   // Modo fone de ouvido: a tradução toca no fone e o microfone não a escuta, então não precisa pausar.
   let fone = localStorage.getItem('trad-fone') === '1';
+  let velVoz = Number(localStorage.getItem('trad-vel')) || 1;
+  let sons = localStorage.getItem('trad-sons') !== '0';
   const falando = { n: 0 };
   function falar(texto, lingua, opc = {}) {
     if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) return; // aviso de falha não é lido
-    const vel = opc.vel || 1.0;
+    const vel = (opc.vel || 1) * velVoz;
     const TTS = plugin('TextToSpeech');
     if (TTS) {
       falando.n++;
@@ -218,16 +221,64 @@
 
   // ---------- Gatinho mascote ----------
   let audio = null;
-  function miau() { // miado curtinho feito com o som do próprio aparelho
+  const ctxAudio = () => (audio = audio || new (window.AudioContext || window.webkitAudioContext)());
+  // Miado sintetizado com as vogais de um miado de verdade (m → i → a → u), diferente a cada vez
+  function miauSintetico() {
+    const ctx = ctxAudio(), t = ctx.currentTime;
+    const k = 0.88 + Math.random() * 0.3, dur = 0.65 + Math.random() * 0.25;
+    const src = ctx.createOscillator(); src.type = 'sawtooth';
+    src.frequency.setValueAtTime(470 * k, t);
+    src.frequency.linearRampToValueAtTime(830 * k, t + dur * 0.35);
+    src.frequency.linearRampToValueAtTime(540 * k, t + dur * 0.95);
+    const lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.frequency.value = 6 + Math.random() * 2; lfoG.gain.value = 12;
+    lfo.connect(lfoG); lfoG.connect(src.frequency);
+    const mestre = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+    // formantes: [m, i, a, u]
+    const forms = [[250, 330, 850, 380], [1200, 2300, 1450, 850], [2600, 2900, 2600, 2400]];
+    const qs = [7, 11, 12], gs = [1, 0.55, 0.22], marcas = [0, 0.12, 0.42, 0.78];
+    forms.forEach((fs, i) => {
+      const bp = ctx.createBiquadFilter(), g = ctx.createGain(); bp.type = 'bandpass'; bp.Q.value = qs[i]; g.gain.value = gs[i];
+      fs.forEach((f, j) => (j ? bp.frequency.linearRampToValueAtTime(f, t + dur * marcas[j]) : bp.frequency.setValueAtTime(f, t)));
+      src.connect(bp); bp.connect(g); g.connect(mestre);
+    });
+    mestre.gain.setValueAtTime(0.0001, t);
+    mestre.gain.exponentialRampToValueAtTime(0.06, t + 0.04);
+    mestre.gain.exponentialRampToValueAtTime(0.9, t + dur * 0.16);
+    mestre.gain.setValueAtTime(0.9, t + dur * 0.7);
+    mestre.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    mestre.connect(lp); lp.connect(ctx.destination);
+    src.start(t); lfo.start(t); src.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+  }
+  function miau(forcar) { // forcar = a pessoa tocou no gatinho (toca mesmo com os sons desligados)
+    if (!sons && !forcar) return;
     try {
-      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-      const t = audio.currentTime, o = audio.createOscillator(), f = audio.createBiquadFilter(), g = audio.createGain();
-      o.type = 'sawtooth'; f.type = 'bandpass'; f.Q.value = 4;
-      o.frequency.setValueAtTime(520, t); o.frequency.linearRampToValueAtTime(880, t + 0.16); o.frequency.linearRampToValueAtTime(560, t + 0.55);
-      f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(2000, t + 0.18); f.frequency.linearRampToValueAtTime(700, t + 0.55);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.05); g.gain.setValueAtTime(0.35, t + 0.38); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
-      o.connect(f); f.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.62);
+      const gravado = localStorage.getItem('trad-miau');
+      if (gravado) { const a = new Audio(gravado); a.play().catch(() => miauSintetico()); return; }
+      miauSintetico();
     } catch (e) { /* sem áudio */ }
+  }
+  function ronrom(seg = 1.6) { // ronronar: ruído grave pulsando
+    if (!sons) return;
+    try {
+      const ctx = ctxAudio(), t = ctx.currentTime, n = ctx.sampleRate * seg, buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 220;
+      const g = ctx.createGain(), mod = ctx.createOscillator(), modG = ctx.createGain();
+      mod.frequency.value = 24; modG.gain.value = 0.5; g.gain.value = 0.5; mod.connect(modG); modG.connect(g.gain);
+      const env = ctx.createGain(); env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(1.2, t + 0.2); env.gain.setValueAtTime(1.2, t + seg - 0.3); env.gain.exponentialRampToValueAtTime(0.0001, t + seg);
+      src.connect(lp); lp.connect(g); g.connect(env); env.connect(ctx.destination);
+      src.start(t); mod.start(t); src.stop(t + seg); mod.stop(t + seg);
+    } catch (e) {}
+  }
+  function plop() { // bolhinha de mensagem nova
+    if (!sons) return;
+    try {
+      const ctx = ctxAudio(), t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(760, t); o.frequency.exponentialRampToValueAtTime(260, t + 0.1);
+      g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.13);
+    } catch (e) {}
   }
   const FRASES_GATO = ['Miau! 😺', 'Ronrom… 💛', 'Fale comigo em qualquer idioma! 🌍', 'Eu entendo 24 idiomas, sabia? 😼',
     'Toque no 🎤 e fale!', 'Estudar um pouquinho todo dia faz miau-ravilhas! 📚', 'Com fone de ouvido 🎧 a conversa flui sem pausas.',
@@ -243,7 +294,7 @@
       },
       ouvindo(sim) { el.classList.toggle('ouvindo', sim); }
     };
-    img.addEventListener('click', () => { miau(); g.dizer(FRASES_GATO[Math.floor(Math.random() * FRASES_GATO.length)]); });
+    img.addEventListener('click', () => { miau(true); g.dizer(FRASES_GATO[Math.floor(Math.random() * FRASES_GATO.length)]); });
     return g;
   }
   const gatoInicio = gato('gatoInicio'), gatoSala = gato('gatoSala');
@@ -361,7 +412,14 @@
   if (!SR) $('#semVoz').hidden = false;
   if (!window.FIREBASE_CONFIG) $('#semNuvem').hidden = false;
   $('#novaSala').onclick = () => { salaEl.value = novoCodigo(); };
-  const mostrarTela = (id) => { document.querySelectorAll('.tela,#f2f').forEach((t) => t.classList.toggle('on', t.id === id)); };
+  const ganchosAba = {}; // aba → função chamada ao abrir (preenchidas pelas outras partes do app)
+  const mostrarTela = (id) => {
+    document.querySelectorAll('.tela,#f2f').forEach((t) => t.classList.toggle('on', t.id === id));
+    const abas = $('#abas');
+    abas.hidden = id === 'salaTela' || id === 'f2f';
+    abas.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.aba === id));
+    if (ganchosAba[id]) ganchosAba[id]();
+  };
 
   // ---------- Sala ----------
   let conexao = null, eu = null;
@@ -392,17 +450,22 @@
     if (f.tipo) return evento(f);
     const d = document.createElement('div');
     d.className = 'linha' + (f.eu ? ' eu' : '');
-    const quem = f.eu ? 'Você' : esc(f.nome || 'Alguém') + ' · ' + esc(nomeLingua(f.lingua));
+    const quem = f.eu ? 'Você' : esc(f.nome || 'Alguém') + ' · ' + bandeira(f.lingua) + ' ' + esc(nomeLingua(f.lingua));
     const mesma = codTrad(f.lingua) === codTrad(eu.lingua);
     d.innerHTML = avatar(f.uid, f.eu ? eu.nome : f.nome) + `<div class="msg"><div class="quem">${quem}</div><div class="tr">${esc(f.eu || mesma ? f.texto : '…')}</div>` +
       (f.eu || mesma ? '' : `<div class="orig">${esc(f.texto)}</div>`) +
-      '<div class="acoes">' + (f.eu ? '' : '<button class="ouvir">🔊 ouvir</button>') + '<button class="curtir" title="Curtir">❤️</button><button class="rir" title="Rir">😂</button></div><div class="reacoes"></div></div>';
+      '<div class="acoes">' + (f.eu ? '' : '<button class="ouvir">🔊 ouvir</button>') + '<button class="curtir" title="Curtir">❤️</button><button class="rir" title="Rir">😂</button><button class="copiar" title="Copiar">📋</button></div><div class="reacoes"></div></div>';
     if (f.id) porId.set(f.id, { linha: d, reacoes: new Map() });
     $('.curtir', d).onclick = () => reagir(f.id, '❤️');
     $('.rir', d).onclick = () => reagir(f.id, '😂');
+    $('.copiar', d).onclick = () => { const t = $('.tr', d).textContent; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => gatoSala.dizer('Copiei! 📋', 1500)).catch(() => prompt('Copie:', t)); };
     $('.msg', d).addEventListener('dblclick', () => reagir(f.id, '❤️'));
     inserir(d);
-    if (!f.eu && f.nova) { const img = $('#gatoSala img'); img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula'); }
+    if (!f.eu && f.nova) {
+      plop();
+      const img = $('#gatoSala img'); img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula');
+      if (Math.random() < 0.3) gatoSala.dizer(/\?\s*$/.test(f.texto) ? 'Hmm, uma pergunta! 🤔 Responda no 🎤' : ['Que legal! 😺', 'Miau, entendi tudo! 🐾', 'Prrr… 💛', 'Conversa boa! 😸'][Math.floor(Math.random() * 4)], 2500);
+    }
     const tr = $('.tr', d);
     const pronto = (f.eu || mesma) ? Promise.resolve(f.texto) : traduzir(f.texto, f.lingua, eu.lingua).then((t) => { tr.textContent = t; rolar(); return t; });
     const btn = $('.ouvir', d);
@@ -415,7 +478,7 @@
   function atualizarPessoas(lista) {
     const outros = lista.filter((p) => !p.eu);
     $('#pessoas').innerHTML = outros.length
-      ? outros.map((p) => avatar(p.uid, p.nome)).join('') + '<span>' + esc(outros.map((p) => p.nome + ' (' + nomeLingua(p.lingua) + ')').join(', ')) + '</span>'
+      ? outros.map((p) => avatar(p.uid, p.nome)).join('') + '<span>' + esc(outros.map((p) => p.nome + ' ' + bandeira(p.lingua)).join(', ')) + '</span>'
       : 'Ninguém mais na sala ainda — toque em Convidar';
     const agora = new Map(outros.map((p) => [p.uid, p.nome]));
     if (presentes) {
@@ -469,18 +532,31 @@
     mostrarTela('inicio');
   }
 
-  function enviarTexto(t) { t = t.trim(); if (t && conexao) conexao.enviar(t); }
-  const mic = $('#mic');
-  mic.onclick = () => {
-    if (ouvinte.ativo) { ouvinte.parar(); return; }
+  const arrumar = (t) => { t = String(t || '').trim(); return t ? t.charAt(0).toLocaleUpperCase() + t.slice(1) : t; };
+  function enviarTexto(t) { t = arrumar(t); if (t && conexao) conexao.enviar(t); }
+  let segurar = localStorage.getItem('trad-segurar') === '1';
+  const mic = $('#mic'), salaOnda = $('#salaOnda');
+  let ondaTm = null;
+  const ondaForte = (el) => { el.classList.add('forte'); clearTimeout(ondaTm); ondaTm = setTimeout(() => el.classList.remove('forte'), 400); };
+  function ligarMicSala() {
     const ok = ouvinte.iniciar(eu.lingua, {
-      parcial: (t) => { $('#digitar').placeholder = t || 'Ouvindo…'; conexao && conexao.vivo(t); },
-      final: (t) => { enviarTexto(t); $('#digitar').placeholder = 'Ouvindo…'; },
+      parcial: (t) => { $('#digitar').placeholder = t || 'Ouvindo…'; if (t) ondaForte(salaOnda); conexao && conexao.vivo(t); },
+      final: (t) => { enviarTexto(t); if (ouvinte.ativo) $('#digitar').placeholder = 'Ouvindo…'; },
       erro: (m) => alert(m),
-      fim: () => { mic.classList.remove('on'); gatoSala.ouvindo(false); $('#digitar').placeholder = 'Fale no microfone ou digite…'; conexao && conexao.vivo(''); }
+      fim: () => { mic.classList.remove('on'); salaOnda.classList.remove('on'); gatoSala.ouvindo(false); $('#digitar').placeholder = 'Fale no microfone ou digite…'; conexao && conexao.vivo(''); }
     });
-    if (ok) { mic.classList.add('on'); gatoSala.ouvindo(true); gatoSala.dizer(fone ? 'Estou ouvindo 👂 (modo fone: pode falar à vontade)' : 'Estou ouvindo… 👂', 2500); $('#digitar').placeholder = 'Ouvindo…'; }
-  };
+    if (ok) {
+      mic.classList.add('on'); salaOnda.classList.add('on'); gatoSala.ouvindo(true);
+      gatoSala.dizer(segurar ? 'Fale enquanto segura 👂 Solte para enviar.' : fone ? 'Estou ouvindo 👂 (modo fone: pode falar à vontade)' : 'Estou ouvindo… 👂', 2500);
+      $('#digitar').placeholder = 'Ouvindo…';
+    }
+  }
+  mic.onclick = () => { if (segurar) return; if (ouvinte.ativo) ouvinte.parar(); else ligarMicSala(); };
+  // Segurar para falar: liga ao encostar e desliga ao soltar (envia o que ouviu)
+  mic.addEventListener('pointerdown', (e) => { if (!segurar) return; e.preventDefault(); mic.setPointerCapture && mic.setPointerCapture(e.pointerId); if (!ouvinte.ativo) ligarMicSala(); });
+  const soltar = () => { if (segurar && ouvinte.ativo) ouvinte.parar(); };
+  mic.addEventListener('pointerup', soltar); mic.addEventListener('pointercancel', soltar);
+  mic.addEventListener('contextmenu', (e) => e.preventDefault());
   $('#digitar').addEventListener('keydown', (e) => { if (e.key === 'Enter') { enviarTexto(e.target.value); e.target.value = ''; } });
   $('#entrar').onclick = entrarSala;
   $('#btSair').onclick = sairSala;
@@ -523,7 +599,7 @@
   // ---------- Modo fone de ouvido ----------
   function definirFone(v) {
     fone = v; localStorage.setItem('trad-fone', v ? '1' : '0');
-    $('#fone').checked = v;
+    $('#fone').checked = v; if ($('#ajFone')) $('#ajFone').checked = v;
     $('#btFone').classList.toggle('ligado', v);
     $('#f2fFone').classList.toggle('ligado', v);
     $('#f2fFone').textContent = '🎧 Fone: ' + (v ? 'sim' : 'não');
@@ -533,12 +609,20 @@
   $('#btFone').onclick = () => { definirFone(!fone); gatoSala.dizer(fone ? '🎧 Modo fone ligado!' : 'Modo fone desligado.', 2500); };
 
   // ---------- Abas de baixo ----------
-  document.querySelectorAll('.abas button').forEach((b) => { b.onclick = () => { ouvinte.parar(); mostrarTela(b.dataset.aba); if (b.dataset.aba === 'estudo' && window.ClaSpeakEstudo) window.ClaSpeakEstudo.abrir(); }; });
+  document.querySelectorAll('#abas button').forEach((b) => { b.onclick = () => { ouvinte.parar(); mostrarTela(b.dataset.aba); }; });
+  ganchosAba.estudo = () => window.ClaSpeakEstudo && window.ClaSpeakEstudo.abrir();
   const nomeSalvo = localStorage.getItem('trad-nome');
   if (nomeSalvo) setTimeout(() => gatoInicio.dizer('Miau! Que bom te ver, ' + nomeSalvo + '! 😺'), 400);
 
   // Para a aba Estudar (tradutor-estudo.js)
-  window.ClaSpeak = { traduzir, traduzirVarias, falar, ouvinte, miau, gato, LINGUAS, preencher, nomeLingua, codTrad, esc, linguaPadrao, minhaLingua: () => linguaEl.value, temVoz: () => !!SR };
+  window.ClaSpeak = {
+    traduzir, traduzirVarias, falar, ronrom, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
+    get fone() { return fone; },
+    get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },
+    get sons() { return sons; }, set sons(v) { sons = v; localStorage.setItem('trad-sons', v ? '1' : '0'); },
+    get vozLigada() { return vozLigada; }, set vozLigada(v) { vozLigada = v; localStorage.setItem('trad-voz', v ? '1' : '0'); },
+    get segurar() { return segurar; }, set segurar(v) { segurar = v; localStorage.setItem('trad-segurar', v ? '1' : '0'); },
+    cacheInfo: () => cache.size, limparCache: () => { cache.clear(); localStorage.removeItem('trad-cache'); }, ouvinte, miau, gato, LINGUAS, preencher, nomeLingua, codTrad, esc, linguaPadrao, minhaLingua: () => linguaEl.value, temVoz: () => !!SR };
 
   // ---------- Frente a frente ----------
   const lados = {};
@@ -563,6 +647,7 @@
           l.txt.textContent = t;
           const r = await traduzir(t, l.sel.value, outro.sel.value);
           outro.txt.textContent = r;
+          pulaF2f();
           falar(r, outro.sel.value);
         },
         erro: (m) => alert(m),
@@ -575,6 +660,8 @@
   $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').textContent = '🔊 Voz: ' + (vozLigada ? 'ligada' : 'desligada'); };
   $('#f2fLimpar').onclick = () => { lados.a.txt.textContent = ''; lados.b.txt.textContent = ''; };
   $('#f2fFone').onclick = () => definirFone(!fone);
+  const f2fGato = $('#f2fGato'), pulaF2f = () => { f2fGato.classList.remove('pula'); void f2fGato.offsetWidth; f2fGato.classList.add('pula'); };
+  f2fGato.onclick = () => { miau(true); pulaF2f(); };
   $('#f2fSair').onclick = () => { ouvinte.parar(); mostrarTela('inicio'); };
 
   // Adianta o que demora: a nuvem e a tradução já começam a se preparar com o app aberto

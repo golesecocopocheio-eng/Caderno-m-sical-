@@ -169,12 +169,12 @@
       const fimN = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n && ouvinte.pausado) setTimeout(() => ouvinte.pausar(false), 250); };
       opc.aoComecar && opc.aoComecar();
       const fimN2 = () => { fimN(); opc.aoTerminar && opc.aoTerminar(); };
-      TTS.speak({ text: texto, lang: lingua, rate: vel, queueStrategy: 1 }).then(fimN2, fimN2);
+      TTS.speak({ text: texto, lang: lingua, rate: vel, pitch: opc.tom || 1, queueStrategy: 1 }).then(fimN2, fimN2);
       return;
     }
     if (!window.speechSynthesis) return;
     const u = new SpeechSynthesisUtterance(texto);
-    u.lang = lingua; u.rate = vel;
+    u.lang = lingua; u.rate = vel; u.pitch = opc.tom || 1;
     const v = melhorVoz(lingua);
     try { if (v) u.voice = v; } catch (e) { /* voz recusada: usa a padrão do idioma */ }
     u.onstart = () => opc.aoComecar && opc.aoComecar();

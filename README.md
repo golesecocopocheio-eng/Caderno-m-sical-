@@ -41,6 +41,10 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **Gatinho dançarino em todas as abas:** nos cartões de Traduzir, Texto, Estudar e Ajustes aparece o gatinho de
+  corpo inteiro, que dança e pula sozinho de vez em quando e dança ao ser tocado; no Texto dança quando a
+  tradução aparece; no Estudar comemora os acertos, balança a cabeça nos erros e faz festa com música ao
+  terminar um tema; na aba Gatinho há o botão 💃 Dançar com música.
 - **Gatinho dançarino na sala:** o gatinho de corpo inteiro passeia pela parte de baixo da conversa, dança
   com luzes de festa e notinhas enquanto uma tradução é lida, dança junto com os emojis, pula quando alguém
   entra e fica atento (balançando a cada palavra) com o microfone ligado.

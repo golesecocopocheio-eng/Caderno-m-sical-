@@ -305,18 +305,56 @@
   const FRASES_GATO = ['Miau! 😺', 'Ronrom… 💛', 'Fale comigo em qualquer idioma! 🌍', 'Eu entendo 24 idiomas, sabia? 😼',
     'Toque no 🎤 e fale!', 'Estudar um pouquinho todo dia faz miau-ravilhas! 📚', 'Com fone de ouvido 🎧 a conversa flui sem pausas.',
     'Mande um emoji pra sala! 🎉', 'Prrr… carinho aceito! 🐾'];
+  // Notinhas saindo de um elemento (gatinho dançando)
+  function notasDe(el, ms) {
+    const fim = Date.now() + ms;
+    const tm = setInterval(() => {
+      if (Date.now() > fim || !el.offsetParent) { clearInterval(tm); return; }
+      const r = el.getBoundingClientRect(), n = document.createElement('span'); n.className = 'notaSala';
+      n.textContent = ['🎵', '🎶', '✨', '🐾'][Math.floor(Math.random() * 4)];
+      n.style.left = (r.left + Math.random() * r.width) + 'px'; n.style.top = (r.top + 6) + 'px';
+      document.body.appendChild(n); setTimeout(() => n.remove(), 1500);
+    }, 280);
+  }
+  function musiquinha() { // melodia curtinha de festa
+    if (!sons) return;
+    try {
+      const ctx = ctxAudio(), t0 = ctx.currentTime, notas = [523, 659, 784, 659, 880, 784, 659, 1046];
+      notas.forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(), t = t0 + i * 0.16;
+        o.type = 'square'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.15);
+      });
+    } catch (e) {}
+  }
   function gato(id) {
     const el = $('#' + id), img = $('img', el), fala = $('.fala', el);
-    let tm = null;
+    const corpo = img.classList.contains('corpoCard');
+    let tm = null, ocupado = 0;
+    const solta = (cls, ms) => { img.classList.remove('pula', 'pulo', 'danca', 'nao'); void img.offsetWidth; img.classList.add(cls); ocupado = Date.now() + ms; setTimeout(() => img.classList.remove(cls), ms); };
     const g = {
       dizer(t, ms = 3800) {
         fala.textContent = t; el.classList.add('falando');
-        img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula');
+        if (!img.classList.contains('danca')) { img.classList.remove('pula'); void img.offsetWidth; img.classList.add('pula'); }
         clearTimeout(tm); if (el.classList.contains('mini')) tm = setTimeout(() => el.classList.remove('falando'), ms);
       },
-      ouvindo(sim) { el.classList.toggle('ouvindo', sim); }
+      ouvindo(sim) { el.classList.toggle('ouvindo', sim); },
+      dancar(ms = 1800, festa) { // dança por um tempo; festa = com música e luzes no cartão
+        if (!corpo) return;
+        solta('danca', ms); notasDe(img, ms);
+        if (festa) { musiquinha(); el.classList.add('festa'); setTimeout(() => el.classList.remove('festa'), ms); }
+      },
+      pular() { if (corpo) solta('pulo', 800); },
+      nao() { if (corpo) solta('nao', 700); }
     };
-    img.addEventListener('click', () => { miau(true); g.dizer(FRASES_GATO[Math.floor(Math.random() * FRASES_GATO.length)]); });
+    img.addEventListener('click', () => { miau(true); g.dancar(1600); g.dizer(FRASES_GATO[Math.floor(Math.random() * FRASES_GATO.length)]); });
+    // de vez em quando, sozinho, ele dá uma dancinha ou um pulo
+    if (corpo) setInterval(() => {
+      if (!el.offsetParent || Date.now() < ocupado || el.classList.contains('ouvindo')) return;
+      const r = Math.random();
+      if (r < 0.35) g.pular(); else if (r < 0.7) g.dancar(1300);
+    }, 7000 + Math.random() * 3000);
     return g;
   }
   const gatoInicio = gato('gatoInicio'), gatoSala = gato('gatoSala');
@@ -670,18 +708,19 @@
     $('#f2fFone').innerHTML = '🎧<span> Fone' + (v ? ' ✓' : '') + '</span>';
   }
   definirFone(fone);
-  $('#fone').onchange = (e) => { definirFone(e.target.checked); gatoInicio.dizer(e.target.checked ? '🎧 Modo fone ligado: falo no seu ouvido e continuo ouvindo você!' : 'Modo fone desligado: pauso o microfone enquanto leio a tradução.'); };
+  $('#fone').onchange = (e) => { definirFone(e.target.checked); gatoInicio.dancar(1500); gatoInicio.dizer(e.target.checked ? '🎧 Modo fone ligado: falo no seu ouvido e continuo ouvindo você!' : 'Modo fone desligado: pauso o microfone enquanto leio a tradução.'); };
   $('#btFone').onclick = () => { definirFone(!fone); gatoSala.dizer(fone ? '🎧 Modo fone ligado!' : 'Modo fone desligado.', 2500); };
 
   // ---------- Abas de baixo ----------
   document.querySelectorAll('#abas button').forEach((b) => { b.onclick = () => { ouvinte.parar(); mostrarTela(b.dataset.aba); }; });
   ganchosAba.estudo = () => window.ClaSpeakEstudo && window.ClaSpeakEstudo.abrir();
   const nomeSalvo = localStorage.getItem('trad-nome');
-  if (nomeSalvo) setTimeout(() => gatoInicio.dizer('Miau! Que bom te ver, ' + nomeSalvo + '! 😺'), 400);
+  if (nomeSalvo) setTimeout(() => { gatoInicio.dizer('Miau! Que bom te ver, ' + nomeSalvo + '! 😺'); gatoInicio.dancar(2000); }, 400);
+  ganchosAba.inicio = () => setTimeout(() => gatoInicio.pular(), 200);
 
   // Para a aba Estudar (tradutor-estudo.js)
   window.ClaSpeak = {
-    traduzir, traduzirVarias, falar, melhorVoz, ronrom, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
+    traduzir, traduzirVarias, falar, melhorVoz, ronrom, musiquinha, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
     get fone() { return fone; },
     get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },
     get sons() { return sons; }, set sons(v) { sons = v; localStorage.setItem('trad-sons', v ? '1' : '0'); },

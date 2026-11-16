@@ -20,7 +20,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   de linha em SVG (`app/tradutor-ui.js` troca os emojis da interface por ícones; o conteúdo — mensagens,
   reações, textos traduzidos — fica como está). O mascote gatinho saiu de todas as telas: os balões dele
   viraram linhas de status discretas e as animações decorativas (confete, palco, notinhas) foram desligadas.
-  Logo: balão de conversa com um "C" e ondas de voz num quadrado índigo (`app/icons/claspeak.svg`). Capa com logo, nome e frase na tela de abertura do app e do APK; capas para divulgar em `app/icons/capa/` (vertical 1080×1920 e horizontal 1200×630).
+  Logo: balão de conversa com um "C" e ondas de voz num quadrado prata (metálico); nome "Clã Speak" em prata (`app/icons/claspeak.svg`). Capa com logo, nome e frase na tela de abertura do app e do APK; capas para divulgar em `app/icons/capa/` (vertical 1080×1920 e horizontal 1200×630).
 - **Motor de tradução:**
   - **Padrão (gratuito):** Google Tradutor sem chave, com MyMemory de reserva.
   - **Modo Executivo (opcional):** em ⚙️ Ajustes → Motor de tradução, escolha "Executivo", cole a sua chave
@@ -52,7 +52,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Sala:** bandeiras dos idiomas, som de mensagem nova, copiar, avatares, aviso de quem entrou e saiu,
   emojis e reações nas mensagens e "fulano está falando...".
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
-- **APK Android próprio ("Clã Speak", logo "C" em balão de conversa índigo sobre fundo escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+- **APK Android próprio ("Clã Speak", logo prata "C" em balão de conversa sobre fundo escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
   `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
   em voz alta), e o convite para a sala é pelo código.

@@ -137,3 +137,119 @@
   // O botão da aba Gatinho agora leva para cá
   const bt = $('#petSom'); if (bt) bt.onclick = () => C.mostrarTela('musica');
 })();
+
+/* ---------- 🎬 Treinar com YouTube (player oficial incorporado) ---------- */
+(() => {
+  'use strict';
+  const C = window.ClaSpeak;
+  if (!C) return;
+  const $ = (s, r = document) => r.querySelector(s);
+  const info = (t) => { $('#ytInfo').textContent = t; };
+  const balao = (t) => { const b = $('#mBalao'); b.textContent = t; b.classList.add('on'); clearTimeout(balao.tm); balao.tm = setTimeout(() => b.classList.remove('on'), 2200); };
+  C.preencher($('#ytDe'), localStorage.getItem('trad-yt-de') || 'en-US');
+  $('#ytDe').onchange = () => { localStorage.setItem('trad-yt-de', $('#ytDe').value); traduzFrase(); };
+  $('#ytLink').value = localStorage.getItem('trad-yt-link') || '';
+
+  // Pega o código do vídeo de youtu.be/…, watch?v=…, /shorts/…, /embed/…
+  function idDo(link) {
+    const m = String(link).trim().match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/) || String(link).trim().match(/^([A-Za-z0-9_-]{11})$/);
+    return m ? m[1] : null;
+  }
+  let player = null, api = null, idAtual = null, A = null, B = null, loop = false, loopTm = null, vel = 1;
+  function carregarApi() {
+    if (api) return api;
+    api = new Promise((ok, err) => {
+      if (window.YT && window.YT.Player) return ok();
+      window.onYouTubeIframeAPIReady = ok;
+      const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = err; document.head.appendChild(s);
+      setTimeout(() => err(new Error('tempo')), 8000);
+    });
+    api.catch(() => { api = null; });
+    return api;
+  }
+  function abrirFora() { return 'https://www.youtube.com/watch?v=' + idAtual; }
+  function erroVideo(cod) {
+    const msg = (cod === 101 || cod === 150 || cod === 153)
+      ? 'Este vídeo não deixa tocar fora do YouTube (o dono bloqueou). Abra no YouTube e treine as frases aqui embaixo.'
+      : 'Não consegui tocar este vídeo aqui.';
+    info(msg); $('#ytCtl').hidden = true;
+    const a = $('#ytBuscar'); a.href = abrirFora(); a.textContent = '▶ Abrir no YouTube';
+  }
+  async function abrir() {
+    const id = idDo($('#ytLink').value);
+    if (!id) { info('Cole um link do YouTube válido (ex.: https://youtu.be/…)'); return; }
+    idAtual = id; localStorage.setItem('trad-yt-link', $('#ytLink').value.trim());
+    $('#ytBox').hidden = false; info('Carregando o vídeo…');
+    try {
+      await carregarApi();
+      if (player) { player.loadVideoById(id); player.setPlaybackRate(vel); }
+      else player = new YT.Player('ytPlayer', {
+        videoId: id, host: 'https://www.youtube-nocookie.com',
+        playerVars: { playsinline: 1, rel: 0, modestbranding: 1, origin: location.origin },
+        events: { onReady: () => { info('Pronto! Use ⏪, 🐢 e A/B + 🔁 para treinar um trecho.'); $('#ytCtl').hidden = false; }, onError: (e) => erroVideo(e.data) }
+      });
+      if (player && player.getIframe) { const f = player.getIframe(); f && f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); }
+      $('#ytCtl').hidden = false;
+      const a = $('#ytBuscar'); a.href = abrirFora(); a.textContent = '▶ Abrir no YouTube';
+    } catch (e) {
+      // sem a API: mostra o player simples do YouTube (sem os botões de treino)
+      $('#ytBox').innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
+      $('#ytCtl').hidden = true; info('Vídeo carregado (sem os botões de treino nesta conexão).');
+    }
+  }
+  $('#ytCarregar').onclick = abrir;
+  $('#ytLink').addEventListener('keydown', (e) => { if (e.key === 'Enter') abrir(); });
+
+  const ok = () => player && player.getCurrentTime;
+  $('#ytVolta').onclick = () => { if (ok()) player.seekTo(Math.max(0, player.getCurrentTime() - 5), true); };
+  $('#ytTocar').onclick = () => { if (!ok()) return; player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(); };
+  $('#ytVel').onclick = () => { if (!ok()) return; vel = vel === 1 ? 0.75 : vel === 0.75 ? 0.5 : 1; player.setPlaybackRate(vel); $('#ytVel').textContent = '🐢 ' + vel + '×'; balao(vel < 1 ? 'Mais devagar 🐢' : 'Velocidade normal'); };
+  const fmt = (t) => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+  $('#ytA').onclick = () => { if (!ok()) return; A = player.getCurrentTime(); $('#ytA').textContent = 'A ' + fmt(A); $('#ytA').classList.add('ligado'); };
+  $('#ytB').onclick = () => { if (!ok()) return; B = player.getCurrentTime(); $('#ytB').textContent = 'B ' + fmt(B); $('#ytB').classList.add('ligado'); };
+  $('#ytLoop').onclick = () => {
+    if (!ok()) return;
+    if (A == null || B == null || B <= A) { info('Marque o começo (A) e o fim (B) do trecho enquanto o vídeo toca.'); return; }
+    loop = !loop; $('#ytLoop').classList.toggle('ligado', loop); clearInterval(loopTm);
+    if (loop) { player.seekTo(A, true); player.playVideo(); loopTm = setInterval(() => { if (player.getCurrentTime() >= B) player.seekTo(A, true); }, 200); balao('Repetindo o trecho 🔁'); }
+  };
+
+  // Frase que a pessoa ouviu: tradução, ouvir e repetir com conferência
+  let tmF = null, tradF = '';
+  async function traduzFrase() {
+    const t = $('#ytFrase').value.trim(); const busca = $('#ytBuscar');
+    if (!idAtual) busca.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent((t || 'música para aprender ' + C.nomeLingua($('#ytDe').value)) + ' lyrics');
+    if (!t) { $('#ytTrad').textContent = ''; tradF = ''; return; }
+    tradF = await C.traduzir(t, $('#ytDe').value, C.minhaLingua());
+    if ($('#ytFrase').value.trim() === t) $('#ytTrad').textContent = tradF;
+  }
+  $('#ytFrase').addEventListener('input', () => { clearTimeout(tmF); tmF = setTimeout(traduzFrase, 400); });
+  traduzFrase();
+  $('#ytOuvir').onclick = () => { const t = $('#ytFrase').value.trim(); if (t) { if (ok()) player.pauseVideo(); C.falar(t, $('#ytDe').value, { sempre: true, vel: 0.9 }); } };
+  const normal = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+  function parecido(a, b) {
+    a = normal(a); b = normal(b); if (!a || !b) return 0;
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return 1 - d[a.length][b.length] / Math.max(a.length, b.length);
+  }
+  $('#ytRepetir').onclick = () => {
+    const alvo = $('#ytFrase').value.trim(); if (!alvo) { balao('Escreva a frase primeiro ✍️'); return; }
+    if (C.ouvinte.ativo) { C.ouvinte.parar(); return; }
+    if (ok()) player.pauseVideo();
+    const okM = C.ouvinte.iniciar($('#ytDe').value, {
+      parcial: (t) => { $('#ytOuvi').textContent = '👂 ' + (t || 'Pode falar…'); },
+      final: (t) => {
+        C.ouvinte.parar(); const n = parecido(t, alvo);
+        $('#ytOuvi').textContent = '👂 Ouvi: “' + t + '”';
+        if (n >= 0.75) { C.miau(); balao(n > 0.92 ? 'Perfeito! 😺🎉' : 'Muito bem! 😺'); } else balao('Quase! Tente de novo 💪');
+      },
+      erro: (m) => balao(m),
+      fim: () => { $('#ytRepetir').textContent = '🎤 Repetir'; }
+    });
+    if (okM) $('#ytRepetir').textContent = '⏹ Parar';
+  };
+  // Saiu da aba Música: pausa o vídeo
+  document.querySelectorAll('#abas button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.aba !== 'musica' && ok()) { player.pauseVideo(); clearInterval(loopTm); loop = false; $('#ytLoop').classList.remove('ligado'); } }));
+})();

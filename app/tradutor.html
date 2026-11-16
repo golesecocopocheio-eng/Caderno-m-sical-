@@ -280,7 +280,35 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 /* Gatinho rasta: dançando/andando mostra a dança de verdade (9 passos do GIF) */
 .corpo.danca img,.corpo.anda img,.gatinho.mini img.danca,.gatinho.mini img.anda,.gatinho img.corpoCard.danca,.gatoCaixa.escreve,.gatoCaixa.acena{content:url(icons/gato-danca.webp)}
 .pet .foto img.dancaPet{content:url(icons/gato-rosto-danca.webp)}
+/* Frente a frente profissional */
+#f2f{--fonte:1.35rem}
+#f2f .pista{height:126px}
+#f2f .ator{width:52px;height:96px;bottom:6px}
+.lado .cab{display:flex;gap:8px;align-items:center}
+.lado .cab select{flex:1;padding:9px 10px}
+.lado .estado{font-size:.78rem;color:var(--mu);white-space:nowrap;max-width:42%;overflow:hidden;text-overflow:ellipsis}
+.lado .estado.ativo{color:var(--c);font-weight:700}
+.lado .texto{padding-bottom:12px}
+.hist{display:flex;flex-direction:column;gap:10px}
+.hist .item{animation:entra .25s}
+.hist .item.eu{align-self:flex-end;max-width:90%;background:#1f1a05;border:1px solid #4a3d0a;border-radius:14px 14px 4px 14px;padding:6px 10px;font-size:calc(var(--fonte) * .72);color:#fde68a}
+.hist .item small{display:block;font-size:.7rem;color:var(--mu);font-weight:500;font-style:normal}
+.hist .item.outro{max-width:96%;font-size:var(--fonte);font-weight:650;line-height:1.35}
+.hist .item.outro .orig{font-size:.78rem;color:var(--mu);font-weight:400;font-style:italic;margin-top:3px}
+.hist .item.outro button{background:none;color:var(--c);padding:0 4px;font-size:.9rem;vertical-align:middle}
+.hist .item.vivo{color:var(--mu);font-style:italic;font-size:calc(var(--fonte) * .8)}
+.hist .item.vivo.trad{color:#fde68a;opacity:.75}
+.lado .texto .gatoCaixa{height:58px}
+.lado .texto.cheio .gatoCaixa{opacity:0;pointer-events:none}
+.lado .texto.cheio .gatoCaixa.escreve{opacity:1}
+.mic.grande{width:100%;height:54px;border-radius:16px;font-size:1.05rem;display:flex;align-items:center;justify-content:center;gap:8px;flex:none}
+.mic.grande.on{background:#dc2626;color:#fff;animation:pulsa 1.2s infinite}
 /* Música */
+.yt{position:relative;width:100%;aspect-ratio:16/9;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;border:2px solid var(--c)}
+.yt iframe,.yt>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+#ytCtl button{padding:8px 10px}
+#ytCtl button.ligado{background:var(--c);color:#0b0b0b;border-color:var(--c)}
+.botaoLink{display:inline-flex;align-items:center;border-radius:12px;padding:12px 16px;background:var(--card2);color:var(--tx);border:1px solid var(--borda);font-weight:700;text-decoration:none}
 .palcoMusica{height:190px}
 .palcoMusica .ator{bottom:10px}
 .palcoMusica.festa .corpo img{content:url(icons/gato-danca.webp)}
@@ -470,6 +498,23 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
       <div class="chave"><span>🌍 Cantar na tradução</span><input type="checkbox" id="mCantaTrad"></div>
     </div>
     <div class="card letra" id="mLetra"><p class="mu" style="text-align:center">🎶 Toque em ▶ para ouvir. A letra aparece aqui, com a tradução.</p></div>
+    <div class="card" id="ytCard">
+      <b>🎬 Treinar com YouTube</b>
+      <p class="mu">Cole o link de uma música ou vídeo do YouTube: ele toca aqui pelo player oficial. Repita trechos, deixe mais devagar e treine as frases.</p>
+      <div class="row"><input id="ytLink" placeholder="https://youtu.be/…" inputmode="url"><button id="ytCarregar" style="flex:none">▶ Abrir</button></div>
+      <div class="yt" id="ytBox" hidden><div id="ytPlayer"></div></div>
+      <div class="botoes" id="ytCtl" hidden>
+        <button class="sec" id="ytVolta">⏪ 5s</button><button id="ytTocar">⏯</button><button class="sec" id="ytVel">🐢 1×</button>
+        <button class="sec" id="ytA">A</button><button class="sec" id="ytB">B</button><button class="sec" id="ytLoop">🔁 Trecho</button>
+      </div>
+      <p class="mu" id="ytInfo"></p>
+      <label for="ytFrase">Frase que você ouviu</label>
+      <div class="row" style="margin-bottom:6px"><select id="ytDe"></select></div>
+      <textarea id="ytFrase" placeholder="Escreva um trecho que você ouviu…" style="min-height:70px"></textarea>
+      <div class="resultado" id="ytTrad" style="min-height:30px"></div>
+      <div class="botoes" style="justify-content:flex-start"><button id="ytOuvir">🔊 Ouvir</button><button class="sec" id="ytRepetir">🎤 Repetir</button><a class="sec botaoLink" id="ytBuscar" target="_blank" rel="noopener">🔎 Buscar no YouTube</a></div>
+      <p class="mu" id="ytOuvi"></p>
+    </div>
     <p class="mu" style="text-align:center">Músicas e batida originais do Clã Speak 🐾</p>
   </div></div>
 </section>
@@ -536,17 +581,19 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 <!-- Frente a frente -->
 <section id="f2f">
   <div class="lado cima" data-lado="b">
+    <div class="cab"><select></select><span class="estado"></span></div>
     <div class="texto"></div>
-    <div class="ctl"><select></select><button class="mic">🎤</button></div>
+    <button class="mic grande">🎤 <span>Toque para falar</span></button>
   </div>
   <div class="palco" id="palco"></div>
   <div class="pista" id="pista">
     <div class="ator" id="ator"><div class="vira" id="vira"><div class="corpo" id="corpo"><img src="icons/gato-corpo.png" alt="Gatinho" id="f2fGato"></div></div></div>
-    <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
+    <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><button id="f2fTroca" title="Trocar os idiomas">⇄</button><button id="f2fFonte" title="Tamanho da letra">Aa</button><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
   </div>
   <div class="lado" data-lado="a">
+    <div class="cab"><select></select><span class="estado"></span></div>
     <div class="texto"></div>
-    <div class="ctl"><select></select><button class="mic">🎤</button></div>
+    <button class="mic grande">🎤 <span>Toque para falar</span></button>
   </div>
 </section>
 

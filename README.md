@@ -56,6 +56,11 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   bumbo macio e aro no tempo 3 (one drop), chimbal suave, órgão no contratempo com eco dub e baixo redondo
   em Lá menor → Ré, a 80 bpm, com compressor na mixagem.
   Toca no 💃 Dançar e no botão 🎶 Som de reggae da aba Gatinho (sem parar até desligar) e nas festas do Estudar.
+- **Emoções do gatinho** (`app/tradutor-emocao.js`): feliz, canta (melodia de miados), dança, assustado, triste,
+  apaixonado, surpreso, tonto, bravo e sono, cada uma com animação, emojis e som próprio. Gestos: um toque
+  (feliz/canta/surpreso ou a ação de sempre), 3 toques rápidos (susto ou bravo), segurar o dedo (carinho →
+  apaixonado, ronrona), chacoalhar o celular (tonto/assustado). Também reage sozinho: triste ao errar no Estudar,
+  canta no combo de 5, surpreso com mensagem nova na sala e boceja depois de 45 s parado.
 - **Gatinho rasta:** o mascote do app é o gatinho preto de gorro reggae do GIF enviado. Os 9 passos de dança
   foram recortados do fundo (`app/icons/gato-danca.webp`, animado; `gato-corpo.png`, parado;
   `gato-rosto.png` e `gato-rosto-danca.webp`, redondos). Sempre que o gatinho dança ou anda, toca a dança

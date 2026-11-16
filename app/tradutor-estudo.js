@@ -134,10 +134,11 @@
       const c = document.createElement('div'); c.className = 'combo'; c.textContent = '🔥 Combo x' + combo + '!';
       document.body.appendChild(c); setTimeout(() => c.remove(), 1350);
       gato.dancar(2600, true); gato.confete(combo >= 5 ? 28 : 18);
+      if (combo === 5 && window.ClaSpeakEmocao) setTimeout(() => window.ClaSpeakEmocao('canta', document.querySelector('#gatoEstudo img')), 2700);
       gato.dizer(frase + ' 🔥 ' + combo + ' seguidos!');
     } else { gato.dancar(1700); gato.confete(8); gato.dizer(frase); }
   }
-  function errou(frase) { combo = 0; gato.nao(); gato.dizer(frase); }
+  function errou(frase) { combo = 0; gato.nao(); gato.dizer(frase); setTimeout(() => window.ClaSpeakEmocao && window.ClaSpeakEmocao('triste', document.querySelector('#gatoEstudo img')), 700); }
   function proximo() { pos = (pos + 1) % itens.length; if (pos === 0) { ganhar(10); gato.dizer('🎉 Você terminou o tema! +10 ⭐ Miau!'); C.miau(); gato.dancar(3600, true); gato.confete(30); } else gato.pular(); mostrar(); }
 
   $('#estAlvo').onclick = () => $('#estAlvo').classList.remove('oculto');

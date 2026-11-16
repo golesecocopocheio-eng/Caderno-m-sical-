@@ -46,7 +46,7 @@ jobs:
         run: npx cap add android
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#0A0A0B' --splashBackgroundColor '#0A0A0B' --splashBackgroundColorDark '#0A0A0B'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#C9CCD3' --splashBackgroundColor '#0A0A0B' --splashBackgroundColorDark '#0A0A0B'
 
       - name: Definir a versão do app
         run: |

@@ -41,6 +41,10 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   fica atento enquanto a pessoa fala e "escreve" a tradução letra por letra (com ✍️) na caixa de quem ouve.
 - **Captação de voz:** onda animada enquanto ouve, primeira letra maiúscula automática e segurar para falar.
 - **🎧 Modo fone de ouvido:** com fone, o microfone continua ouvindo enquanto a tradução toca (sem pausas).
+- **Gatinho rasta:** o mascote do app é o gatinho preto de gorro reggae do GIF enviado. Os 9 passos de dança
+  foram recortados do fundo (`app/icons/gato-danca.webp`, animado; `gato-corpo.png`, parado;
+  `gato-rosto.png` e `gato-rosto-danca.webp`, redondos). Sempre que o gatinho dança ou anda, toca a dança
+  de verdade do GIF.
 - **Gatinho dançarino em todas as abas:** nos cartões de Traduzir, Texto, Estudar e Ajustes aparece o gatinho de
   corpo inteiro, que dança e pula sozinho de vez em quando e dança ao ser tocado; no Texto dança quando a
   tradução aparece; no Estudar comemora os acertos, balança a cabeça nos erros e faz festa com música ao
@@ -53,7 +57,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Sala animada:** bandeiras dos idiomas, som de mensagem nova, 📋 copiar, comentários do gatinho, avatares coloridos, aviso de quem entrou e saiu, emojis que voam para todos, reações ❤️ 😂
   nas mensagens (ou toque duas vezes) e "fulano está falando..." com pontinhos.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
-- **APK Android próprio ("Clã Speak", logo com a foto de um gatinho preto miando, balão "Miau!" e o nome, em amarelo e preto):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+- **APK Android próprio ("Clã Speak", logo com o gatinho rasta dançando (gorro reggae, pingente da paz) num círculo verde/amarelo/vermelho, balão "Miau!" e o nome):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
   `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
   em voz alta), e o convite para a sala é pelo código.

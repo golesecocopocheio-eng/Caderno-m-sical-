@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#0b0b0b">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="tradutor.webmanifest">
+<link rel="preload" as="image" href="icons/gato-danca.webp">
 <link rel="preconnect" href="https://translate.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="icon" href="icons/tradutor-192.png">
@@ -274,7 +275,10 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 .corpo.pulo{animation:pulo .8s cubic-bezier(.3,.7,.4,1)}
 @keyframes pulo{0%{transform:scaleY(.85)}30%{transform:translateY(-38px) rotate(-180deg) scaleY(1.05)}60%{transform:translateY(-30px) rotate(-360deg)}85%{transform:translateY(0) scaleY(.88)}100%{transform:none}}
 .corpo.danca{animation:danca .52s ease-in-out infinite}
-@keyframes danca{0%{transform:rotate(-14deg) translateX(-6px) scaleY(1)}25%{transform:rotate(0) translateY(-12px) scaleY(1.06)}50%{transform:rotate(14deg) translateX(6px) scaleY(.92)}75%{transform:rotate(0) translateY(-12px) scaleY(1.06)}100%{transform:rotate(-14deg) translateX(-6px) scaleY(1)}}
+@keyframes danca{0%,100%{transform:rotate(-5deg) translateY(0)}25%{transform:rotate(0) translateY(-9px)}50%{transform:rotate(5deg) translateY(0)}75%{transform:rotate(0) translateY(-9px)}}
+/* Gatinho rasta: dançando/andando mostra a dança de verdade (9 passos do GIF) */
+.corpo.danca img,.corpo.anda img,.gatinho.mini img.danca,.gatinho.mini img.anda,.gatinho img.corpoCard.danca,.gatoCaixa.escreve,.gatoCaixa.acena{content:url(icons/gato-danca.webp)}
+.pet .foto img.dancaPet{content:url(icons/gato-rosto-danca.webp)}
 /* Sala: mensagem sendo lida */
 .linha.tocando .msg{box-shadow:0 0 0 2px var(--c),0 0 18px rgba(250,204,21,.35)}
 .eq{display:none;gap:2px;align-items:flex-end;height:12px;margin-left:6px;vertical-align:middle}
@@ -385,7 +389,7 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
   <div class="rolavel"><div class="box">
     <div class="card pet">
       <div class="gatinho" id="gatoPet" style="justify-content:center"><div class="fala">Miau! Cuida de mim? 🥺</div></div>
-      <div class="foto" id="petFoto"><img src="icons/tradutor-gato.png" alt="Gatinho" id="petImg"><span class="acess" id="petAcess"></span></div>
+      <div class="foto" id="petFoto"><img src="icons/gato-rosto.png" alt="Gatinho" id="petImg"><span class="acess" id="petAcess"></span></div>
       <div class="medidor"><span>😺 Felicidade</span><div class="barraProg"><div id="petFeliz"></div></div></div>
       <div class="medidor"><span>🍗 Barriga</span><div class="barraProg"><div id="petFome"></div></div></div>
       <div class="medidor"><span>⚡ Energia</span><div class="barraProg"><div id="petEnergia"></div></div></div>

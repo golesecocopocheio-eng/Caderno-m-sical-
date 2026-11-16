@@ -634,7 +634,7 @@
     $('#fone').checked = v; if ($('#ajFone')) $('#ajFone').checked = v;
     $('#btFone').classList.toggle('ligado', v);
     $('#f2fFone').classList.toggle('ligado', v);
-    $('#f2fFone').textContent = '🎧 Fone: ' + (v ? 'sim' : 'não');
+    $('#f2fFone').innerHTML = '🎧<span> Fone' + (v ? ' ✓' : '') + '</span>';
   }
   definirFone(fone);
   $('#fone').onchange = (e) => { definirFone(e.target.checked); gatoInicio.dizer(e.target.checked ? '🎧 Modo fone ligado: falo no seu ouvido e continuo ouvindo você!' : 'Modo fone desligado: pauso o microfone enquanto leio a tradução.'); };
@@ -670,6 +670,7 @@
       let tm = null;
       const ok = ouvinte.iniciar(l.sel.value, {
         parcial: (t) => {
+          if (t) gatoOuveFala(k, t);
           l.txt.innerHTML = '<span class="p">' + esc(t || 'Ouvindo…') + '</span>';
           clearTimeout(tm);
           if (t) tm = setTimeout(() => traduzir(t, l.sel.value, outro.sel.value).then((r) => { outro.txt.innerHTML = '<span class="p">' + esc(r) + '</span>'; }), 250);
@@ -690,11 +691,11 @@
         erro: (m) => alert(m),
         fim: () => { l.mic.classList.remove('on'); f2fGato.classList.remove('escuta'); bipe(false); }
       });
-      if (ok) { l.mic.classList.add('on'); virarGato(k); f2fGato.classList.add('escuta'); bipe(true); }
+      if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); virarGato(k); f2fGato.classList.add('escuta'); bipe(true); }
     };
   });
-  $('#abrirF2f').onclick = () => { mostrarTela('f2f'); $('#f2fVoz').textContent = '🔊 Voz: ' + (vozLigada ? 'ligada' : 'desligada'); };
-  $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').textContent = '🔊 Voz: ' + (vozLigada ? 'ligada' : 'desligada'); };
+  $('#abrirF2f').onclick = () => { mostrarTela('f2f'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
+  $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fLimpar').onclick = () => { lados.a.txt.textContent = ''; lados.b.txt.textContent = ''; };
   $('#f2fFone').onclick = () => definirFone(!fone);
   const f2fGato = $('#f2fGato'), palco = $('#palco');
@@ -714,6 +715,22 @@
       p.style.transform = de === 'a' ? '' : 'rotate(180deg)'; p.style.animationDelay = (i * 0.14) + 's';
       soltarNoPalco(p, 1200 + i * 140);
     }
+  }
+  // Enquanto a pessoa fala: o gatinho balança a cabeça a cada palavra e ondinhas vão até ele
+  let ultimaPalavras = 0, ultimaOnda = 0;
+  function gatoOuveFala(lado, texto) {
+    const n = (texto.trim().match(/\S+/g) || []).length;
+    if (n === ultimaPalavras) return;
+    ultimaPalavras = n;
+    f2fGato.classList.remove('assente'); void f2fGato.offsetWidth; f2fGato.classList.add('assente');
+    const ag = Date.now(); if (ag - ultimaOnda < 160) return; ultimaOnda = ag;
+    const o = document.createElement('span'); o.className = 'onda2';
+    o.textContent = ['🎶', '🎵', '💬', '🔉'][Math.floor(Math.random() * 4)];
+    const meio = f2fGato.getBoundingClientRect(), y = meio.top + meio.height / 2;
+    const deCima = lado === 'b', inicio = deCima ? y * 0.45 : y + (innerHeight - y) * 0.55;
+    o.style.top = inicio + 'px'; if (deCima) o.style.transform = 'rotate(180deg)';
+    o.style.setProperty('--dx', (Math.random() * 140 - 70) + 'px'); o.style.setProperty('--dy', (y - inicio) + 'px');
+    soltarNoPalco(o, 850);
   }
   let notasTm = null;
   function notas(para, ligar) { // notinhas saindo do gatinho para quem está ouvindo

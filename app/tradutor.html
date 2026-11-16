@@ -164,10 +164,11 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 .lado .texto .p{color:var(--mu);font-size:.95rem}
 .lado .ctl{display:flex;gap:8px;align-items:center}
 .lado .ctl select{flex:1}
-.meio{display:flex;justify-content:center;align-items:center;gap:5px;padding:6px;background:#0b0b0b;border-top:3px solid var(--c);border-bottom:3px solid var(--c);flex-wrap:wrap}
+.meio{display:flex;justify-content:center;align-items:center;gap:5px;padding:6px;flex-wrap:nowrap;background:#0b0b0b;border-top:3px solid var(--c);border-bottom:3px solid var(--c);flex-wrap:wrap}
 .meio button{background:rgba(255,255,255,.12);color:#fff;padding:6px 8px;font-size:.78rem}
 .meio button.ligado{background:var(--c);color:#0b0b0b}
-.meio img{width:52px;height:52px;border-radius:50%;box-shadow:0 0 0 3px var(--c);cursor:pointer;transition:transform .45s cubic-bezier(.3,1.6,.5,1)}
+@media (max-width:390px){.meio button span{display:none}.meio button{font-size:1.05rem;padding:6px 12px}}
+.meio img{width:72px;height:72px;margin:-14px 4px;flex:none;position:relative;z-index:2;border-radius:50%;box-shadow:0 0 0 3px var(--c);cursor:pointer;transition:transform .45s cubic-bezier(.3,1.6,.5,1)}
 .meio img.paraCima{transform:rotate(180deg)}
 .meio img.escuta{animation:escuta 1s ease-in-out infinite}
 .meio img.paraCima.escuta{animation:escutaCima 1s ease-in-out infinite}
@@ -177,6 +178,12 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
 @keyframes canta{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg) scale(1.05)}}
 .meio img.paraCima.cantando{animation:cantaCima .5s ease-in-out infinite}
 @keyframes cantaCima{0%,100%{transform:rotate(175deg)}50%{transform:rotate(185deg) scale(1.05)}}
+.meio img.assente{animation:assente .35s ease-out}
+.meio img.paraCima.assente{animation:assenteCima .35s ease-out}
+@keyframes assente{0%{transform:none}40%{transform:translateY(5px) rotate(-7deg) scale(1.08)}100%{transform:none}}
+@keyframes assenteCima{0%{transform:rotate(180deg)}40%{transform:rotate(187deg) translateY(-5px) scale(1.08)}100%{transform:rotate(180deg)}}
+.onda2{position:absolute;left:50%;font-size:1.3rem;margin-left:-.65em;animation:paraGato .8s ease-in forwards}
+@keyframes paraGato{from{opacity:.95;transform:translate(var(--dx),0) scale(1)}to{opacity:0;transform:translate(0,var(--dy)) scale(.4)}}
 .palco{position:fixed;inset:0;pointer-events:none;z-index:15;overflow:hidden}
 .carta{position:absolute;left:50%;top:50%;margin:-26px 0 0 -70px;width:140px;background:var(--c);color:#0b0b0b;font-weight:800;border-radius:18px;padding:8px 10px;text-align:center;font-size:.85rem;box-shadow:0 6px 20px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .carta.desce{animation:desce 1s cubic-bezier(.5,0,.3,1) forwards}
@@ -389,7 +396,7 @@ input[type=range]{padding:0;accent-color:var(--c);background:none;border:0}
     <div class="ctl"><select></select><button class="mic">🎤</button></div>
   </div>
   <div class="palco" id="palco"></div>
-  <div class="meio"><img src="icons/tradutor-gato.png" alt="Gatinho" id="f2fGato"><button id="f2fVoz">🔊 Voz: ligada</button><button id="f2fFone">🎧 Fone</button><button id="f2fLimpar">Limpar</button><button id="f2fSair">Sair</button></div>
+  <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><img src="icons/tradutor-gato.png" alt="Gatinho" id="f2fGato"><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
   <div class="lado" data-lado="a">
     <div class="texto"></div>
     <div class="ctl"><select></select><button class="mic">🎤</button></div>

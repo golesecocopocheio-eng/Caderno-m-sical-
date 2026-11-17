@@ -120,40 +120,58 @@
   if (abas) { abas.addEventListener('click', () => requestAnimationFrame(corAba)); corAba(); }
 })();
 
-/* Tela de abertura (capa): já vem no HTML (sem tela branca). Estrelas passando como numa
-   viagem pelo espaço; no fim a capa "avança" para dentro do app. Toque para pular. */
+/* Tela de abertura (capa): já vem no HTML (sem tela branca). Abre devagar, como flutuando no
+   espaço: estrelas passando lentamente e estrelas cadentes cruzando o céu. Toque para pular. */
 (function () {
   'use strict';
   const c = document.getElementById('capa');
   if (!c) return;
   try { sessionStorage.setItem('trad-capa', '1'); } catch (e) {}
+  const DUR = 5200;
   const cv = document.getElementById('capaWarp'), x = cv && cv.getContext('2d');
-  let fim = false, t0 = performance.now(), raf = 0;
+  let fim = false, raf = 0;
   if (x) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const W = () => (cv.width = innerWidth * dpr, cv.height = innerHeight * dpr);
     W(); addEventListener('resize', W);
-    const cores = ['255,255,255', '255,255,255', '249,168,212', '125,211,252', '196,181,253', '253,230,138'];
-    const N = 260, est = [];
-    const nova = (z) => ({ x: (Math.random() - .5) * 2, y: (Math.random() - .5) * 2, z: z || Math.random() * 1 + .05, c: cores[(Math.random() * cores.length) | 0] });
-    for (let i = 0; i < N; i++) est.push(nova());
-    let ult = t0;
+    const cores = ['255,255,255', '255,255,255', '255,255,255', '249,168,212', '125,211,252', '196,181,253', '253,230,138'];
+    const est = [], cad = [];
+    const nova = (z) => ({ x: (Math.random() - .5) * 2.2, y: (Math.random() - .5) * 2.2, z: z || Math.random() * 1 + .1, c: cores[(Math.random() * cores.length) | 0], f: Math.random() * 6.28 });
+    for (let i = 0; i < 180; i++) est.push(nova());
+    const novaCadente = () => {
+      const w = cv.width, h = cv.height, daEsq = Math.random() < .5;
+      cad.push({ x: daEsq ? -w * .1 : w * (.3 + Math.random() * .8), y: h * Math.random() * .45, vx: (daEsq ? 1 : -1) * w * (.55 + Math.random() * .3), vy: h * (.18 + Math.random() * .12), vida: 0, dur: 1.3 + Math.random() * .6, c: cores[(Math.random() * cores.length) | 0] });
+    };
+    let ult = performance.now(), prox = 300;
     const passo = (agora) => {
       const dt = Math.min(50, agora - ult) / 1000; ult = agora;
-      const tt = (agora - t0) / 1000;
-      const vel = fim ? 3.2 : .18 + Math.min(1, tt / 1.6) * .55; // acelera; na saída, salto
-      const w = cv.width, h = cv.height, cx = w / 2, cy = h * .42, k = Math.max(w, h) * .5;
+      const w = cv.width, h = cv.height, cx = w / 2, cy = h * .42, k = Math.max(w, h) * .45;
       x.clearRect(0, 0, w, h);
+      const vel = fim ? .35 : .07; // passeio lento pelo espaço
       for (const s of est) {
-        const z0 = s.z; s.z -= vel * dt;
-        if (s.z <= .02) { Object.assign(s, nova(1.05)); continue; }
-        const px = cx + s.x / s.z * k, py = cy + s.y / s.z * k, qx = cx + s.x / z0 * k, qy = cy + s.y / z0 * k;
-        if (px < -50 || px > w + 50 || py < -50 || py > h + 50) { Object.assign(s, nova(1.05)); continue; }
-        const a = Math.min(1, (1.1 - s.z) * 1.2);
-        x.strokeStyle = 'rgba(' + s.c + ',' + a.toFixed(3) + ')';
-        x.lineWidth = Math.max(.6, (1.2 - s.z) * 2.4) * dpr;
-        x.lineCap = 'round';
-        x.beginPath(); x.moveTo(qx, qy); x.lineTo(px, py); x.stroke();
+        s.z -= vel * dt; s.f += dt * 2;
+        if (s.z <= .05) { Object.assign(s, nova(1.1)); continue; }
+        const px = cx + s.x / s.z * k, py = cy + s.y / s.z * k;
+        if (px < -20 || px > w + 20 || py < -20 || py > h + 20) { Object.assign(s, nova(1.1)); continue; }
+        const a = Math.min(1, (1.15 - s.z) * 1.1) * (.65 + .35 * Math.sin(s.f));
+        const r = Math.max(.5, (1.2 - s.z) * 1.8) * dpr;
+        x.fillStyle = 'rgba(' + s.c + ',' + Math.max(0, a).toFixed(3) + ')';
+        x.beginPath(); x.arc(px, py, r, 0, 6.283); x.fill();
+      }
+      prox -= dt * 1000;
+      if (prox <= 0) { novaCadente(); prox = 650 + Math.random() * 700; }
+      for (let i = cad.length - 1; i >= 0; i--) {
+        const m = cad[i]; m.vida += dt;
+        const t = m.vida / m.dur; if (t >= 1) { cad.splice(i, 1); continue; }
+        m.x += m.vx * dt; m.y += m.vy * dt;
+        const a = t < .15 ? t / .15 : 1 - (t - .15) / .85;
+        const tx = m.x - m.vx * .22, ty = m.y - m.vy * .22;
+        const g = x.createLinearGradient(tx, ty, m.x, m.y);
+        g.addColorStop(0, 'rgba(' + m.c + ',0)'); g.addColorStop(1, 'rgba(' + m.c + ',' + a.toFixed(3) + ')');
+        x.strokeStyle = g; x.lineWidth = 2.2 * dpr; x.lineCap = 'round';
+        x.beginPath(); x.moveTo(tx, ty); x.lineTo(m.x, m.y); x.stroke();
+        x.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')'; x.shadowColor = 'rgba(' + m.c + ',1)'; x.shadowBlur = 12 * dpr;
+        x.beginPath(); x.arc(m.x, m.y, 2.4 * dpr, 0, 6.283); x.fill(); x.shadowBlur = 0;
       }
       raf = requestAnimationFrame(passo);
     };
@@ -161,11 +179,11 @@
   }
   const sair = () => {
     if (fim) return; fim = true;
-    setTimeout(() => c.classList.add('sai'), 180);
-    setTimeout(() => { cancelAnimationFrame(raf); c.remove(); }, 950);
+    c.classList.add('sai');
+    setTimeout(() => { cancelAnimationFrame(raf); c.remove(); }, 1500);
   };
   c.addEventListener('click', sair);
-  setTimeout(sair, 2400);
+  setTimeout(sair, DUR);
 })();
 
 /* Planetas e estrelas no fundo de todo o app (camada fixa atrás das telas) */

@@ -39,14 +39,14 @@ jobs:
           rm -rf www && mkdir -p www/icons www/vendor
           cp ../app/tradutor.html www/index.html
           cp ../app/tradutor.js ../app/tradutor-estudo.js ../app/tradutor-extra.js ../app/tradutor-musica.js ../app/tradutor-conversa.js ../app/tradutor-saber.js ../app/tradutor-ui.js ../app/tradutor-arte.js ../app/tradutor-backup.js ../app/tradutor.webmanifest ../app/firebase-config.js www/
-          cp ../app/icons/tradutor-gato.png ../app/icons/gato-corpo.png ../app/icons/gato-danca.webp ../app/icons/gato-rosto.png ../app/icons/gato-rosto-danca.webp ../app/icons/tradutor-192.png ../app/icons/tradutor-512.png ../app/icons/claspeak-marca.svg www/icons/
+          cp ../app/icons/tradutor-gato.png ../app/icons/gato-corpo.png ../app/icons/gato-danca.webp ../app/icons/gato-rosto.png ../app/icons/gato-rosto-danca.webp ../app/icons/tradutor-192.png ../app/icons/tradutor-512.png ../app/icons/claspeak-marca.svg ../app/icons/ceu.webp www/icons/
           cp ../app/vendor/qrcode.js ../app/vendor/anthropic-sdk.js ../app/vendor/firebase-app-compat.js ../app/vendor/firebase-auth-compat.js ../app/vendor/firebase-firestore-compat.js www/vendor/
 
       - name: Criar o projeto Android
         run: npx cap add android
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#4C1D95' --splashBackgroundColor '#0C0614' --splashBackgroundColorDark '#0C0614'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#4C1D95' --splashBackgroundColor '#F3EEFF' --splashBackgroundColorDark '#F3EEFF'
 
       - name: Definir a versão do app
         run: |

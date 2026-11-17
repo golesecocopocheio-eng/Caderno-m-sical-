@@ -11,9 +11,9 @@
     inicio: (g) => grad(g, '#C4B5FD', '#7C3AED') +
       '<rect x="14" y="18" width="78" height="50" rx="12" fill="url(#' + g + ')" fill-opacity=".14" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<path d="M34 68v14l14-14" fill="none" stroke="url(#' + g + ')" stroke-width="1.6" stroke-linejoin="round"/>' +
-      '<text x="53" y="51" text-anchor="middle" font-size="24" font-weight="600" fill="#FDE68A" font-family="Inter,system-ui,sans-serif">Aa</text>' +
-      '<rect x="70" y="50" width="76" height="48" rx="12" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
-      '<path d="M126 98v12l-12-12" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<text x="53" y="51" text-anchor="middle" font-size="24" font-weight="600" fill="#7C3AED" font-family="Inter,system-ui,sans-serif">Aa</text>' +
+      '<rect x="70" y="50" width="76" height="48" rx="12" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
+      '<path d="M126 98v12l-12-12" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6" stroke-linejoin="round"/>' +
       '<g class="arOnda" stroke="#FACC15" stroke-width="3" stroke-linecap="round">' +
       '<line x1="88" y1="64" x2="88" y2="84"/><line x1="97" y1="64" x2="97" y2="84"/><line x1="106" y1="64" x2="106" y2="84"/><line x1="115" y1="64" x2="115" y2="84"/><line x1="124" y1="64" x2="124" y2="84"/><line x1="133" y1="64" x2="133" y2="84"/></g>' +
       '<circle class="arPisca" cx="146" cy="22" r="3" fill="#FACC15"/><circle class="arPisca d2" cx="8" cy="96" r="2" fill="#FACC15"/>',
@@ -24,8 +24,8 @@
       '<g class="arGira"><circle cx="128" cy="22" r="10" fill="none" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<g stroke="url(#' + g + ')" stroke-width="1.6" stroke-linecap="round"><path d="M128 4v4M128 36v4M110 22h4M142 22h4M115 9l3 3M138 32l3 3M115 35l3-3M138 12l3-3"/></g></g>',
     estudo: (g) => grad(g, '#7FD8C4', '#2F9E86') +
-      '<rect x="40" y="30" width="80" height="56" rx="10" fill="#13101A" stroke="#2F9E86" stroke-opacity=".35" stroke-width="1.4" transform="rotate(-8 80 58)"/>' +
-      '<rect x="36" y="34" width="84" height="58" rx="10" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
+      '<rect x="40" y="30" width="80" height="56" rx="10" fill="#FFFFFF" stroke="#2F9E86" stroke-opacity=".35" stroke-width="1.4" transform="rotate(-8 80 58)"/>' +
+      '<rect x="36" y="34" width="84" height="58" rx="10" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<path d="M50 52h40M50 62h28" stroke="url(#' + g + ')" stroke-width="2" stroke-linecap="round"/>' +
       '<circle cx="102" cy="76" r="9" fill="url(#' + g + ')" fill-opacity=".18" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<path class="arCheck" d="M97.5 76l3 3 6-6" fill="none" stroke="#7FD8C4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
@@ -39,7 +39,7 @@
       '<line x1="118" y1="46" x2="118" y2="62"/><line x1="128" y1="46" x2="128" y2="62"/><line x1="138" y1="46" x2="138" y2="62"/></g>' +
       '<path class="arFlutua" d="M132 22v-12l12-3v12" fill="none" stroke="#E79BD0" stroke-width="1.6" stroke-linejoin="round"/><circle class="arFlutua" cx="129" cy="23" r="3" fill="#E79BD0"/><circle class="arFlutua" cx="141" cy="20" r="3" fill="#E79BD0"/>',
     conversa: (g) => grad(g, '#86C5F5', '#3D8BD9') +
-      '<rect x="12" y="20" width="84" height="38" rx="12" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
+      '<rect x="12" y="20" width="84" height="38" rx="12" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<path d="M26 34h44M26 44h30" stroke="#3D8BD9" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>' +
       '<rect x="62" y="68" width="86" height="34" rx="12" fill="url(#' + g + ')" fill-opacity=".16" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<g fill="#86C5F5"><circle class="arPonto" cx="92" cy="85" r="3"/><circle class="arPonto d2" cx="105" cy="85" r="3"/><circle class="arPonto d3" cx="118" cy="85" r="3"/></g>' +
@@ -47,15 +47,15 @@
     nuvem: (g) => grad(g, '#C4B5FD', '#7C3AED') +
       '<path d="M44 92a22 22 0 0 1-3-43.8A30 30 0 0 1 98 40a20 20 0 0 1-2 52z" fill="url(#' + g + ')" fill-opacity=".14" stroke="url(#' + g + ')" stroke-width="1.6" stroke-linejoin="round"/>' +
       '<g class="arFlutua"><path d="M70 82V58M60 68l10-10 10 10" fill="none" stroke="#FACC15" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>' +
-      '<rect x="112" y="70" width="36" height="40" rx="6" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
+      '<rect x="112" y="70" width="36" height="40" rx="6" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<path d="M120 82h20M120 90h14" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"/>' +
-      '<circle cx="140" cy="100" r="7" fill="#13101A" stroke="#FACC15" stroke-width="1.6"/><path class="arCheck" d="M137 100l2 2 4-4" fill="none" stroke="#FACC15" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="140" cy="100" r="7" fill="#FFFFFF" stroke="#FACC15" stroke-width="1.6"/><path class="arCheck" d="M137 100l2 2 4-4" fill="none" stroke="#FACC15" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<circle class="arPisca" cx="20" cy="30" r="2.5" fill="#FACC15"/><circle class="arPisca d2" cx="128" cy="24" r="2" fill="#FACC15"/>',
     ajustes: (g) => grad(g, '#B9BCC8', '#6B6F80') +
       '<g stroke="url(#' + g + ')" stroke-width="1.6" stroke-linecap="round"><path d="M24 34h112M24 60h112M24 86h112" stroke-opacity=".5"/></g>' +
-      '<g class="arSlide"><circle cx="60" cy="34" r="8" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/></g>' +
-      '<g class="arSlide d2"><circle cx="104" cy="60" r="8" fill="#13101A" stroke="#FACC15" stroke-width="1.6"/></g>' +
-      '<g class="arSlide d3"><circle cx="78" cy="86" r="8" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/></g>'
+      '<g class="arSlide"><circle cx="60" cy="34" r="8" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/></g>' +
+      '<g class="arSlide d2"><circle cx="104" cy="60" r="8" fill="#FFFFFF" stroke="#FACC15" stroke-width="1.6"/></g>' +
+      '<g class="arSlide d3"><circle cx="78" cy="86" r="8" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/></g>'
   };
 
   const TEXTOS = {

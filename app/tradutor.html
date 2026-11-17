@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clã Speak</title>
-<meta name="theme-color" content="#0B0910">
+<meta name="theme-color" content="#F3EEFF">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="tradutor.webmanifest">
 <link rel="preload" as="image" href="icons/gato-danca.webp">
@@ -651,6 +651,40 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
 .bkRest{margin-top:12px;border-top:1px solid var(--borda);padding-top:10px}
 .bkRest summary{cursor:pointer;font-weight:500;color:var(--c2);margin-bottom:8px}
 .bkRest #bkArquivoBt{width:100%;margin-bottom:6px}
+
+/* ===== TEMA CÉU CLARO (fundo com galáxias, app/icons/ceu.webp) ===== */
+:root{--bg:#F3EEFF;--card:rgba(255,255,255,.72);--card2:rgba(255,255,255,.88);--borda:rgba(91,33,182,.14);--borda2:rgba(91,33,182,.26);
+  --tx:#1C1530;--mu:#6B6385;--c:#7C3AED;--c2:#6D28D9;--eu:#EDE6FF;--ok:#15803D;--erro:#DC2626}
+html{background:#F3EEFF}
+body{background:#F3EEFF url(icons/ceu.webp) center/cover no-repeat fixed;color:var(--tx)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:url(icons/ceu.webp) center/cover no-repeat}
+.tela,.rolavel,#f2f{background:transparent}
+header{background:rgba(255,255,255,.6);border-bottom-color:var(--borda);backdrop-filter:saturate(160%) blur(14px)}
+.abas{background:rgba(255,255,255,.72);border-top-color:var(--borda);backdrop-filter:saturate(160%) blur(14px)}
+.abas button{color:#7A7290}
+.abas button.on{color:#6D28D9}
+.abas button.on::before{background:#F59E0B}
+.card,.hero,.status,.lista .item,.sbVocab button,.opcoes button{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.card,.hero{box-shadow:0 1px 2px rgba(76,29,149,.06),0 8px 24px rgba(76,29,149,.06)}
+select,input,textarea,.lista .item,.opcoes button,.sbVocab button{background:rgba(255,255,255,.9);color:var(--tx)}
+input::placeholder,textarea::placeholder{color:#9C94B3}
+.aviso{background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.25);color:#B91C1C}
+.linha.eu .msg,.cvM.eu .bal{border-color:rgba(124,58,237,.25)}
+.mic{box-shadow:0 4px 14px rgba(124,58,237,.35)}
+.heroTit{color:var(--tx)}
+.heroSobre{filter:saturate(1.1) brightness(.85)}
+#inicio .marca{color:#1C1530}
+.marca .am{background:linear-gradient(90deg,#7C3AED,#C026D3 60%,#F59E0B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capa{background:#F3EEFF url(icons/ceu.webp) center/cover no-repeat}
+.capaBrilho{background:radial-gradient(60% 40% at 50% 42%,rgba(255,255,255,.75),transparent 70%)}
+.capaNome{color:#1C1530}
+.capaNome span{background:linear-gradient(90deg,#7C3AED,#C026D3 60%,#F59E0B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capaFrase{color:#6B6385}
+.capaBarra{background:rgba(91,33,182,.15)}
+.capaLogo{filter:drop-shadow(0 12px 28px rgba(124,58,237,.35))}
+.lado.cima{background:rgba(237,230,255,.55)}
+.pista{background:rgba(255,255,255,.55);border-color:var(--borda)}
+.lado .texto .dica{color:var(--mu)}
 </style>
 </head>
 <body>

@@ -221,7 +221,7 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .dhd .da.on svg.i{color:#fff}.daw .dh .rb svg.i{width:22px;height:22px}
 .dly{margin:0 10px 6px;border:1px solid var(--line);border-radius:14px;background:var(--card);flex:0 0 auto}.dly>summary{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700;font-size:16px;min-height:44px;cursor:pointer}.dly>summary svg{width:22px;height:22px}.dly .mini{margin-left:auto;min-height:36px;padding:0 14px;font-size:14px}
 .dlyv{max-height:22vh;overflow-y:auto;padding:4px 14px 12px;scroll-behavior:smooth}.dlyv p{margin:3px 0;font-size:19px;line-height:1.35;color:var(--mute);transition:color .2s,transform .2s}.dlyv p.on{color:var(--ink);font-weight:800;transform:translateX(3px)}.dlyv p.sec{font-size:13px;font-weight:700;color:var(--chord);margin-top:10px}.dlyv p.gap{height:8px;margin:0}
-.dlyt[hidden],.dlyv[hidden]{display:none}.dlyt{display:block;width:calc(100% - 24px);margin:0 12px 12px;min-height:22vh;font-size:18px;line-height:1.4;box-sizing:border-box}
+.dlvi{padding:0 14px 10px;font-size:19px;font-weight:700;color:var(--chord);min-height:0}.dlvi:empty{display:none}.dlyt[hidden],.dlyv[hidden]{display:none}.dlyt{display:block;width:calc(100% - 24px);margin:0 12px 12px;min-height:22vh;font-size:18px;line-height:1.4;box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -386,7 +386,10 @@ function pane(){const p=$('#pane'),s=cur;
 let sr=null,srOn=false,recTipo='mix',recBk=true,recNS=true,recLive=false;try{recLive=localStorage.getItem('cm_live')==='1'}catch(e){}
 const liveOn=s=>{if(recLive)return true;if(!s||s.fase!=='ideia')return false;try{return localStorage.getItem('cm_live')!=='0'}catch(e){return true}};
 if(window.Capacitor)document.documentElement.style.setProperty('--satmin','30px');
-function stopSR(){karStop();srOn=false;try{sr&&sr.stop()}catch(e){}}
+let nat=null;
+function dawLive(t){const v=$('#dlvi');if(v)v.textContent=t||''}
+function dawLyrRefresh(){try{const t=$('#dlyt');if($('#dlyv')&&daw&&daw.lyrDraw&&!(t&&!t.hidden)){$('#dly').open=true;daw.lyrDraw();const v=$('#dlyv');if(daw.recording&&v)v.scrollTop=v.scrollHeight}}catch(e){}}
+function stopSR(){karStop();srOn=false;try{sr&&sr.stop()}catch(e){}if(nat){const n=nat;nat=null;try{n.P.stop().catch(()=>{})}catch(e){}try{n.hs.forEach(h=>h.then(x=>x.remove()).catch(()=>{}))}catch(e){}}}
 /* ---------- mixer ---------- */
 const mx={ac:null,buf:{},bad:{},src:[],gn:{},master:null,playing:false,t0:0,pos:0,dur:0,raf:0,mv:1};
 const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
@@ -697,7 +700,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  e.innerHTML=`<div class="dh"><button id="dx" class="rb sm" aria-label="Fechar o estúdio">${IC.x}</button><div class="dti"><b>${esc(s.title||'Sem título')}</b><small id="dtm">0:00.0 / 0:00.0</small></div><div class="lvl" id="dvu" aria-label="Nível do microfone"><i></i></div></div>
  <div class="dt"><div class="tr"><button id="dhome" class="rb" aria-label="Voltar ao início">${IC.rew}</button><button id="dplay" class="rb pl" aria-label="Tocar">${IC.play}</button><button id="drecb" class="rcb">${IC.rec} Gravar</button></div>
  <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
- <details class="dly" id="dly" ${(s.letra||s.ouvido||'').trim()?'open':''}><summary>${IC.notes} Letra <button id="dlye" class="mini" type="button">Editar</button></summary><div id="dlyv" class="dlyv"></div><textarea id="dlyt" class="dlyt" hidden placeholder="Cole ou escreva a letra aqui"></textarea></details>
+ <details class="dly" id="dly" ${(s.letra||s.ouvido||'').trim()?'open':''}><summary>${IC.notes} Letra <button id="dlye" class="mini" type="button">Editar</button></summary><div id="dlyv" class="dlyv"></div><div id="dlvi" class="dlvi" aria-live="polite"></div><textarea id="dlyt" class="dlyt" hidden placeholder="Cole ou escreva a letra aqui"></textarea></details>
  <div class="dbody" id="dbody"><div class="dleft" id="dleft"></div><div class="dright" id="dscr"><div class="dinner" id="dinner"></div></div></div>
  <div class="dsel" id="dsel"></div>`;
  document.body.appendChild(e);
@@ -1014,12 +1017,24 @@ function lvCommit(i,t){let x=(t||'').trim().replace(/\s+/g,' ');if(!x)return fal
  const last=L.length-1,now=Date.now();
  if(last>=0&&now-LV.t<6000){const p=lvNz(L[last]);if(p===n||p.startsWith(n+' '))return false;if(n.startsWith(p+' ')){L[last]=x;LV.map[i]=last;LV.t=now;return true}}
  L.push(x);LV.map[i]=L.length-1;LV.t=now;return true}
-function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return false;
+function startNative(s){let P;try{P=plug('SpeechRecognition')}catch(e){return false}
+ stopSR();srOn=true;LV={base:s.ouvido||'',lines:[],map:{},t:0};let n=0,live='';const me={P,hs:[]};nat=me;
+ const show=t=>{const v=$('#lvi');if(v&&cur===s)v.textContent=t||'Ouvindo…';dawLive(t)};
+ const commit=()=>{if(live&&lvCommit(n,live)){s.ouvido=lvText();save(s);dawLyrRefresh();if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}};
+ const fail=m=>{srOn=false;const g=$('#gst');if(g&&cur===s)g.textContent=m;show('')};
+ const go=async()=>{if(!srOn||nat!==me)return;try{await P.start({language:stu.lang,maxResults:1,partialResults:true,popup:false})}catch(e){const t=String(e&&(e.message||e));if(/permission|denied/i.test(t))fail('Sem permissão do microfone para escrever a letra.');else if(srOn&&nat===me)setTimeout(go,700)}};
+ (async()=>{try{const a=await P.available();if(!a||a.available===false)return fail('Este celular não tem o reconhecimento de voz do Google. A gravação continua.');
+  const pm=await P.requestPermissions();if(pm&&pm.speechRecognition==='denied')return fail('Sem permissão do microfone para escrever a letra.');
+  me.hs.push(P.addListener('partialResults',e=>{const t=e&&e.matches&&e.matches[0];if(!t)return;live=t;show(t);commit()}));
+  me.hs.push(P.addListener('listeningState',e=>{if(e&&e.status==='stopped'){commit();n++;live='';show('');if(srOn&&nat===me)setTimeout(go,250)}}));
+  go()}catch(e){fail('Não deu para ligar a letra ao vivo. A gravação continua.')}})();
+ return true}
+function startLetra(s){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return CAPN?startNative(s):false;
  try{stopSR();sr=new SR();sr.lang=stu.lang;sr.continuous=true;sr.interimResults=true;srOn=true;
   LV={base:s.ouvido||'',lines:[],map:{},t:0};karStart(s,false);
   sr.onresult=e=>{karFeed(e);let itm='',ch=false;for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal){if(lvCommit(i,t))ch=true}else if(i>=e.resultIndex)itm+=t}
-   if(ch){s.ouvido=lvText();save(s);if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}
-   const v=$('#lvi');if(v&&cur===s)v.textContent=itm||'Ouvindo…'};
+   if(ch){s.ouvido=lvText();save(s);dawLyrRefresh();if(cur===s){const d=$('#dr');if(d){d.value=s.ouvido;d.scrollTop=d.scrollHeight;cnts()}}}
+   const v=$('#lvi');if(v&&cur===s)v.textContent=itm||'Ouvindo…';dawLive(itm||'Ouvindo…')};
   sr.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;const msg=e.error==='network'?'Para escrever a letra o Chrome precisa de internet.':e.error==='audio-capture'?'O microfone está ocupado e não deu para escrever a letra junto com a gravação. A gravação continua.':'Sem permissão do microfone para escrever a letra.';
    srOn=false;const g=$('#gst');if(g&&cur===s)g.textContent=msg;const v=$('#lvi');if(v)v.textContent='';const so=$('#so');if(so)so.textContent='✎ Só escrever'};
   sr.onend=()=>{if(srOn){if(LV)LV.map={};KP.ri=-1;KP.base=KP.idx;try{sr.start()}catch(e){}}};
@@ -1034,7 +1049,7 @@ function saveAll(){const s=cur;if(!s)return;
  if(d&&!(s.letra||'').includes(d.slice(0,60))){s.letra=(s.letra||'').trim()?s.letra.replace(/\s+$/,'')+'\n\n'+d:d;merged=d.split('\n').length}
  save(s);put(s);flushAll();
  setTimeout(()=>{if(cur!==s)return;const n=s.audios.filter(a=>a.blob).length;const o=$('#sum');if(o)o.innerHTML=`<b>Tudo salvo às ${hhmm()}.</b><br>${n} ${n===1?'gravação':'gravações'} · ${wc(s.letra||'')} palavras na letra${merged?' ('+merged+' linhas novas passadas do rascunho)':''}.`;toast('Tudo salvo');if(tab==='estudio')studio($('#pane'))},wasRec?900:50)}
-function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function studio(p){const s=cur,rc=rec&&rec.state==='recording',SR=window.SpeechRecognition||window.webkitSpeechRecognition||CAPN;
  const keepSum=$('#sum')?$('#sum').innerHTML:'';
  if(!s.bpm)s.bpm=90;if(!s.sig)s.sig=4;
  p.innerHTML='<button class="pri" id="dawb2" style="width:100%;margin-bottom:10px;padding:14px">🎛 Abrir estúdio multipista</button>'+`<div class="card2 stc"><div class="stt"><span id="tmr" class="tmr">0:00</span><div class="lvl" aria-label="Nível do microfone"><i id="lvl"></i></div></div>

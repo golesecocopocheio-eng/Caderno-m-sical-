@@ -35,9 +35,10 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Frente a frente transparente:** as caixas da escrita são transparentes (aparecem o céu, planetas e estrelas), com borda lilás e texto branco com sombra; seletores de idioma translúcidos.
 - **Frente a frente com cosmos:** a faixa do meio (botões Voz, Fone, Auto, Limpar, Sair) tem céu roxo com planeta
   rosa de anel dourado, planeta azul, planetinhas lilás e dourado, estrelas piscando e estrelas cadentes.
-- **Abertura devagar, no espaço:** a capa já vem no HTML e o Android usa fundo roxo na janela (sem tela branca entre
-  o splash e o app). Por cerca de 5 s as estrelas passam devagar e estrelas cadentes cruzam o céu; o logo, o nome,
-  a frase e a assinatura aparecem aos poucos, e a capa some suavemente.
+- **Abertura: viagem pelo espaço** (`#abertura` no `tradutor.html`): céu roxo-escuro com nebulosas, três camadas de
+  estrelas vindo na direção da tela (como viajar no espaço) e estrelas cadentes; a lua chega do fundo, depois aparecem
+  "Clã Speak", a frase e "by Sanka Brunelli". Em ~3,6 s tudo avança para dentro do app. Feita só com animações de
+  GPU (não trava enquanto o app carrega). No Android, splash, janela e WebView usam o mesmo roxo-escuro (sem branco).
 - **Paleta:** roxo, lilás, rosa e azul-claro, com um toque de dourado (cabeçalhos das abas, planetas, estrelas,
   cometas e o nome "Speak" em degradê).
 - **Planetas e estrelas em todo o app:** no fundo de todas as abas há 6 planetas flutuando devagar (dois com

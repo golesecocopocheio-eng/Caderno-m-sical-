@@ -46,7 +46,7 @@ jobs:
         run: npx cap add android
 
       - name: Gerar ícones e tela de abertura
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#3B0F7A' --splashBackgroundColor '#6D28D9' --splashBackgroundColorDark '#6D28D9'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#3B0F7A' --splashBackgroundColor '#1E0A45' --splashBackgroundColorDark '#1E0A45'
 
       - name: Fundo roxo no Android (sem tela branca entre o splash e o app)
         run: |
@@ -56,13 +56,19 @@ jobs:
           cor = v / 'colors.xml'
           t = cor.read_text() if cor.exists() else '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n'
           if 'claFundo' not in t:
-              t = t.replace('</resources>', '    <color name="claFundo">#3B0F7A</color>\n</resources>')
+              t = t.replace('</resources>', '    <color name="claFundo">#1E0A45</color>\n</resources>')
           cor.write_text(t)
           st = v / 'styles.xml'
           x = st.read_text()
           def add(m):
               return m.group(0) + '\n        <item name="android:windowBackground">@color/claFundo</item>'
           x = re.sub(r'<style name="AppTheme(\.NoActionBar)?"[^>]*>', add, x)
+          def lanc(m):
+              return m.group(0) + ('\n        <item name="windowSplashScreenBackground">@color/claFundo</item>'
+                  '\n        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>'
+                  '\n        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>'
+                  '\n        <item name="android:windowBackground">@color/claFundo</item>')
+          x = re.sub(r'<style name="AppTheme\.NoActionBarLaunch"[^>]*>', lanc, x)
           st.write_text(x)
           print(x)
           PY

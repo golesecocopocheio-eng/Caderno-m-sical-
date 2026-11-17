@@ -161,3 +161,18 @@
     '<span class="cometa"></span><span class="cometa c2"></span>';
   document.body.insertBefore(d, document.body.firstChild);
 })();
+
+/* Frente a frente: planetas, estrelas e estrelas cadentes na faixa do meio */
+(function () {
+  const pista = document.getElementById('pista');
+  if (!pista) return;
+  const d = document.createElement('div');
+  d.className = 'pistaCosmos'; d.setAttribute('aria-hidden', 'true');
+  let est = '', s = 21; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const cores = ['#FFFFFF', '#FFFFFF', '#F9A8D4', '#7DD3FC', '#C4B5FD', '#FDE68A'];
+  for (let i = 0; i < 26; i++) est += '<i style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;--c:' + cores[(r() * cores.length) | 0] + ';--d:-' + (r() * 3).toFixed(1) + 's;--s:' + (r() < .2 ? 2.6 : 1.5) + 'px"></i>';
+  d.innerHTML = est +
+    '<span class="pp pp1"><b></b></span><span class="pp pp2"></span><span class="pp pp3"></span><span class="pp pp4"></span>' +
+    '<span class="cad c1"></span><span class="cad c2"></span><span class="cad c3"></span>';
+  pista.insertBefore(d, pista.firstChild);
+})();

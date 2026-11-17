@@ -929,6 +929,29 @@ header h1,.marca{font-size:17px;font-weight:700}
 #f2f .lado .texto{font-size:20px;border-radius:18px}
 #f2f .dica{font-size:15px}
 #f2f .dica b{font-size:18px}
+
+/* ===== Frente a frente: cosmos na faixa do meio ===== */
+.pista{position:relative;overflow:hidden;background:linear-gradient(90deg,rgba(46,16,101,.75),rgba(91,33,182,.55) 50%,rgba(46,16,101,.75))!important;border-color:rgba(255,255,255,.12)}
+.pista .meio{position:relative;z-index:2;padding:16px 6px}
+.pista .vez{position:relative;z-index:2}
+.pistaCosmos{position:absolute;inset:0;z-index:1;pointer-events:none}
+.pistaCosmos i{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:var(--c);box-shadow:0 0 5px 1px var(--c);animation:brilha 2.6s ease-in-out var(--d) infinite}
+.pp{position:absolute;border-radius:50%;animation:ppFlutua 7s ease-in-out infinite alternate}
+.pp1{width:44px;height:44px;left:-8px;top:50%;margin-top:-22px;background:radial-gradient(circle at 32% 30%,#FCE7F3,#F472B6 55%,#9D174D);box-shadow:0 0 18px rgba(236,72,153,.5)}
+.pp1 b{position:absolute;left:-12px;right:-12px;top:50%;height:12px;margin-top:-6px;border-radius:50%;border:2.5px solid rgba(253,230,138,.8);transform:rotate(-18deg);border-top-color:transparent}
+.pp2{width:30px;height:30px;right:6px;top:8px;background:radial-gradient(circle at 32% 30%,#F0F9FF,#7DD3FC 55%,#0284C7);box-shadow:0 0 14px rgba(56,189,248,.5);animation-duration:9s}
+.pp3{width:14px;height:14px;right:22%;bottom:6px;background:radial-gradient(circle at 32% 30%,#F5F3FF,#C4B5FD 55%,#7C3AED);box-shadow:0 0 10px rgba(167,139,250,.6);animation-duration:6s}
+.pp4{width:9px;height:9px;left:24%;top:7px;background:radial-gradient(circle at 32% 30%,#FEF3C7,#FBBF24 60%,#B45309);box-shadow:0 0 8px rgba(251,191,36,.7);animation-duration:5s}
+@keyframes ppFlutua{from{transform:translate(0,0)}to{transform:translate(6px,-4px)}}
+.cad{position:absolute;width:70px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),#fff);transform:rotate(-14deg);opacity:0;animation:cadente 5s linear infinite}
+.cad::after{content:"";position:absolute;right:-2px;top:-2px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px #fff}
+.cad.c1{top:10%;animation-delay:.3s}
+.cad.c2{top:55%;animation-delay:2.1s;animation-duration:6s;background:linear-gradient(90deg,transparent,rgba(249,168,212,.3),#F9A8D4)}
+.cad.c2::after{background:#FCE7F3;box-shadow:0 0 8px 2px #F472B6}
+.cad.c3{top:30%;animation-delay:3.8s;animation-duration:7s;background:linear-gradient(90deg,transparent,rgba(125,211,252,.3),#7DD3FC)}
+.cad.c3::after{background:#E0F2FE;box-shadow:0 0 8px 2px #38BDF8}
+@keyframes cadente{0%{left:-20%;opacity:0;transform:translateY(0) rotate(-14deg)}6%{opacity:1}28%{left:105%;opacity:0;transform:translateY(-18px) rotate(-14deg)}100%{left:105%;opacity:0}}
+@media (prefers-reduced-motion:reduce){.pistaCosmos *{animation:none!important}}
 </style>
 </head>
 <body>

@@ -1014,23 +1014,6 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 .capaBarra{animation:capaTx 1s 1.5s ease both}
 .capaBarra i{animation:capaBarra 4.6s ease-in-out .4s both}
 .capaAutor{animation:capaTx 1.4s 1.9s cubic-bezier(.2,.7,.2,1) both}
-
-/* ===== Cartão Frente a frente em destaque (roxo como os outros) ===== */
-.cardF2f{position:relative;overflow:hidden;border:1px solid rgba(167,139,250,.55);background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(237,230,255,.80) 60%,rgba(252,231,243,.78));box-shadow:0 10px 28px rgba(76,29,149,.22)}
-.cardF2f::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#7C3AED,#DB2777)}
-.cardF2f > b{font-size:16px;color:#4C1D95}
-.cardF2f > b .ic{color:#7C3AED;width:20px;height:20px}
-#abrirF2f{height:52px;border-radius:14px;font-size:15px;font-weight:700;color:#fff;border:0;background:linear-gradient(135deg,#7C3AED,#A21CAF 60%,#DB2777);box-shadow:0 8px 22px rgba(124,58,237,.42);display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.01em}
-#abrirF2f::before{content:"";width:20px;height:20px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 8h10M7 12h6'/%3E%3Cpath d='M21 12a8 8 0 0 1-11.8 7L4 20l1.1-4.6A8 8 0 1 1 21 12z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 8h10M7 12h6'/%3E%3Cpath d='M21 12a8 8 0 0 1-11.8 7L4 20l1.1-4.6A8 8 0 1 1 21 12z'/%3E%3C/svg%3E") center/contain no-repeat}
-#abrirF2f:active{transform:scale(.98)}
-
-/* ===== Cartão Frente a frente com fundo roxo ===== */
-.cardF2f{background:linear-gradient(135deg,#5B21B6 0%,#7C3AED 50%,#A21CAF 100%)!important;border:1px solid rgba(233,213,255,.35);box-shadow:0 12px 30px rgba(76,29,149,.4)}
-.cardF2f::before{display:none}
-.cardF2f::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%);pointer-events:none}
-.cardF2f > b,.cardF2f > b .ic{color:#fff}
-.cardF2f .mu{color:#EDE9FE}
-#abrirF2f{background:#fff;color:#6D28D9;box-shadow:0 8px 20px rgba(30,6,60,.3)}
 </style>
 </head>
 <body>
@@ -1066,7 +1049,7 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
       <button id="entrar" style="width:100%;margin-top:12px">Entrar na sala</button>
       <div id="semNuvem" class="aviso" hidden>A nuvem não está configurada (firebase-config.js). A sala só funciona entre abas deste aparelho.</div>
     </div>
-    <div class="card cardF2f">
+    <div class="card">
       <b>🗣️ Frente a frente</b>
       <p class="mu">Um celular só, na mesa entre duas pessoas: a tela se divide e cada lado fala e lê no seu idioma.</p>
       <button id="abrirF2f" style="width:100%">Abrir modo frente a frente</button>

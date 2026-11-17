@@ -163,7 +163,7 @@ button.gh{background:rgba(255,255,255,.07);border-color:rgba(245,194,66,.35);col
 .ov{display:block;color:var(--mute);font-size:13px;margin-bottom:8px;letter-spacing:.2px}
 .cont .big{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;background:none;padding:0}.cont .big b{font-size:26px;line-height:1.15}.cont .big span{color:var(--mute);font-size:15px}
 .chips2{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chips2 span{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--mute)}.chips2 span.ok{color:var(--ink);border-color:var(--hl);background:color-mix(in srgb,var(--hl) 20%,var(--card))}
-.qa{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.qa button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:14px;border-radius:20px;min-height:104px}.qa button span{line-height:0;margin-bottom:8px}.qa button span .i{width:26px;height:26px}.qa b{font-size:16px}.qa small{color:var(--mute);font-size:13px}
+.qa{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:12px 0}.qa button{min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:14px;border-radius:20px;min-height:104px}.qa button span{line-height:0;margin-bottom:8px}.qa button span .i{width:26px;height:26px}.qa b{font-size:16px}.qa small{color:var(--mute);font-size:13px}
 .qa button.gold{background:linear-gradient(145deg,#FFE9A0,#F5C242 60%,#D9A21F);border-color:#D9A21F;color:#2A1A00}.qa button.gold small{color:#5A3E00}
 button{white-space:nowrap}
 h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
@@ -316,7 +316,7 @@ function iniHome(my){const S=setList(),L=[...my].sort((a,b)=>b.upd-a.upd),c=L[0]
  const part=c?[['Cifra',(c.cifra||'').trim()],['Letra',(c.letra||'').trim()],['Gravação',c.audios.length]]:[];
  const andamento=L.filter(s=>s.fase==='compondo'&&s!==c).slice(0,4),ideias=L.filter(s=>s.fase==='ideia'&&s!==c).slice(0,4);
  return `${c?`<section class="card2 cont"><small class="ov">Continuar de onde parou</small><button class="big" data-id="${c.id}"><b>${esc(c.title)||'Sem título'}</b><span>${esc(c.artist)||'Sem artista'} · ${esc(c.key||'C')}${c.mode==='m'?'m':''} · ${ago(c.upd)}</span></button><div class="chips2">${part.map(x=>`<span class="${x[1]?'ok':''}">${x[1]?'✓':'○'} ${x[0]}${x[0]==='Gravação'&&x[1]>1?'s':''}</span>`).join('')}${c.fase?`<span class="fase"><i class="fz fz-${c.fase}"></i>${faseNome(c.fase)}</span>`:''}</div><div class="row" style="margin-top:12px"><button class="pri" data-id="${c.id}" style="flex:1">Abrir</button><button id="cE" style="flex:1">Gravar</button><button id="cL" style="flex:1">Letra</button></div></section>`:''}
- <div class="qa"><button id="qn"><span>${IC.add}</span><b>Nova música</b><small>Cifra e letra</small></button><button id="qi" class="gold"><span>${IC.mic2}</span><b>Gravar ideia</b><small>Abre pronto para gravar</small></button><button id="qm"><span>${IC.imp}</span><b>Trazer músicas</b><small>Áudios e letras</small></button><button id="qc"><span>${IC.ext}</span><b>Cifra de outro artista</b><small>Cifra Club</small></button></div>
+ <div class="qa"><button id="qn"><span>${IC.add}</span><b>Nova música</b><small>Cifra e letra</small></button><button id="qi" class="gold"><span>${IC.mic2}</span><b>Gravar ideia</b><small>Abre pronto para gravar</small></button><button id="qm"><span>${IC.imp}</span><b>Trazer músicas</b><small>Áudios e letras</small></button><button id="qc"><span>${IC.ext}</span><b>Cifra Club</b><small>Cifra de outro artista</small></button><button id="qd"><span>${IC.cloud}</span><b>Salvar no Drive</b><small>Cópia de tudo</small></button><button id="qre"><span>${IC.bk}</span><b>Restaurar músicas</b><small>De uma cópia salva</small></button></div>
  ${S.length?`<section class="card2"><div class="row" style="align-items:center"><b style="flex:1;font-size:17px">Set do show</b><span class="tag">${S.length} ${S.length===1?'música':'músicas'}</span></div><p class="hint" style="margin:6px 0 10px">${S.slice(0,3).map(s=>esc(s.title)||'Sem título').join(' · ')}${S.length>3?' …':''}</p><div class="row"><button class="pri" id="qp" style="flex:1">▶ Abrir no palco</button><button id="qr" style="flex:1">Editar set</button></div></section>`:''}
  ${andamento.length?`<h2 class="sec">Em andamento</h2><div class="songs">${andamento.map(songRow).join('')}</div>`:''}
  ${ideias.length?`<h2 class="sec">Ideias para desenvolver</h2><div class="songs">${ideias.map(songRow).join('')}</div>`:''}
@@ -336,7 +336,7 @@ function list(){cur=null;mixStop();if(typeof edClose==='function')edClose();if(t
  if(hv==='play'){playBind();return}
  if(hv==='rep'){repBind();return}
  if(hv==='ini'){bindRows();document.querySelectorAll('.cont .big,.cont .pri').forEach(b=>b.onclick=()=>openSong(b.dataset.id));const c=[...my].sort((a,b)=>b.upd-a.upd)[0];if($('#cE'))$('#cE').onclick=()=>openSong(c.id,'estudio');if($('#cL'))$('#cL').onclick=()=>openSong(c.id,'letra');
-  $('#qn').onclick=newBlank;$('#qi').onclick=quickIdea;$('#qm').onclick=imp;$('#qc').onclick=()=>{hv='rep';cifraImp()};if($('#qp'))$('#qp').onclick=()=>palco(0,setList());if($('#qr'))$('#qr').onclick=()=>{hv='rep';list()};return}
+  $('#qn').onclick=newBlank;$('#qi').onclick=quickIdea;$('#qm').onclick=imp;$('#qc').onclick=()=>{hv='rep';cifraImp()};$('#qd').onclick=exportAll;$('#qre').onclick=pickRestore;if($('#qp'))$('#qp').onclick=()=>palco(0,setList());if($('#qr'))$('#qr').onclick=()=>{hv='rep';list()};return}
  document.querySelectorAll('.fch button').forEach(b=>b.onclick=()=>{fq=b.dataset.f;list()});
  if($('#q'))$('#q').oninput=e=>{q=e.target.value;rows()};
  $('#new').onclick=newBlank;rows()}
@@ -830,11 +830,14 @@ function backup(){cur=null;mixStop();const d=lk(),na=songs.reduce((n,s)=>n+s.aud
  app.innerHTML=`<header class="sh"><button class="ic" id="back" aria-label="Voltar">${IC.back}</button><div class="tt"><h1 class="ti" style="margin:0;font-size:24px">Cópia de segurança</h1></div></header>
  <div class="card2"><p style="margin:0 0 4px"><b>${songs.length}</b> ${songs.length===1?'música':'músicas'} e <b>${na}</b> ${na===1?'faixa':'faixas'} neste aparelho.</p><p class="hint" style="margin:0">Última cópia: ${d?new Date(d).toLocaleString('pt-BR'):'nunca'}.</p></div>
  <p class="hint">O app salva tudo sozinho a cada alteração. A cópia serve para guardar fora do celular (Drive, WhatsApp, e-mail), caso você troque de aparelho ou precise reinstalar.</p>
- <button class="pri" id="ex" style="width:100%;padding:14px;margin-top:6px">Guardar uma cópia</button>
- <label class="fb2" style="margin-top:10px">Restaurar de uma cópia<input id="im" type="file" hidden></label>
- <p class="hint">Restaurar nunca apaga nada: junta o que está na cópia com o que já está no app.</p>`;
- $('#back').onclick=list;$('#ex').onclick=exportAll;
- $('#im').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const n=importSongs(await readBackup(f));toast(n?n+' música(s) restaurada(s)':'Nada novo na cópia: o app já tem tudo.');setTimeout(()=>backup(),900)}catch(x){toast('Esse arquivo não é uma cópia do Clan music.')}}}
+ <button class="pri" id="ex" style="width:100%;padding:16px;margin-top:6px;font-size:17px">${IC.cloud} Salvar no meu Drive</button>
+ <p class="hint">Toca em Salvar e, na lista que abrir, escolha <b>Drive</b>. A cópia guarda todas as músicas, letras e faixas de áudio.</p>
+ <button id="rs" style="width:100%;padding:16px;margin-top:10px;font-size:17px">${IC.bk} Restaurar minhas músicas</button>
+ <p class="hint">Escolha o arquivo .cmbk (pode ser direto do Drive). Restaurar nunca apaga nada: junta o que está na cópia com o que já está no app.</p>`;
+ $('#back').onclick=list;$('#ex').onclick=exportAll;$('#rs').onclick=pickRestore}
+function pickRestore(){const i=document.createElement('input');i.type='file';i.style.display='none';document.body.appendChild(i);
+ i.onchange=async()=>{const f=i.files[0];i.remove();if(!f)return;try{const n=importSongs(await readBackup(f));toast(n?n+' música(s) restaurada(s)':'Nada novo na cópia: o app já tem tudo.');setTimeout(()=>{if(!cur)list()},900)}catch(x){toast('Esse arquivo não é uma cópia do Clan music.')}};
+ i.click()}
 async function exportAll(){flushAll();toast('Preparando a cópia…');
  const blob=buildBackup(),name='clan-music-'+new Date().toISOString().slice(0,10)+'.cmbk';
  try{

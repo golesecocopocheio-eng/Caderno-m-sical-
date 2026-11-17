@@ -51,11 +51,19 @@
       '<path d="M120 82h20M120 90h14" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"/>' +
       '<circle cx="140" cy="100" r="7" fill="#FFFFFF" stroke="#FACC15" stroke-width="1.6"/><path class="arCheck" d="M137 100l2 2 4-4" fill="none" stroke="#FACC15" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<circle class="arPisca" cx="20" cy="30" r="2.5" fill="#FACC15"/><circle class="arPisca d2" cx="128" cy="24" r="2" fill="#FACC15"/>',
-    ajustes: (g) => grad(g, '#B9BCC8', '#6B6F80') +
-      '<g stroke="url(#' + g + ')" stroke-width="1.6" stroke-linecap="round"><path d="M24 34h112M24 60h112M24 86h112" stroke-opacity=".5"/></g>' +
-      '<g class="arSlide"><circle cx="60" cy="34" r="8" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/></g>' +
-      '<g class="arSlide d2"><circle cx="104" cy="60" r="8" fill="#FFFFFF" stroke="#FACC15" stroke-width="1.6"/></g>' +
-      '<g class="arSlide d3"><circle cx="78" cy="86" r="8" fill="#FFFFFF" stroke="url(#' + g + ')" stroke-width="1.6"/></g>'
+    ajustes: (g) => grad(g, '#C4B5FD', '#6D28D9') +
+      '<defs><radialGradient id="' + g + 'p" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#FDE68A"/><stop offset=".5" stop-color="#F59E0B"/><stop offset="1" stop-color="#B45309"/></radialGradient>' +
+      '<radialGradient id="' + g + 'a" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#BFDBFE"/><stop offset="1" stop-color="#3B82F6"/></radialGradient>' +
+      '<radialGradient id="' + g + 'r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#F5D0FE"/><stop offset="1" stop-color="#C026D3"/></radialGradient></defs>' +
+      '<ellipse cx="80" cy="64" rx="70" ry="24" fill="none" stroke="url(#' + g + ')" stroke-opacity=".35" stroke-dasharray="3 5"/>' +
+      '<g class="arOrbita"><circle cx="150" cy="64" r="4" fill="url(#' + g + 'a)"/></g>' +
+      '<circle cx="80" cy="62" r="26" fill="url(#' + g + 'p)"/>' +
+      '<path d="M58 56q22-8 44 0M56 66q24-6 48 2" stroke="#FEF3C7" stroke-opacity=".45" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="80" cy="64" rx="44" ry="10" fill="none" stroke="#7C3AED" stroke-width="3" transform="rotate(-14 80 64)" stroke-dasharray="70 40" stroke-dashoffset="-18"/>' +
+      '<g class="arFlutua"><circle cx="134" cy="26" r="11" fill="url(#' + g + 'r)"/><circle cx="130" cy="22" r="2" fill="#fff" fill-opacity=".6"/></g>' +
+      '<g class="arFlutua d2"><circle cx="22" cy="100" r="8" fill="url(#' + g + 'a)"/></g>' +
+      '<g fill="#7C3AED"><path class="arPisca" d="M30 22l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/><path class="arPisca d2" d="M120 100l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z" fill="#F59E0B"/></g>' +
+      '<circle class="arPisca" cx="54" cy="14" r="1.6" fill="#A78BFA"/><circle class="arPisca d2" cx="150" cy="96" r="1.6" fill="#A78BFA"/><circle class="arPisca" cx="8" cy="54" r="1.4" fill="#F59E0B"/>'
   };
 
   const TEXTOS = {
@@ -65,7 +73,7 @@
     musica: { cor: '#B4509A', sobre: 'Karaokê', titulo: 'Treine o idioma cantando', sub: 'Letra traduzida verso por verso, no ritmo do vídeo.' },
     conversa: { cor: '#3D8BD9', sobre: 'Conversação', titulo: 'Pratique situações reais', sub: 'Responda falando ou digitando e receba nota a cada fala.' },
     nuvem: { cor: '#8B5CF6', sobre: 'Backup', titulo: 'Seus dados, sempre salvos', sub: 'Backup automático na nuvem. Baixe ou recupere tudo em outro celular com o seu código.' },
-    ajustes: { cor: '#8B8D98', sobre: 'Preferências', titulo: 'Do seu jeito', sub: 'Motor de tradução, voz, captação e acessibilidade.' }
+    ajustes: { cor: '#7C3AED', sobre: 'Preferências', titulo: 'Do seu jeito', sub: 'Motor de tradução, voz, captação e acessibilidade.' }
   };
 
   function saudacao() {
@@ -127,3 +135,19 @@
   c.addEventListener('click', sair);
   setTimeout(sair, 1400);
 })();
+
+/* Planetas e estrelas no fundo da aba Ajustes */
+(function () {
+  const t = document.getElementById('ajustes');
+  if (!t) return;
+  const d = document.createElement('div');
+  d.className = 'cosmos'; d.setAttribute('aria-hidden', 'true');
+  let est = '';
+  let s = 11; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 34; i++) est += '<i class="estrela" style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;--t:' + (2 + r() * 3).toFixed(1) + 's;--d:-' + (r() * 4).toFixed(1) + 's;--s:' + (r() < .2 ? 3 : 2) + 'px"></i>';
+  d.innerHTML = est +
+    '<span class="planeta p1"><b></b></span><span class="planeta p2"></span><span class="planeta p3"></span>' +
+    '<span class="cometa"></span>';
+  t.insertBefore(d, t.firstChild);
+})();
+

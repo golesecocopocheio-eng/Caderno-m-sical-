@@ -25,6 +25,9 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   dourado) com estrelas e galáxias espirais (`app/icons/ceu.webp`, gerada pelo próprio projeto). Cartões
   brancos translúcidos com desfoque, texto escuro e destaques em roxo e amarelo; a tela de abertura e o splash
   do APK seguem o mesmo céu.
+- **Capa (by Sanka Brunelli):** a abertura do app, o splash do APK e as capas de divulgação mostram o logo da lua
+  com duas órbitas e planetinhas girando, estrelas coloridas, o nome Clã Speak, a frase e a assinatura
+  "by Sanka Brunelli".
 - **Paleta:** roxo, lilás, rosa e azul-claro, com um toque de dourado (cabeçalhos das abas, planetas, estrelas,
   cometas e o nome "Speak" em degradê).
 - **Planetas e estrelas em todo o app:** no fundo de todas as abas há 6 planetas flutuando devagar (dois com

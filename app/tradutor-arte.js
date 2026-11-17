@@ -120,20 +120,28 @@
   if (abas) { abas.addEventListener('click', () => requestAnimationFrame(corAba)); corAba(); }
 })();
 
-/* Tela de abertura (capa): logo, nome e frase por ~1,3 s; toque para pular. */
+/* Tela de abertura (capa): logo, nome e frase e assinatura por ~2,2 s; toque para pular. */
 (function () {
   'use strict';
   if (sessionStorage.getItem('trad-capa')) return;
   sessionStorage.setItem('trad-capa', '1');
   const c = document.createElement('div');
   c.className = 'capa'; c.setAttribute('aria-hidden', 'true');
-  c.innerHTML = '<div class="capaBrilho"></div><img class="capaLogo" src="icons/claspeak-marca.svg" alt="">' +
-    '<div class="capaNome">Clã <span>Speak</span></div><div class="capaFrase">Tradução de voz em tempo real</div>' +
-    '<div class="capaBarra"><i></i></div>';
+  let est = '', sd = 5; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 40; i++) est += '<i style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;--d:-' + (r() * 3).toFixed(1) + 's;--s:' + (r() < .2 ? 3 : 1.6) + 'px"></i>';
+  c.innerHTML = '<div class="capaBrilho"></div><div class="capaEst">' + est + '</div>' +
+    '<div class="capaCentro">' +
+      '<div class="capaOrbitas"><span class="o1"><b></b></span><span class="o2"><b></b></span>' +
+      '<img class="capaLogo" src="icons/claspeak-marca.svg" alt=""></div>' +
+      '<div class="capaNome">Clã <span>Speak</span></div>' +
+      '<div class="capaFrase">Tradução de voz em tempo real</div>' +
+      '<div class="capaBarra"><i></i></div>' +
+    '</div>' +
+    '<div class="capaAutor"><i></i><span>by <b>Sanka Brunelli</b></span><i></i></div>';
   document.body.appendChild(c);
   const sair = () => { c.classList.add('sai'); setTimeout(() => c.remove(), 450); };
   c.addEventListener('click', sair);
-  setTimeout(sair, 1400);
+  setTimeout(sair, 2200);
 })();
 
 /* Planetas e estrelas no fundo de todo o app (camada fixa atrás das telas) */

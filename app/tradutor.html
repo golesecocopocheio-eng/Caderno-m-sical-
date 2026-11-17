@@ -796,6 +796,36 @@ header .ic{color:#E9DDFF}
 .cvSug{background:rgba(42,20,82,.35);border-top-color:rgba(255,255,255,.12)}
 #cvBarra{background:rgba(42,20,82,.35)}
 .cvTopo button.ligado{background:#EDE6FF;color:#6D28D9;border-color:transparent}
+
+/* ===== Capa redesenhada (assinatura by Sanka Brunelli) ===== */
+.capa{gap:0;justify-content:center}
+.capaBrilho{background:radial-gradient(42% 30% at 50% 40%,rgba(236,72,153,.28),transparent 70%),radial-gradient(60% 40% at 50% 44%,rgba(124,58,237,.45),transparent 75%)}
+.capaEst{position:absolute;inset:0;pointer-events:none}
+.capaEst i{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:#fff;box-shadow:0 0 6px 1px rgba(255,255,255,.8);animation:brilha 2.4s ease-in-out var(--d) infinite}
+.capaEst i:nth-child(3n){background:#F9A8D4;box-shadow:0 0 6px 1px #F472B6}
+.capaEst i:nth-child(4n){background:#7DD3FC;box-shadow:0 0 6px 1px #38BDF8}
+.capaEst i:nth-child(7n){background:#FDE68A;box-shadow:0 0 6px 1px #F59E0B}
+.capaCentro{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:-40px}
+.capaOrbitas{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.capaOrbitas span{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(233,221,255,.35)}
+.capaOrbitas .o1{inset:8px;transform:rotateX(68deg) rotateZ(0);animation:capaGira 6s linear infinite}
+.capaOrbitas .o2{inset:-6px;border-color:rgba(249,168,212,.3);transform:rotateX(70deg) rotateY(28deg);animation:capaGira2 9s linear infinite}
+.capaOrbitas b{position:absolute;top:-5px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#7DD3FC);box-shadow:0 0 10px #38BDF8}
+.capaOrbitas .o2 b{background:radial-gradient(circle at 35% 30%,#fff,#F472B6);box-shadow:0 0 10px #EC4899;width:8px;height:8px}
+@keyframes capaGira{to{transform:rotateX(68deg) rotateZ(360deg)}}
+@keyframes capaGira2{to{transform:rotateX(70deg) rotateY(28deg) rotateZ(-360deg)}}
+.capaLogo{width:128px;height:128px;filter:drop-shadow(0 0 28px rgba(192,132,252,.55)) drop-shadow(0 14px 30px rgba(46,16,101,.6))}
+.capaNome{font-size:42px;letter-spacing:-1.6px;color:#fff;text-shadow:0 6px 30px rgba(46,16,101,.45)}
+.capaFrase{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:#E9DDFF;opacity:.9}
+.capaBarra{margin-top:22px;width:120px}
+.capaAutor{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 42px);display:flex;align-items:center;justify-content:center;gap:12px;color:#E9DDFF;font-size:13px;letter-spacing:.08em;animation:capaTx .7s .5s cubic-bezier(.2,.7,.2,1) both}
+.capaAutor b{font-weight:600;color:#fff;letter-spacing:.06em;background:linear-gradient(90deg,#fff,#F9A8D4 50%,#FDE68A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capaAutor i{width:34px;height:1px;background:linear-gradient(90deg,transparent,rgba(233,221,255,.7))}
+.capaAutor i:last-child{background:linear-gradient(90deg,rgba(233,221,255,.7),transparent)}
+.capaBarra i{animation-duration:2.1s}
+.capaNome span,header .marca .am{background:linear-gradient(90deg,#E9D5FF,#F9A8D4 50%,#FDE68A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capaOrbitas{width:180px;height:180px;margin-bottom:-4px}
+@media (prefers-reduced-motion:reduce){.capaOrbitas span,.capaEst i{animation:none!important}}
 </style>
 </head>
 <body>

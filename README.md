@@ -28,7 +28,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Capa minimalista (by Sanka Brunelli):** abertura do app, splash do APK e capas de divulgação com degradê liso
   roxo → magenta → rosa, a lua grande no centro, o nome "Clã Speak" em branco, a frase e a assinatura
   "by Sanka Brunelli".
-- **Abas evoluídas:** barra de baixo maior (ícones de 22 px, aba ativa com fundo e traço em degradê); sala com
+- **Abas evoluídas:** barra de baixo maior, ícones roxos em destaque e a aba ativa com o ícone branco dentro de uma pílula em degradê roxo → rosa; logo do topo maior com brilho e aro dourado; sala com
   código em destaque, botões grandes (fone, voz, Convidar, Sair), emojis maiores e microfone de 56 px; frente a
   frente com botões grandes de ícone + nome (Voz, Fone, Auto, Limpar, Sair) e caixas de texto maiores.
 - **Frente a frente transparente:** as caixas da escrita são transparentes (aparecem o céu, planetas e estrelas), com borda lilás e texto branco com sombra; seletores de idioma translúcidos.

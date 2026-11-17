@@ -30,7 +30,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
     tradução, sem comentários. "Testar" faz uma tradução de exemplo. A chave fica guardada só no aparelho e é
     enviada só para a API da Anthropic (SDK oficial em `app/vendor/anthropic-sdk.js`). As prévias "ao vivo" e
     as listas continuam no Google (mais rápido); se a API falhar, o app volta sozinho para o Google.
-- **Backup na nuvem** (`app/tradutor-backup.js`, Ajustes → Backup na nuvem): os dados do app (favoritos,
+- **Aba ☁️ Backup** (`app/tradutor-backup.js`): os dados do app (favoritos,
   histórico, pontos, artigos salvos, letras do Karaokê e ajustes) são salvos sozinhos no Firestore
   (`copias/{código}`): a cada minuto se algo mudou, ao sair do app e ao abrir os Ajustes. Cada aparelho tem um
   **código de backup** de 12 letras; com ele, "Restaurar backup" recupera tudo em outro celular. "Baixar backup"
@@ -40,7 +40,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Aba Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
   Compras, Números, Emergência, Trabalho) traduzidas na hora, com ouvir, devagar, repetir (o app confere a
   pronúncia) e quiz. Pontos e dias seguidos ficam guardados no aparelho.
-- **6 abas:** Traduzir (sala, frente a frente e texto), Saber, Estudar, Karaokê, Conversar e Ajustes.
+- **7 abas:** Traduzir (sala, frente a frente e texto), Saber, Estudar, Karaokê, Conversar, Backup e Ajustes.
 - **Texto:** traduz enquanto digita, ditado pelo microfone, inverter idiomas, ouvir, copiar, favoritas e recentes.
 - **Ajustes:** motor de tradução, segurar para falar, modo fone, velocidade da voz, ler em voz alta, sons de
   interface, letras grandes e apagar as traduções guardadas.

@@ -153,9 +153,8 @@
     } catch (e) { rest.textContent = 'Esse arquivo não é um backup do Clã Speak.'; }
   };
 
-  // Ao abrir os Ajustes, atualiza a tela e faz o backup se algo mudou
-  const antes = C.ganchosAba.ajustes;
-  C.ganchosAba.ajustes = function () { if (antes) antes.apply(this, arguments); mostrar(); if (autoLigado()) enviar(false); };
+  // Ao abrir a aba Backup, atualiza a tela e faz o backup se algo mudou
+  C.ganchosAba.nuvem = function () { mostrar(); if (autoLigado()) enviar(false); };
   mostrar();
   window.ClaSpeakBackup = { enviar, coletar, codigo };
 })();

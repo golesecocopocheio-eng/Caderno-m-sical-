@@ -44,6 +44,13 @@
       '<rect x="62" y="68" width="86" height="34" rx="12" fill="url(#' + g + ')" fill-opacity=".16" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
       '<g fill="#86C5F5"><circle class="arPonto" cx="92" cy="85" r="3"/><circle class="arPonto d2" cx="105" cy="85" r="3"/><circle class="arPonto d3" cx="118" cy="85" r="3"/></g>' +
       '<circle cx="138" cy="28" r="12" fill="none" stroke="url(#' + g + ')" stroke-width="1.6"/><path d="M132 26h0M144 26h0" stroke="#86C5F5" stroke-width="3" stroke-linecap="round"/><path d="M133 32q5 4 10 0" fill="none" stroke="#86C5F5" stroke-width="1.6" stroke-linecap="round"/>',
+    nuvem: (g) => grad(g, '#C4B5FD', '#7C3AED') +
+      '<path d="M44 92a22 22 0 0 1-3-43.8A30 30 0 0 1 98 40a20 20 0 0 1-2 52z" fill="url(#' + g + ')" fill-opacity=".14" stroke="url(#' + g + ')" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<g class="arFlutua"><path d="M70 82V58M60 68l10-10 10 10" fill="none" stroke="#FACC15" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>' +
+      '<rect x="112" y="70" width="36" height="40" rx="6" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/>' +
+      '<path d="M120 82h20M120 90h14" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<circle cx="140" cy="100" r="7" fill="#13101A" stroke="#FACC15" stroke-width="1.6"/><path class="arCheck" d="M137 100l2 2 4-4" fill="none" stroke="#FACC15" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle class="arPisca" cx="20" cy="30" r="2.5" fill="#FACC15"/><circle class="arPisca d2" cx="128" cy="24" r="2" fill="#FACC15"/>',
     ajustes: (g) => grad(g, '#B9BCC8', '#6B6F80') +
       '<g stroke="url(#' + g + ')" stroke-width="1.6" stroke-linecap="round"><path d="M24 34h112M24 60h112M24 86h112" stroke-opacity=".5"/></g>' +
       '<g class="arSlide"><circle cx="60" cy="34" r="8" fill="#13101A" stroke="url(#' + g + ')" stroke-width="1.6"/></g>' +
@@ -57,6 +64,7 @@
     estudo: { cor: '#2F9E86', sobre: 'Prática diária', titulo: 'Aprenda um pouco todo dia', sub: 'Frases por tema, pronúncia conferida pelo app e quiz rápido.' },
     musica: { cor: '#B4509A', sobre: 'Karaokê', titulo: 'Treine o idioma cantando', sub: 'Letra traduzida verso por verso, no ritmo do vídeo.' },
     conversa: { cor: '#3D8BD9', sobre: 'Conversação', titulo: 'Pratique situações reais', sub: 'Responda falando ou digitando e receba nota a cada fala.' },
+    nuvem: { cor: '#8B5CF6', sobre: 'Backup', titulo: 'Seus dados, sempre salvos', sub: 'Backup automático na nuvem. Baixe ou recupere tudo em outro celular com o seu código.' },
     ajustes: { cor: '#8B8D98', sobre: 'Preferências', titulo: 'Do seu jeito', sub: 'Motor de tradução, voz, captação e acessibilidade.' }
   };
 
@@ -81,7 +89,7 @@
     return d;
   }
 
-  const ALVOS = { inicio: '#gatoInicio', saber: '#gatoSaber', estudo: '#gatoEstudo', musica: '#gatoKara', conversa: '#gatoConv', ajustes: '#gatoAjustes' };
+  const ALVOS = { inicio: '#gatoInicio', saber: '#gatoSaber', estudo: '#gatoEstudo', musica: '#gatoKara', conversa: '#gatoConv', nuvem: '#gatoNuvem', ajustes: '#gatoAjustes' };
   Object.keys(ALVOS).forEach((aba) => {
     const st = document.querySelector(ALVOS[aba]);
     if (st && st.parentNode) st.parentNode.insertBefore(criarHero(aba), st);

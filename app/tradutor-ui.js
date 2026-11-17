@@ -42,10 +42,12 @@
     lista: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
     usuario: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     ok: '<path d="m5 12 5 5L20 7"/>',
-    aviso: '<path d="M12 3 2 21h20zM12 10v5M12 18h.01"/>'
+    aviso: '<path d="M12 3 2 21h20zM12 10v5M12 18h.01"/>',
+    nuvem: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/>'
   };
   // emoji → ícone (os que não estão aqui são só removidos da interface)
   const MAPA = {
+    '☁️': 'nuvem', '☁': 'nuvem',
     '🎤': 'mic', '🎙️': 'mic', '🔊': 'som', '🔉': 'som', '🔇': 'mudo', '🎧': 'fone', '🔄': 'auto', '🔁': 'auto',
     '🧹': 'limpar', '✖': 'fechar', '✖️': 'fechar', '❌': 'fechar', '📋': 'copiar', '⭐': 'estrela', '★': 'estrela', '☆': 'estrela',
     '🔎': 'buscar', '🔍': 'buscar', '🎲': 'sortear', '⏪': 'voltar', '▶': 'tocar', '▶️': 'tocar', '⏯': 'tocarPausar', '⏯️': 'tocarPausar',

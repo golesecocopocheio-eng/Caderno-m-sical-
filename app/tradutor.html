@@ -970,6 +970,17 @@ header h1,.marca{font-size:17px;font-weight:700}
 #f2f .lado .texto{background:rgba(91,33,182,.10);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid rgba(233,213,255,.40);box-shadow:inset 0 0 40px rgba(124,58,237,.12)}
 #f2f .lado .texto .escrita{text-shadow:0 2px 10px rgba(30,6,60,.7),0 0 2px rgba(30,6,60,.5)}
 #f2f .dica{text-shadow:0 1px 6px rgba(30,6,60,.6)}
+
+/* ===== Mais destaque: ícones da barra de baixo e logo do topo ===== */
+.abas button{color:#5B21B6}
+.abas button b{display:flex;align-items:center;justify-content:center;width:44px;height:30px;border-radius:999px;transition:background .2s,box-shadow .2s,transform .2s}
+.abas button b .ic,.abas button .ic{width:23px;height:23px;stroke-width:2.1;color:#7C3AED}
+.abas button.on{background:transparent;color:#4C1D95}
+.abas button.on b{background:linear-gradient(135deg,#7C3AED,#C026D3 60%,#EC4899);box-shadow:0 6px 16px rgba(124,58,237,.45);transform:translateY(-2px)}
+.abas button.on b .ic{color:#fff}
+.abas button.on::before{display:none}
+.marca img{width:38px!important;height:38px!important;border-radius:50%;box-shadow:0 0 0 2px rgba(253,230,138,.55),0 0 18px rgba(192,132,252,.75),0 4px 12px rgba(30,6,60,.45)}
+header h1.marca{font-size:19px;gap:12px;text-shadow:0 2px 10px rgba(30,6,60,.35)}
 </style>
 </head>
 <body>

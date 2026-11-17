@@ -30,6 +30,13 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
     tradução, sem comentários. "Testar" faz uma tradução de exemplo. A chave fica guardada só no aparelho e é
     enviada só para a API da Anthropic (SDK oficial em `app/vendor/anthropic-sdk.js`). As prévias "ao vivo" e
     as listas continuam no Google (mais rápido); se a API falhar, o app volta sozinho para o Google.
+- **Backup na nuvem** (`app/tradutor-backup.js`, Ajustes → Backup na nuvem): os dados do app (favoritos,
+  histórico, pontos, artigos salvos, letras do Karaokê e ajustes) são salvos sozinhos no Firestore
+  (`copias/{código}`): a cada minuto se algo mudou, ao sair do app e ao abrir os Ajustes. Cada aparelho tem um
+  **código de backup** de 12 letras; com ele, "Restaurar backup" recupera tudo em outro celular. "Baixar backup"
+  gera o arquivo `claspeak-backup-AAAA-MM-DD.json` (no APK abre o compartilhar: Drive, e-mail, WhatsApp), que
+  também pode ser restaurado. A chave da API e o cache de traduções nunca entram no backup. **Precisa publicar de
+  novo o `firestore.rules`** (ganhou a regra `copias`).
 - **Aba Estudar** (`app/tradutor-estudo.js`): frases por tema (Saudações, Conversa, Viagem, Restaurante,
   Compras, Números, Emergência, Trabalho) traduzidas na hora, com ouvir, devagar, repetir (o app confere a
   pronúncia) e quiz. Pontos e dias seguidos ficam guardados no aparelho.

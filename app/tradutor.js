@@ -868,6 +868,7 @@
 
   // Para a aba Estudar (tradutor-estudo.js)
   window.ClaSpeak = {
+    nuvem: () => (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey ? preparaNuvem(window.FIREBASE_CONFIG) : Promise.reject(new Error('sem-config'))), plugin, nativo: NATIVO,
     gatoInicio, motor, testarExecutivo: (t) => traduzirExecutivo(t, 'pt-BR', 'en-US'), traduzir, traduzirVarias, falar, melhorVoz, ronrom, miauVoz: (o) => { if (sons || o.forcar) try { miauSintetico(o); } catch (e) {} }, ctxAudio, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
     get fone() { return fone; },
     get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },

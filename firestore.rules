@@ -25,5 +25,13 @@ service cloud.firestore {
     match /salas/{sala}/{colecao}/{doc} {
       allow read, write: if request.auth != null && colecao in ['falas', 'pessoas'];
     }
+
+    // Clã Speak: backup automático. Quem tem o código de 12 letras lê e atualiza o próprio
+    // backup. Ninguém pode listar os códigos nem apagar backups.
+    match /copias/{codigo} {
+      allow get: if request.auth != null && codigo.size() == 12;
+      allow create, update: if request.auth != null && codigo.size() == 12
+        && request.resource.data.app == 'claspeak' && request.resource.data.dados is string;
+    }
   }
 }

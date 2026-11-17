@@ -637,6 +637,20 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
 #inicio .marca{color:#F5F3FF}
 .marca .am{background:linear-gradient(90deg,#FDE68A,#FACC15 50%,#F59E0B);-webkit-background-clip:text;background-clip:text;color:transparent;margin-left:-6px}
 @media (prefers-reduced-motion:reduce){.capa *{animation:none!important}}
+
+/* ===== Backup na nuvem ===== */
+#cardBackup .linha{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 4px;font-weight:500;color:var(--tx)}
+#cardBackup .linha span{flex:1}
+#cardBackup .linha input{width:auto;flex:none;margin:0}
+#cardBackup .linhaBt{display:flex;gap:8px;margin-bottom:10px}
+#cardBackup .linhaBt input{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}
+#bkStatus{margin:2px 0 10px}
+#bkStatus.ok::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
+#bkStatus.erro{color:var(--erro)}
+.bkBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bkRest{margin-top:12px;border-top:1px solid var(--borda);padding-top:10px}
+.bkRest summary{cursor:pointer;font-weight:500;color:var(--c2);margin-bottom:8px}
+.bkRest #bkArquivoBt{width:100%;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -828,6 +842,24 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Ajustes</h1></header>
   <div class="rolavel"><div class="box">
     <div class="status" id="gatoAjustes" role="status" aria-live="polite"></div>
+    <div class="card" id="cardBackup">
+      <b>Backup na nuvem</b>
+      <p class="mu">Seus favoritos, histórico, pontos do Estudar, artigos salvos, letras do Karaokê e ajustes são salvos sozinhos na nuvem. Com o código abaixo você baixa o backup ou recupera tudo em outro celular. A chave da API não entra no backup.</p>
+      <label class="linha"><span>Backup automático</span><input type="checkbox" id="bkAuto" checked></label>
+      <div class="mu" id="bkStatus" role="status" aria-live="polite">Preparando…</div>
+      <label for="bkCodigo">Seu código de backup</label>
+      <div class="linhaBt"><input id="bkCodigo" readonly><button class="sec" id="bkCopiar">Copiar</button></div>
+      <div class="bkBotoes">
+        <button id="bkAgora">Salvar agora</button>
+        <button class="sec" id="bkBaixar">Baixar backup</button>
+      </div>
+      <details class="bkRest"><summary>Restaurar backup</summary>
+        <label for="bkOutro">Código de outro aparelho</label>
+        <div class="linhaBt"><input id="bkOutro" placeholder="XXXX-XXXX-XXXX" autocapitalize="characters" spellcheck="false"><button class="sec" id="bkPuxar">Buscar</button></div>
+        <button class="sec" id="bkArquivoBt">Restaurar de um arquivo</button><input type="file" id="bkArquivo" accept=".json,application/json,text/plain" hidden>
+        <div class="mu" id="bkRestMsg" role="status" aria-live="polite"></div>
+      </details>
+    </div>
     <div class="card" id="cardMotor">
       <b>Motor de tradução</b>
       <p class="mu">O motor Padrão usa o Google Tradutor (rápido e gratuito). O Executivo usa o Claude da Anthropic: precisão terminológica por setor, registro formal/técnico e saída limpa. Prévias ao vivo continuam no motor Padrão.</p>
@@ -948,5 +980,6 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
 <script src="tradutor-saber.js"></script>
 <script src="tradutor-ui.js"></script>
 <script src="tradutor-arte.js"></script>
+<script src="tradutor-backup.js"></script>
 </body>
 </html>

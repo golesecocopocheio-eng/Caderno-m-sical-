@@ -31,7 +31,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Abas evoluídas:** barra de baixo maior, ícones roxos em destaque e a aba ativa com o ícone branco dentro de uma pílula em degradê roxo → rosa; logo do topo maior com brilho e aro dourado; sala com
   código em destaque, botões grandes (fone, voz, Convidar, Sair), emojis maiores e microfone de 56 px; frente a
   frente com botões grandes de ícone + nome (Voz, Fone, Auto, Limpar, Sair) e caixas de texto maiores.
-- **Cartão Frente a frente em destaque:** na aba Traduzir, o cartão tem faixa roxo → rosa e o botão "Abrir modo frente a frente" é roxo em degradê, com ícone (antes era branco).
+- **Cartão Frente a frente em destaque:** na aba Traduzir, o cartão tem fundo roxo em degradê (roxo → violeta → magenta) com texto branco e o botão "Abrir modo frente a frente" branco com letra roxa e ícone.
 - **Frente a frente transparente:** as caixas da escrita são transparentes (aparecem o céu, planetas e estrelas), com borda lilás e texto branco com sombra; seletores de idioma translúcidos.
 - **Frente a frente com cosmos:** a faixa do meio (botões Voz, Fone, Auto, Limpar, Sair) tem céu roxo com planeta
   rosa de anel dourado, planeta azul, planetinhas lilás e dourado, estrelas piscando e estrelas cadentes.

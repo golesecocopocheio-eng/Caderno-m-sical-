@@ -20,7 +20,28 @@ h1{font-size:20px;margin:4px 0 2px}h2{font-size:15px;margin:0 0 8px}
 .cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
 .cats button{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:99px;padding:7px 12px;font-size:13.5px}
 .cats button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
-.prod{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* venda com vida: cor e ícone por grupo */
+body.venda{background:linear-gradient(180deg,#f5f3ff 0%,#fdf4ff 45%,var(--bg) 100%)}
+@media (prefers-color-scheme:dark){body.venda{background:linear-gradient(180deg,#1e1033 0%,#160c26 50%,var(--bg) 100%)}}
+.gtit{display:flex;align-items:center;gap:10px;margin:18px 0 8px;padding:10px 14px;border-radius:16px;color:#fff;background:linear-gradient(120deg,var(--gc),color-mix(in srgb,var(--gc) 55%,#000));box-shadow:0 6px 18px color-mix(in srgb,var(--gc) 35%,transparent)}
+.gtit i{font-style:normal;font-size:24px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.gtit b{font-size:15.5px;letter-spacing:.08em;text-transform:uppercase}
+.gtit small{margin-left:auto;background:rgba(255,255,255,.22);padding:2px 9px;border-radius:99px;font-weight:700;font-size:12px}
+.prod .pc{position:relative;display:flex;flex-direction:column;text-align:left;border:0;border-radius:18px;padding:12px 12px 11px;min-height:96px;color:var(--tx);font-size:15px;font-weight:700;line-height:1.25;
+ background:linear-gradient(160deg,color-mix(in srgb,var(--gc) 16%,var(--card)) 0%,var(--card) 70%);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--gc) 30%,transparent),0 4px 14px color-mix(in srgb,var(--gc) 14%,transparent);overflow:hidden;transition:transform .08s}
+.prod .pc:before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--gc)}
+.prod .pc:active{transform:scale(.96)}
+.prod .pc .ic{font-size:26px;line-height:1;margin-bottom:6px}
+.prod .pc .nm{flex:1}
+.prod .pc small{display:block;width:fit-content;margin-top:8px;padding:3px 10px;border-radius:99px;font-weight:800;font-size:14px;color:#fff;background:var(--gc)}
+.prod .pc .qt{position:absolute;top:8px;right:8px;background:#facc15;color:#2e1065;border-radius:99px;min-width:24px;height:24px;font-size:13px;font-weight:800;display:grid;place-items:center;padding:0 6px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.prod .pc.tem{box-shadow:inset 0 0 0 2.5px var(--gc),0 6px 18px color-mix(in srgb,var(--gc) 30%,transparent)}
+.cats button.cc{border:0;color:#fff;background:color-mix(in srgb,var(--gc) 75%,#000);opacity:.75}
+.cats button.cc.on{opacity:1;box-shadow:0 0 0 2px #fff inset,0 3px 10px color-mix(in srgb,var(--gc) 40%,transparent)}
+.emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
+.emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
+.emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
 .menu{background:radial-gradient(120% 80% at 50% 0%,#5b21b6 0%,#2e1065 45%,#12051f 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px}
 .menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
 .menu .mt span{color:#facc15}
@@ -175,6 +196,11 @@ window.__lerCardapio=lerCardapio;
 /* ---------- cálculo ---------- */
 const ativos=()=>itens.filter(i=>i.on!==false);
 const categorias=()=>{const m=new Map();itens.forEach(i=>{const k=i.c||'Outros',o=i.o??1e9;if(!m.has(k)||o<m.get(k))m.set(k,o)});return [...m.entries()].sort((a,b)=>a[1]-b[1]||a[0].localeCompare(b[0],'pt')).map(x=>x[0])};
+const PALETA=['#7c3aed','#d97706','#0891b2','#db2777','#16a34a','#dc2626','#2563eb','#9333ea','#0d9488','#ea580c'];
+const corCat=c=>{const m=(cfg.cores||{})[c];if(m)return m;const k=categorias().indexOf(c);if(/autora/i.test(c))return '#7c3aed';if(/cl[aá]ssic/i.test(c))return '#d97706';if(/cerveja|chopp/i.test(c))return '#ca8a04';if(/petisco|por[cç]|cozinha|lanche/i.test(c))return '#ea580c';if(/sem\s*[aá]lcool|suco|refri|[aá]gua|soft/i.test(c))return '#0891b2';if(/vinho|espumante/i.test(c))return '#9f1239';if(/dose|shot|destilad|whisk|gin/i.test(c))return '#0f766e';return PALETA[(k<0?0:k)%PALETA.length]};
+const iconeCat=c=>/autora/i.test(c)?'🍸':/cl[aá]ssic/i.test(c)?'🥃':/caipi/i.test(c)?'🍋':/cerveja|chopp/i.test(c)?'🍺':/petisco|por[cç]|cozinha|lanche/i.test(c)?'🍟':/sem\s*[aá]lcool|suco|refri|soft/i.test(c)?'🥤':/[aá]gua/i.test(c)?'💧':/vinho/i.test(c)?'🍷':/espumante/i.test(c)?'🥂':/dose|shot|destilad|whisk/i.test(c)?'🥃':/drink|coquet/i.test(c)?'🍹':/sobremesa/i.test(c)?'🍨':'✨';
+const EMOJIS=['🍸','🍹','🥃','🍋','🍊','🍓','🍍','🥥','🌿','🔥','🍺','🍷','🥂','🍾','🧉','🥤','💧','🍟','🍕','🌮','🍨','⭐','💜','🌶️'];
+const iconeItem=i=>i.e||iconeCat(i.c||'Outros');
 const porOrdem=(x,y)=>(x.o??1e9)-(y.o??1e9)||x.n.localeCompare(y.n,'pt');
 const totalCarrinho=()=>Object.entries(carrinho).reduce((s,[id,q])=>{const i=itens.find(x=>x.id===id);return s+(i?i.p*q:0)},0);
 const qtdCarrinho=()=>Object.values(carrinho).reduce((a,b)=>a+b,0);
@@ -250,7 +276,7 @@ async function mpCancelar(){
 }
 
 /* ---------- desenho ---------- */
-function draw(){
+function draw(){document.body.classList.toggle('venda',aba==='vender'||aba==='cardapio');
   const a=document.activeElement;if(a&&a.dataset&&a.dataset.k&&!folha)return;
   let h=`<h1>🍽️ Cardápio e vendas</h1><div class="tabs">${[['vender','🛒','Vender'],['cardapio','📋','Cardápio'],['vendas','📊','Vendas'],['pag','💳','Receber']].map(([k,e,n])=>`<button data-aba="${k}" class="${aba===k?'on':''}"><span>${e}</span>${n}</button>`).join('')}</div>`;
   if(aba==='vender')h+=telaVender();
@@ -263,15 +289,15 @@ function draw(){
 function telaVender(){
   const A=editar?itens:ativos();if(!A.length)return fotoCard()+`<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Tire a foto do cardápio acima ou adicione os itens à mão.</p><button class="btn sec" id="editarBtn">✍️ Adicionar itens à mão</button></div>`;
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
-  let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="${cat===c?'on':''}">${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
+  let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="cc ${cat===c?'on':''}" style="--gc:${corCat(c)}">${iconeCat(c)} ${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
   if(editar){
     h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:12px;color:var(--mut)">Grupo</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:22px">${iconeCat(c)}</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"><input type="color" data-cor="${esc(c)}" value="${corCat(c)}" title="Cor do grupo" style="width:46px;height:40px;padding:2px;flex:none"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"><details style="grid-column:1/3"><summary style="font-size:13px;color:var(--mut);cursor:pointer">Ícone: <span style="font-size:18px">${iconeItem(i)}</span> · trocar</summary><div class="emo" style="margin-top:6px">${EMOJIS.map(em=>`<button data-emo="${i.id}" data-em="${em}" class="${iconeItem(i)===em?'on':''}">${em}</button>`).join('')}<button data-emo="${i.id}" data-em="" title="Ícone do grupo" style="font-size:12px">padrão</button></div></details></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-    h+=`${cat?'':`<h2 style="margin:12px 2px 6px">${esc(c)}</h2>`}<div class="prod">${l.map(i=>`<button data-add="${i.id}">${esc(i.n)}<small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
+    const gc=corCat(c);h+=`<div class="gtit" style="--gc:${gc}"><i>${iconeCat(c)}</i><b>${esc(c)}</b><small>${l.length}</small></div><div class="prod" style="--gc:${gc}">${l.map(i=>`<button class="pc${carrinho[i.id]?' tem':''}" data-add="${i.id}"><span class="ic">${iconeItem(i)}</span><span class="nm">${esc(i.n)}</span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
   return h;
 }
 function desenharCarrinho(){
@@ -292,7 +318,7 @@ function menuHTML(){
   const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
   const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
   return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
-  ${C.map(c=>`<div class="mc">${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
+  ${C.map(c=>`<div class="mc">${iconeCat(c)} ${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
   <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
 }
 function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
@@ -649,6 +675,7 @@ document.addEventListener('click',async ev=>{
     if(b.id==='fvDel'){const x=fotos.find(y=>y.id===fotoVer);fotoVer=null;verFoto();if(x){await db.collection('fotos').doc(x.id).delete();if(x.g)db.collection('fotosg').doc(x.g).delete().catch(()=>{})}return}
     if(b.id==='zerarCard'){if(b.dataset.s){const v=[...itens];carrinho={};for(const i of v)db.collection('itens').doc(i.id).delete().catch(()=>{});toast('🗑️ Cardápio excluído')}else{b.dataset.s=1;b.textContent='Toque de novo para excluir TODOS os itens';setTimeout(()=>{b.dataset.s='';b.textContent='🗑️ Excluir cardápio'},3000)}return}
     if(b.id==='atualizarCard'){if(b.dataset.s){substituir=true;digitalizar()}else{b.dataset.s=1;b.textContent='Toque de novo: escanear e trocar o cardápio todo';setTimeout(()=>{b.dataset.s='';b.textContent='🔄 Atualizar pela foto'},3500)}return}
+    if(d.emo!==undefined){const i=itens.find(x=>x.id===d.emo);if(i){const o={...strip(i)};if(d.em)o.e=d.em;else delete o.e;await db.collection('itens').doc(i.id).set(o);toast('✅ Ícone de '+i.n+': '+(d.em||'padrão do grupo'))}return}
     if(d.on){const i=itens.find(x=>x.id===d.on);if(i)await db.collection('itens').doc(i.id).set({...strip(i),on:i.on===false});return}
     if(d.del){if(b.dataset.s){await db.collection('itens').doc(d.del).delete();delete carrinho[d.del]}else{b.dataset.s=1;b.textContent='Apagar?';setTimeout(()=>{b.dataset.s='';b.textContent='✕'},2500)}return}
     if(!dono)return;
@@ -665,6 +692,7 @@ document.addEventListener('input',e=>{const t=e.target;
 document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
+  if(t.dataset.cor!==undefined){cfg.cores={...(cfg.cores||{}),[t.dataset.cor]:t.value};await salvarCfg();toast('✅ Cor do grupo '+t.dataset.cor);return}
   if(t.id==='nbNome'||t.id==='nbSub'){cfg[t.id==='nbNome'?'nome':'sub']=t.value.trim();await salvarCfg();return}
   if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
   if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
@@ -687,7 +715,7 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
   // só as miniaturas (v:2); a foto grande baixa ao abrir. Fotos antigas grandes não são baixadas.
   db.collection('fotos').where('v','==',2).onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.mini).sort((a,b)=>b.t-a.t);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
-  db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||''};draw()},()=>{});
+  db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||'',cores:d.cores||{}};draw()},()=>{});
   draw();
 })();
 </script>

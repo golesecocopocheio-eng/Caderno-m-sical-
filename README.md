@@ -21,7 +21,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   reações, textos traduzidos — fica como está). O mascote gatinho saiu de todas as telas: os balões dele
   viraram linhas de status discretas e as animações decorativas (confete, palco, notinhas) foram desligadas.
   Logo: lua crescente amarela (que também forma o "C" de Clã) com ondas de voz, num quadrado roxo com estrelas; nome "Clã" em branco e "Speak" em amarelo. Cores do app: roxo `#7C3AED` e amarelo `#FACC15` (`app/icons/claspeak.svg`). Capa com logo, nome e frase na tela de abertura do app e do APK; capas para divulgar em `app/icons/capa/` (vertical 1080×1920 e horizontal 1200×630).
-- **Fundo de céu com galáxias (tema claro):** o app usa um céu claro em tons pastel (lilás, rosa, azul e
+- **Fundo de céu com galáxias (tema claro):** o app usa um céu claro (com um véu roxo suave, um pouco mais escuro) em tons pastel (lilás, rosa, azul e
   dourado) com estrelas e galáxias espirais (`app/icons/ceu.webp`, gerada pelo próprio projeto). Cartões
   brancos translúcidos com desfoque, texto escuro e destaques em roxo e amarelo; a tela de abertura e o splash
   do APK seguem o mesmo céu.

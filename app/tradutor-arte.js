@@ -120,28 +120,52 @@
   if (abas) { abas.addEventListener('click', () => requestAnimationFrame(corAba)); corAba(); }
 })();
 
-/* Tela de abertura (capa): logo, nome e frase e assinatura por ~2,2 s; toque para pular. */
+/* Tela de abertura (capa): já vem no HTML (sem tela branca). Estrelas passando como numa
+   viagem pelo espaço; no fim a capa "avança" para dentro do app. Toque para pular. */
 (function () {
   'use strict';
-  if (sessionStorage.getItem('trad-capa')) return;
-  sessionStorage.setItem('trad-capa', '1');
-  const c = document.createElement('div');
-  c.className = 'capa'; c.setAttribute('aria-hidden', 'true');
-  let est = '', sd = 5; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 40; i++) est += '<i style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;--d:-' + (r() * 3).toFixed(1) + 's;--s:' + (r() < .2 ? 3 : 1.6) + 'px"></i>';
-  c.innerHTML = '<div class="capaBrilho"></div><div class="capaEst">' + est + '</div>' +
-    '<div class="capaCentro">' +
-      '<div class="capaOrbitas"><span class="o1"><b></b></span><span class="o2"><b></b></span>' +
-      '<img class="capaLogo" src="icons/claspeak-marca.svg" alt=""></div>' +
-      '<div class="capaNome">Clã <span>Speak</span></div>' +
-      '<div class="capaFrase">Tradução de voz em tempo real</div>' +
-      '<div class="capaBarra"><i></i></div>' +
-    '</div>' +
-    '<div class="capaAutor"><i></i><span>by <b>Sanka Brunelli</b></span><i></i></div>';
-  document.body.appendChild(c);
-  const sair = () => { c.classList.add('sai'); setTimeout(() => c.remove(), 450); };
+  const c = document.getElementById('capa');
+  if (!c) return;
+  try { sessionStorage.setItem('trad-capa', '1'); } catch (e) {}
+  const cv = document.getElementById('capaWarp'), x = cv && cv.getContext('2d');
+  let fim = false, t0 = performance.now(), raf = 0;
+  if (x) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = () => (cv.width = innerWidth * dpr, cv.height = innerHeight * dpr);
+    W(); addEventListener('resize', W);
+    const cores = ['255,255,255', '255,255,255', '249,168,212', '125,211,252', '196,181,253', '253,230,138'];
+    const N = 260, est = [];
+    const nova = (z) => ({ x: (Math.random() - .5) * 2, y: (Math.random() - .5) * 2, z: z || Math.random() * 1 + .05, c: cores[(Math.random() * cores.length) | 0] });
+    for (let i = 0; i < N; i++) est.push(nova());
+    let ult = t0;
+    const passo = (agora) => {
+      const dt = Math.min(50, agora - ult) / 1000; ult = agora;
+      const tt = (agora - t0) / 1000;
+      const vel = fim ? 3.2 : .18 + Math.min(1, tt / 1.6) * .55; // acelera; na saída, salto
+      const w = cv.width, h = cv.height, cx = w / 2, cy = h * .42, k = Math.max(w, h) * .5;
+      x.clearRect(0, 0, w, h);
+      for (const s of est) {
+        const z0 = s.z; s.z -= vel * dt;
+        if (s.z <= .02) { Object.assign(s, nova(1.05)); continue; }
+        const px = cx + s.x / s.z * k, py = cy + s.y / s.z * k, qx = cx + s.x / z0 * k, qy = cy + s.y / z0 * k;
+        if (px < -50 || px > w + 50 || py < -50 || py > h + 50) { Object.assign(s, nova(1.05)); continue; }
+        const a = Math.min(1, (1.1 - s.z) * 1.2);
+        x.strokeStyle = 'rgba(' + s.c + ',' + a.toFixed(3) + ')';
+        x.lineWidth = Math.max(.6, (1.2 - s.z) * 2.4) * dpr;
+        x.lineCap = 'round';
+        x.beginPath(); x.moveTo(qx, qy); x.lineTo(px, py); x.stroke();
+      }
+      raf = requestAnimationFrame(passo);
+    };
+    raf = requestAnimationFrame(passo);
+  }
+  const sair = () => {
+    if (fim) return; fim = true;
+    setTimeout(() => c.classList.add('sai'), 180);
+    setTimeout(() => { cancelAnimationFrame(raf); c.remove(); }, 950);
+  };
   c.addEventListener('click', sair);
-  setTimeout(sair, 2200);
+  setTimeout(sair, 2400);
 })();
 
 /* Planetas e estrelas no fundo de todo o app (camada fixa atrás das telas) */

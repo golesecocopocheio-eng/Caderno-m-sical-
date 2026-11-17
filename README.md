@@ -20,7 +20,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   de linha em SVG (`app/tradutor-ui.js` troca os emojis da interface por ícones; o conteúdo — mensagens,
   reações, textos traduzidos — fica como está). O mascote gatinho saiu de todas as telas: os balões dele
   viraram linhas de status discretas e as animações decorativas (confete, palco, notinhas) foram desligadas.
-  Logo: lua crescente amarela (que também forma o "C" de Clã) com ondas de voz, num quadrado roxo com estrelas; nome "Clã" em branco e "Speak" em amarelo. Cores do app: roxo `#7C3AED` e amarelo `#FACC15` (`app/icons/claspeak.svg`). Capa com logo, nome e frase na tela de abertura do app e do APK; capas para divulgar em `app/icons/capa/` (vertical 1080×1920 e horizontal 1200×630).
+  Logo: lua crescente amarela (que também forma o "C" de Clã) com ondas de voz, num círculo roxo-escuro com estrelas e borda dourada; nome "Clã" em branco e "Speak" em amarelo. Cores do app: roxo `#7C3AED` e amarelo `#FACC15` (`app/icons/claspeak.svg`). Capa com logo, nome e frase na tela de abertura do app e do APK; capas para divulgar em `app/icons/capa/` (vertical 1080×1920 e horizontal 1200×630).
 - **Fundo de céu com galáxias (tema claro):** o app usa um céu claro (com um véu roxo suave, um pouco mais escuro) em tons pastel (lilás, rosa, azul e
   dourado) com estrelas e galáxias espirais (`app/icons/ceu.webp`, gerada pelo próprio projeto). Cartões
   brancos translúcidos com desfoque, texto escuro e destaques em roxo e amarelo; a tela de abertura e o splash
@@ -66,7 +66,7 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Sala:** bandeiras dos idiomas, som de mensagem nova, copiar, avatares, aviso de quem entrou e saiu,
   emojis e reações nas mensagens e "fulano está falando...".
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
-- **APK Android próprio ("Clã Speak", logo da lua amarela no quadrado roxo):** o workflow `.github/workflows/apk-tradutor.yml` gera o
+- **APK Android próprio ("Clã Speak", logo redondo da lua amarela em roxo-escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta
   `tradutor-apk-N`. No APK, a voz usa os plugins nativos do Android (reconhecimento do Google e leitura
   em voz alta), e o convite para a sala é pelo código.

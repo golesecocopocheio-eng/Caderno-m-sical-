@@ -25,8 +25,8 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   dourado) com estrelas e galáxias espirais (`app/icons/ceu.webp`, gerada pelo próprio projeto). Cartões
   brancos translúcidos com desfoque, texto escuro e destaques em roxo e amarelo; a tela de abertura e o splash
   do APK seguem o mesmo céu.
-- **Aba Ajustes com planetas e estrelas:** cabeçalho com planeta de anel, lua em órbita e estrelas piscando;
-  no fundo da aba, planetas que flutuam devagar, estrelas que brilham e um cometa passando. Todas as caixas de
+- **Planetas e estrelas em todo o app:** no fundo de todas as abas há 6 planetas flutuando devagar (dois com
+  anel), 80 estrelas que brilham e dois cometas passando; na aba Ajustes, o cabeçalho tem planeta de anel e lua em órbita. Todas as caixas de
   marcar do app viraram interruptores modernos (liga/desliga).
 - **Motor de tradução:**
   - **Padrão (gratuito):** Google Tradutor sem chave, com MyMemory de reserva.

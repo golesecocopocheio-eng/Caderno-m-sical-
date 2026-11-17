@@ -136,18 +136,19 @@
   setTimeout(sair, 1400);
 })();
 
-/* Planetas e estrelas no fundo da aba Ajustes */
+/* Planetas e estrelas no fundo de todo o app (camada fixa atrás das telas) */
 (function () {
-  const t = document.getElementById('ajustes');
-  if (!t) return;
   const d = document.createElement('div');
   d.className = 'cosmos'; d.setAttribute('aria-hidden', 'true');
   let est = '';
   let s = 11; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 34; i++) est += '<i class="estrela" style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;--t:' + (2 + r() * 3).toFixed(1) + 's;--d:-' + (r() * 4).toFixed(1) + 's;--s:' + (r() < .2 ? 3 : 2) + 'px"></i>';
+  for (let i = 0; i < 80; i++) {
+    const g = r() < .15;
+    est += '<i class="estrela' + (g ? ' grande' : '') + '" style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;--t:' + (2 + r() * 3).toFixed(1) + 's;--d:-' + (r() * 4).toFixed(1) + 's;--s:' + (g ? 3 : r() < .5 ? 2 : 1.5) + 'px"></i>';
+  }
   d.innerHTML = est +
     '<span class="planeta p1"><b></b></span><span class="planeta p2"></span><span class="planeta p3"></span>' +
-    '<span class="cometa"></span>';
-  t.insertBefore(d, t.firstChild);
+    '<span class="planeta p4"><b></b></span><span class="planeta p5"></span><span class="planeta p6"></span>' +
+    '<span class="cometa"></span><span class="cometa c2"></span>';
+  document.body.insertBefore(d, document.body.firstChild);
 })();
-

@@ -48,6 +48,25 @@ jobs:
       - name: Gerar ícones e tela de abertura
         run: npx capacitor-assets generate --android --iconBackgroundColor '#3B0F7A' --splashBackgroundColor '#6D28D9' --splashBackgroundColorDark '#6D28D9'
 
+      - name: Fundo roxo no Android (sem tela branca entre o splash e o app)
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          v = pathlib.Path('android/app/src/main/res/values')
+          cor = v / 'colors.xml'
+          t = cor.read_text() if cor.exists() else '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n'
+          if 'claFundo' not in t:
+              t = t.replace('</resources>', '    <color name="claFundo">#3B0F7A</color>\n</resources>')
+          cor.write_text(t)
+          st = v / 'styles.xml'
+          x = st.read_text()
+          def add(m):
+              return m.group(0) + '\n        <item name="android:windowBackground">@color/claFundo</item>'
+          x = re.sub(r'<style name="AppTheme(\.NoActionBar)?"[^>]*>', add, x)
+          st.write_text(x)
+          print(x)
+          PY
+
       - name: Definir a versão do app
         run: |
           sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/" android/app/build.gradle

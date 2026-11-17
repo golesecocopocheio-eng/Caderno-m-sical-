@@ -842,24 +842,6 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Ajustes</h1></header>
   <div class="rolavel"><div class="box">
     <div class="status" id="gatoAjustes" role="status" aria-live="polite"></div>
-    <div class="card" id="cardBackup">
-      <b>Backup na nuvem</b>
-      <p class="mu">Seus favoritos, histórico, pontos do Estudar, artigos salvos, letras do Karaokê e ajustes são salvos sozinhos na nuvem. Com o código abaixo você baixa o backup ou recupera tudo em outro celular. A chave da API não entra no backup.</p>
-      <label class="linha"><span>Backup automático</span><input type="checkbox" id="bkAuto" checked></label>
-      <div class="mu" id="bkStatus" role="status" aria-live="polite">Preparando…</div>
-      <label for="bkCodigo">Seu código de backup</label>
-      <div class="linhaBt"><input id="bkCodigo" readonly><button class="sec" id="bkCopiar">Copiar</button></div>
-      <div class="bkBotoes">
-        <button id="bkAgora">Salvar agora</button>
-        <button class="sec" id="bkBaixar">Baixar backup</button>
-      </div>
-      <details class="bkRest"><summary>Restaurar backup</summary>
-        <label for="bkOutro">Código de outro aparelho</label>
-        <div class="linhaBt"><input id="bkOutro" placeholder="XXXX-XXXX-XXXX" autocapitalize="characters" spellcheck="false"><button class="sec" id="bkPuxar">Buscar</button></div>
-        <button class="sec" id="bkArquivoBt">Restaurar de um arquivo</button><input type="file" id="bkArquivo" accept=".json,application/json,text/plain" hidden>
-        <div class="mu" id="bkRestMsg" role="status" aria-live="polite"></div>
-      </details>
-    </div>
     <div class="card" id="cardMotor">
       <b>Motor de tradução</b>
       <p class="mu">O motor Padrão usa o Google Tradutor (rápido e gratuito). O Executivo usa o Claude da Anthropic: precisão terminológica por setor, registro formal/técnico e saída limpa. Prévias ao vivo continuam no motor Padrão.</p>
@@ -916,6 +898,31 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
 </section>
 
 <!-- Sala -->
+<section id="nuvem" class="tela">
+  <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Backup</h1></header>
+  <div class="rolavel"><div class="box">
+    <div class="status" id="gatoNuvem" role="status" aria-live="polite"></div>
+    <div class="card" id="cardBackup">
+      <b>Backup automático na nuvem</b>
+      <p class="mu">Seus favoritos, histórico, pontos do Estudar, artigos salvos, letras do Karaokê e ajustes são salvos sozinhos na nuvem. Com o código abaixo você baixa o backup ou recupera tudo em outro celular. A chave da API não entra no backup.</p>
+      <label class="linha"><span>Backup automático</span><input type="checkbox" id="bkAuto" checked></label>
+      <div class="mu" id="bkStatus" role="status" aria-live="polite">Preparando…</div>
+      <label for="bkCodigo">Seu código de backup</label>
+      <div class="linhaBt"><input id="bkCodigo" readonly><button class="sec" id="bkCopiar">Copiar</button></div>
+      <div class="bkBotoes">
+        <button id="bkAgora">Salvar agora</button>
+        <button class="sec" id="bkBaixar">Baixar backup</button>
+      </div>
+      <details class="bkRest"><summary>Restaurar backup</summary>
+        <label for="bkOutro">Código de outro aparelho</label>
+        <div class="linhaBt"><input id="bkOutro" placeholder="XXXX-XXXX-XXXX" autocapitalize="characters" spellcheck="false"><button class="sec" id="bkPuxar">Buscar</button></div>
+        <button class="sec" id="bkArquivoBt">Restaurar de um arquivo</button><input type="file" id="bkArquivo" accept=".json,application/json,text/plain" hidden>
+        <div class="mu" id="bkRestMsg" role="status" aria-live="polite"></div>
+      </details>
+    </div>
+  </div></div>
+</section>
+
 <section id="salaTela" class="tela">
   <header>
     <div style="flex:1;min-width:0"><h1>Sala <span id="salaCod"></span></h1><div id="pessoas"></div></div>
@@ -967,6 +974,7 @@ input::placeholder,textarea::placeholder{color:#5B5D66}
   <button data-aba="estudo"><b>📚</b>Estudar</button>
   <button data-aba="musica"><b>🎤</b>Karaokê</button>
   <button data-aba="conversa"><b>💬</b>Conversar</button>
+  <button data-aba="nuvem"><b>☁️</b>Backup</button>
   <button data-aba="ajustes"><b>⚙️</b>Ajustes</button>
 </nav>
 

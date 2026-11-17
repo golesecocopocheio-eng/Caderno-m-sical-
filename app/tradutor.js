@@ -909,6 +909,7 @@
   });
   preencher(lados.a.sel, localStorage.getItem('trad-f2f-a') || linguaEl.value);
   preencher(lados.b.sel, localStorage.getItem('trad-f2f-b') || (linguaEl.value.startsWith('en') ? 'es-ES' : 'en-US'));
+  lados.a.vazio(); lados.b.vazio(); // a dica mostra o idioma já escolhido
   Object.entries(lados).forEach(([k, l]) => {
     l.sel.onchange = () => { localStorage.setItem('trad-f2f-' + k, l.sel.value); if (!l.escrita.textContent.trim() || l.escrita.querySelector('.dica')) l.vazio(); };
     l.mic.onclick = () => {

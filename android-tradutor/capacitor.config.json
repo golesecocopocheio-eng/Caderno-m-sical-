@@ -3,7 +3,8 @@
   "appName": "Clã Speak",
   "webDir": "www",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": false,
+    "backgroundColor": "#3B0F7A"
   },
-  "backgroundColor": "#000000"
+  "backgroundColor": "#3B0F7A"
 }

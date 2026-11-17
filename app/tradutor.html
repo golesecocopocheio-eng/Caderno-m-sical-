@@ -860,6 +860,54 @@ header h1,.marca{font-size:17px;font-weight:700}
 .capaLogo{width:240px;height:240px}
 .capaCentro{margin-top:-20px}
 @media (max-width:360px){.capaLogo{width:200px;height:200px}}
+
+/* ===== Abas evoluídas: barra de baixo maior, sala e frente a frente mais bonitos ===== */
+.abas{padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);gap:2px;border-radius:22px 22px 0 0;box-shadow:0 -8px 30px rgba(46,16,101,.18)}
+.abas button{min-height:58px;padding:6px 2px;font-size:11.5px;font-weight:600;gap:4px;border-radius:14px;transition:background .2s,color .2s,transform .15s}
+.abas button b .ic,.abas button .ic{width:25px;height:25px;stroke-width:1.9}
+.abas button.on{background:linear-gradient(180deg,rgba(124,58,237,.14),rgba(236,72,153,.10));color:#6D28D9}
+.abas button.on::before{top:-8px;left:32%;right:32%;height:3px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,#7C3AED,#EC4899,#F59E0B)}
+.abas button:active{transform:scale(.94)}
+/* Sala */
+#msgs{background:transparent}
+#salaTela header{flex-wrap:wrap;gap:10px;padding-bottom:12px}
+#salaTela header > div:first-child{flex:1 1 100%!important}
+#salaTela header button{flex:1}
+#salaTela #btFone,#salaTela #btVoz{flex:0 0 52px}
+.emojis{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.emojis::-webkit-scrollbar{display:none}
+.emojis button{flex:none}
+#salaTela header h1{font-size:20px;color:#fff}
+#salaTela #salaCod{display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.18);font-family:ui-monospace,Menlo,monospace;letter-spacing:.1em;font-size:15px;vertical-align:2px}
+#salaTela #pessoas{color:#E9DDFF;font-size:12.5px;margin-top:4px}
+#salaTela header button{min-width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px}
+#salaTela header button .ic{width:22px;height:22px;color:#fff}
+#salaTela header button.ligado{background:#fff;color:#6D28D9}
+#salaTela header button.ligado .ic{color:#6D28D9}
+#salaTela #btConvidar{background:linear-gradient(135deg,#7C3AED,#DB2777);border-color:transparent}
+#salaTela #btSair{background:rgba(220,38,38,.25);border-color:rgba(255,255,255,.18)}
+#avisoSala{background:rgba(255,255,255,.88);color:#B91C1C}
+.emojis{background:transparent;border-top:0;padding:8px 12px 2px;gap:6px}
+.emojis button{background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.6);border-radius:14px;font-size:22px;min-width:44px;height:44px;padding:0 8px;box-shadow:0 4px 12px rgba(46,16,101,.15)}
+.emojis button .ic{width:22px;height:22px;color:#6D28D9}
+#salaTela .barra{background:rgba(42,20,82,.35);backdrop-filter:blur(12px);padding-top:10px}
+#salaTela .barra .mic,#f2f .mic{width:64px;height:64px;box-shadow:0 8px 24px rgba(124,58,237,.45),0 0 0 4px rgba(255,255,255,.18)}
+#salaTela .barra .mic .ic,#f2f .mic .ic{width:28px;height:28px}
+#salaTela .barra input{height:52px;border-radius:16px;font-size:15px}
+/* Frente a frente */
+.pista .meio{gap:8px;padding:10px 8px}
+.meio button{flex-direction:column;gap:4px;min-width:62px;height:62px;padding:6px 4px;border-radius:16px;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.6);color:#3B0F7A;box-shadow:0 6px 16px rgba(46,16,101,.18)}
+.meio button .ic{width:24px;height:24px;color:#6D28D9}
+.meio button span{display:block}
+.meio button.ligado{background:linear-gradient(135deg,#7C3AED,#DB2777);color:#fff;border-color:transparent}
+.meio button.ligado .ic{color:#fff}
+#f2fSair{background:rgba(254,226,226,.92)!important;color:#B91C1C!important}
+#f2fSair .ic{color:#B91C1C!important}
+#f2f .ctl{gap:10px}
+#f2f .ctl select{height:52px;border-radius:16px;font-size:15px}
+#f2f .lado .texto{border-radius:20px;font-size:22px;box-shadow:0 10px 30px rgba(46,16,101,.18)}
+#f2f .dica{font-size:16px}
+#f2f .dica b{font-size:20px}
 </style>
 </head>
 <body>

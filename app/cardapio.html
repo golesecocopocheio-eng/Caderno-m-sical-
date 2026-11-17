@@ -75,6 +75,29 @@ body.venda{background:var(--bg)}
 .prod .pc.auto .qt{background:var(--dc);color:#fff}
 .cats button.cc{opacity:1;color:color-mix(in srgb,var(--gc) 85%,var(--tx));background:color-mix(in srgb,var(--gc) 10%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gc) 30%,transparent)}
 .cats button.cc.on{color:#fff;background:var(--gc);box-shadow:none}
+/* ===== visual profissional: uma cor só, lista organizada (por cima dos anteriores) ===== */
+.prod,.prod .pc,.gtit,.cats button.cc{--gc:var(--ac)!important;--dc:var(--ac)!important}
+.gtit{margin:22px 4px 8px;padding:0;border:0;gap:8px}
+.gtit i{width:auto;height:auto;background:none;font-size:15px}
+.gtit b{font-size:12.5px;letter-spacing:.14em;color:var(--mut)}
+.gtit small{background:none;color:var(--mut);font-weight:600;padding:0}
+.prod{grid-template-columns:1fr;gap:0;background:var(--card);border:1px solid var(--bd);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.prod .pc,.prod .pc.auto{grid-column:auto;flex-direction:row;align-items:center;gap:12px;min-height:0;padding:12px 14px;border:0;border-radius:0!important;border-bottom:1px solid var(--bd);box-shadow:none;background:var(--card);color:var(--tx);font-weight:600}
+.prod .pc:last-child{border-bottom:0}
+.prod .pc:before,.prod .pc.auto:before{display:block;width:3px;background:var(--ac);opacity:0;transition:opacity .15s}
+.prod .pc.tem:before{opacity:1}
+.prod .pc.tem,.prod .pc.auto.tem{box-shadow:none;background:color-mix(in srgb,var(--ac) 5%,var(--card))}
+.prod .pc:active{transform:none;background:color-mix(in srgb,var(--ac) 8%,var(--card))}
+.prod .pc .ic,.prod .pc.auto .ic{width:40px;height:40px;margin:0;font-size:20px;border-radius:12px;background:var(--bg);flex:none;filter:none}
+.prod .pc .nm{flex:1;font-size:15px;font-weight:650}
+.prod .pc.auto .tx{flex:1;min-width:0}
+.prod .pc.auto .nm{font-size:15px;font-weight:700;color:var(--tx)}
+.prod .pc.auto .ds{color:var(--mut);font-size:12.5px;margin-top:2px}
+.prod .pc.auto .sl{color:var(--mut);font-size:10px;letter-spacing:.14em;margin-top:3px;background:none;padding:0}
+.prod .pc small,.prod .pc.auto small{margin:0;padding:0;background:none;color:var(--tx);font-size:15px;font-weight:800;flex:none;white-space:nowrap}
+.prod .pc .qt,.prod .pc.auto .qt{position:static;order:-1;background:var(--ac);color:#fff;min-width:24px;height:24px;font-size:12.5px;box-shadow:none;margin-right:-4px}
+.cats button.cc{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--bd)}
+.cats button.cc.on{color:var(--bg);background:var(--tx);box-shadow:none}
 .emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
 .emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
 .emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}

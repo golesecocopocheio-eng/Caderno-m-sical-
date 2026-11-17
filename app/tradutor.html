@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clã Speak</title>
-<meta name="theme-color" content="#D9CBF6">
+<meta name="theme-color" content="#DCCDF7">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="tradutor.webmanifest">
 <link rel="preload" as="image" href="icons/gato-danca.webp">
@@ -744,6 +744,24 @@ body::before{background:linear-gradient(180deg,rgba(67,20,140,.24),rgba(76,29,14
 .planeta.p2{top:62%}
 .planeta.p3{top:78%}
 .cometa.c2{animation-delay:6.5s;animation-duration:11s;width:90px}
+
+/* ===== Paleta: roxo, lilás, rosa, azul-claro e um toque dourado ===== */
+:root{--bg:#DCCDF7}
+body{background:linear-gradient(160deg,rgba(91,33,182,.30),rgba(192,132,252,.18) 35%,rgba(236,72,153,.16) 65%,rgba(56,189,248,.20)),url(icons/ceu.webp) center/cover no-repeat fixed,#DCCDF7}
+body::before{background:linear-gradient(160deg,rgba(91,33,182,.30),rgba(192,132,252,.18) 35%,rgba(236,72,153,.16) 65%,rgba(56,189,248,.20)),url(icons/ceu.webp) center/cover no-repeat}
+.capa{background:linear-gradient(160deg,rgba(91,33,182,.30),rgba(192,132,252,.18) 35%,rgba(236,72,153,.16) 65%,rgba(56,189,248,.20)),url(icons/ceu.webp) center/cover no-repeat,#DCCDF7}
+.cosmos .estrela,.cosmos .estrela:nth-child(3n),.cosmos .estrela:nth-child(5n){background:var(--c,#8B5CF6);box-shadow:0 0 6px 1px var(--c,#8B5CF6)}
+.planeta.p1{background:radial-gradient(circle at 32% 30%,#FCE7F3,#F472B6 55%,#9D174D);box-shadow:inset -14px -10px 24px rgba(131,24,67,.3),0 10px 40px rgba(236,72,153,.35)}
+.planeta.p1 b{border-color:rgba(245,158,11,.65);border-top-color:transparent}
+.planeta.p2{background:radial-gradient(circle at 32% 30%,#F0F9FF,#7DD3FC 55%,#0284C7);box-shadow:inset -8px -6px 14px rgba(3,105,161,.3),0 8px 26px rgba(56,189,248,.35)}
+.planeta.p3{background:radial-gradient(circle at 32% 30%,#F5F3FF,#C4B5FD 55%,#7C3AED);box-shadow:0 6px 18px rgba(139,92,246,.35)}
+.planeta.p4{background:radial-gradient(circle at 32% 30%,#F3E8FF,#A855F7 55%,#4C1D95)}
+.planeta.p4 b{border-color:rgba(236,72,153,.55);border-bottom-color:transparent}
+.planeta.p5{background:radial-gradient(circle at 32% 30%,#E0F2FE,#93C5FD 55%,#2563EB);box-shadow:0 6px 22px rgba(96,165,250,.35)}
+.cometa{background:linear-gradient(90deg,transparent,#F9A8D4,#fff)}
+.cometa.c2{background:linear-gradient(90deg,transparent,#7DD3FC,#fff)}
+.marca .am,.capaNome span{background:linear-gradient(90deg,#7C3AED,#C084FC 35%,#EC4899 70%,#F59E0B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capaBarra i{background:linear-gradient(90deg,#7C3AED,#EC4899,#38BDF8,#F59E0B)}
 </style>
 </head>
 <body>

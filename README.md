@@ -128,12 +128,10 @@ devolver um item ao que era naquele momento (só o dono). Sem o Firebase, o hist
 aparelho (últimas alterações); com o Firebase, fica na nuvem (`bares/{codigo}/historico`), vale
 para todos os celulares e as regras não deixam editar nem apagar registros.
 
-### Dados iniciais do APK
+### Dados do bar
 
-`android-build/dados-iniciais.json` vai **só dentro do APK** (não vai para o site). Na primeira abertura
-de cada versão desse pacote, o app **preenche o que falta** no aparelho, sem substituir nada que já foi
-lançado: no Caixa, dias que faltam e campos vazios; na Portaria, noites sem nenhuma entrada; no
-Estoque, itens e registros que faltam. Atenção: este repositório é público, então esse arquivo também é.
+Nenhum dado do bar fica neste repositório (ele é público). Os dados ficam no aparelho e, com a
+sincronização ligada, no Firebase. Um celular novo puxa tudo da nuvem ao entrar com o código do bar.
 
 ### Publicação
 

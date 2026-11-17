@@ -36,3 +36,4 @@ google-services.json
 
 # Chave de depuração usada para assinar o APK do app do bar (não é segredo)
 !android-build/debug.keystore
+dados-iniciais*.json

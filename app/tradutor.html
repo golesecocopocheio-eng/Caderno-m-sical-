@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clã Speak</title>
-<meta name="theme-color" content="#F3EEFF">
+<meta name="theme-color" content="#E4DAFB">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="tradutor.webmanifest">
 <link rel="preload" as="image" href="icons/gato-danca.webp">
@@ -712,6 +712,16 @@ input[type=checkbox]:checked::after{transform:translateX(18px)}
 input[type=checkbox]:focus-visible{outline:2px solid #A78BFA;outline-offset:2px}
 .chave{gap:14px}
 @media (prefers-reduced-motion:reduce){.cosmos *,.arOrbita{animation:none!important}}
+
+/* ===== Céu um pouco mais escuro ===== */
+:root{--bg:#E4DAFB;--card:rgba(255,255,255,.66);--card2:rgba(255,255,255,.84);--borda:rgba(76,29,149,.18);--mu:#5F5778}
+html{background:#E4DAFB}
+body{background:linear-gradient(180deg,rgba(76,29,149,.16),rgba(91,33,182,.22)),url(icons/ceu.webp) center/cover no-repeat fixed,#E4DAFB}
+body::before{background:linear-gradient(180deg,rgba(76,29,149,.16),rgba(91,33,182,.22)),url(icons/ceu.webp) center/cover no-repeat}
+header{background:rgba(245,240,255,.62)}
+.abas{background:rgba(245,240,255,.78)}
+.capa{background:linear-gradient(180deg,rgba(76,29,149,.16),rgba(91,33,182,.22)),url(icons/ceu.webp) center/cover no-repeat,#E4DAFB}
+.lado.cima{background:rgba(221,210,252,.55)}
 </style>
 </head>
 <body>

@@ -172,7 +172,7 @@ function render(){
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
   {const sa=saidas.length;$("#cEnt").textContent=ents.length;$("#cSai").textContent=sa;$("#cDentro").textContent=Math.max(0,ents.length-sa);
    $("#saida").disabled=ver!==noite;$("#saidaDesf").hidden=!sa||ver!==noite}
-  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(soma(l))}</span></div>`}).join("");
+  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k),cz=k!=="clan"?l.filter(e=>e.pg==="cortesia").length:0;return `<div><b>${l.length}</b><span>${n} · ${brl(soma(l))}${cz?`<br><small style="color:#b45309">🎁 ${cz} cortesia${cz>1?"s":""}</small>`:""}</span></div>`}).join("");
   $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(soma(ents.filter(e=>e.pg===k)))}</b><span>${PGI[k]} ${n}</span></div>`).join("");
   {// ✅ conferência: total = categorias = formas de pagamento; pessoas = categorias
    const tc=cent(tot),porCat=CATS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.cat===k))*100),0),porPg=PGS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.pg===k))*100),0);
@@ -193,7 +193,7 @@ function render(){
     return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} <button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button></span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
   const sm=a=>soma(a);
-  $("#audit").innerHTML=`<div><b>${lan.length}</b><span>Lançadas · ${brl(sm(lan))}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(sm(lan)-sm(apg))}</b><span>Saldo</span></div>`;
+  {const nL=ents.length+apg.length,vL=Math.round((soma(ents)+sm(apg))*100)/100;$("#audit").innerHTML=`<div><b>${nL}</b><span>Lançadas · ${brl(vL)}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(soma(ents))}</b><span>Saldo</span></div>`}
   $("#apagadas").innerHTML=apg.sort((a,b)=>b.ts-a.ts).slice(0,10).map(l=>{const h=new Date(l.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});const c=(CATS.find(x=>x[0]===l.cat)||[0,"?"])[1];return `<div class="item"><span>🗑 ${h} · ${c}${l.nome?" · "+escN(l.nome):""}${l.quem?" · por <b>"+escN(l.quem)+"</b>":""}</span><span>${brl(l.valor)}</span></div>`}).join("");
   document.querySelectorAll(".dono").forEach(el=>el.hidden=!owner);
   {const minha=[...ents].filter(e=>me&&e.u===me).sort((a,b)=>b.ts-a.ts)[0]||[...ents].sort((a,b)=>b.ts-a.ts)[0];const d=$("#desfazer");d.hidden=!minha||ver!==noite;if(minha)d.dataset.alvo=minha.id}
@@ -228,6 +228,7 @@ document.addEventListener("click",async ev=>{
       const en={cat,pg:free?"cortesia":pg,valor:free?0:cent(preco(cat))/100,noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
+      if(pg==="cortesia"&&cat!=="clan"){pg="dinheiro";render();$("#status").textContent="🎁 Cortesia lançada. Pagamento voltou para 💵 Dinheiro."}
     }else if(t.id==="saida"){
       if(ver!==noite){$("#status").textContent="Você está vendo outra noite. Escolha a data de hoje para lançar saídas.";return}
       if(navigator.vibrate)navigator.vibrate(15);

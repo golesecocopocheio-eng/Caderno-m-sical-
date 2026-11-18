@@ -748,13 +748,21 @@
       new Promise((_, err) => setTimeout(() => err(new Error('tempo esgotado')), 15000))]);
     const pulso = setInterval(() => pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now() }, { merge: true }).catch(() => {}), 30000);
     const offs = [];
-    offs.push(base.collection('falas').orderBy('t').limitToLast(60).onSnapshot((s) => {
+    // Salas paradas expiram: só valem as falas das últimas 24 horas
+    const desde = Date.now() - 24 * 3600 * 1000;
+    offs.push(base.collection('falas').where('t', '>', desde).orderBy('t').limitToLast(60).onSnapshot((s) => {
       s.docChanges().forEach((c) => { if (c.type === 'added') { const d = c.doc.data(); h.fala({ ...d, id: c.doc.id, eu: d.uid === meu, nova: d.t >= entrada }); } });
     }, () => h.aviso('A nuvem recusou a sala: falta publicar no Firebase a regra das salas (firestore.rules).')));
     // Quem não dá sinal há 2 minutos (fechou o app sem sair) some da lista.
     let lista = [];
     const mostrar = () => { const agora = Date.now(); h.pessoas(lista.filter((p) => p.eu || agora - p.t < 120000)); };
-    offs.push(base.collection('pessoas').onSnapshot((s) => { lista = s.docs.map((d) => ({ ...d.data(), uid: d.id, eu: d.id === meu })); mostrar(); }));
+    // Estado da conexão: dados vindos só da cópia local = sem contato com a nuvem (o Firestore reconecta sozinho)
+    const estadoRede = (fromCache) => h.conexao && h.conexao(!navigator.onLine ? 'offline' : fromCache ? 'reconectando' : 'online');
+    offs.push(base.collection('pessoas').onSnapshot({ includeMetadataChanges: true }, (s) => { lista = s.docs.map((d) => ({ ...d.data(), uid: d.id, eu: d.id === meu })); mostrar(); estadoRede(s.metadata.fromCache); }));
+    const voltou = () => { estadoRede(true); pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now() }, { merge: true }).catch(() => {}); };
+    const caiu = () => estadoRede(true);
+    window.addEventListener('online', voltou); window.addEventListener('offline', caiu);
+    offs.push(() => { window.removeEventListener('online', voltou); window.removeEventListener('offline', caiu); });
     const revisar = setInterval(mostrar, 30000);
     let ultimo = 0, pend = null, tm = null;
     const vivo = (texto) => {
@@ -877,7 +885,7 @@
     const outros = lista.filter((p) => !p.eu);
     $('#pessoas').innerHTML = outros.length
       ? outros.map((p) => avatar(p.uid, p.nome)).join('') + '<span>' + esc(outros.map((p) => p.nome + ' ' + bandeira(p.lingua)).join(', ')) + '</span>'
-      : 'Ninguém mais na sala ainda — toque em Convidar';
+      : 'Ninguém mais na sala ainda — toque em Convidar e compartilhe o convite';
     const agora = new Map(outros.map((p) => [p.uid, p.nome]));
     if (presentes) {
       for (const [id, nome] of agora) if (!presentes.has(id)) { sistema('🐾 ' + nome + ' entrou na sala'); if (vozLigada) miau(); salaGolpe('pulo', 800); gatoSala.dizer('Miau! Oi, ' + nome + '! 👋'); voar('🐾'); }
@@ -918,8 +926,20 @@
     mostrarTela('salaTela');
     $('#btVoz').textContent = vozLigada ? '🔊' : '🔇';
     try {
-      conexao = await conectar(sala, eu, { fala: bolha, pessoas: atualizarPessoas, aviso: (t) => { const a = $('#avisoSala'); a.textContent = '⚠️ ' + t; a.hidden = false; } });
+      mostrarConexao('conectando');
+      conexao = await conectar(sala, eu, { fala: bolha, pessoas: atualizarPessoas, conexao: mostrarConexao, aviso: (t) => { const a = $('#avisoSala'); a.textContent = '⚠️ ' + t; a.hidden = false; } });
+      if (!conexao.nuvem) mostrarConexao('local');
+      if (!presentes || !presentes.size) setTimeout(() => { if ((!presentes || !presentes.size) && $('#convite').hidden) $('#btConvidar').onclick(); }, 1200);
     } catch (e) { alert('Não foi possível entrar na sala: ' + e.message); mostrarTela('inicio'); }
+  }
+
+  function mostrarConexao(est) {
+    const el = $('#salaConexao'); if (!el) return;
+    const txt = { conectando: 'Conectando…', online: 'Conectado', reconectando: 'Reconectando…', offline: 'Sem internet', local: 'Só neste aparelho' }[est] || '';
+    if (el.dataset.estado === est) return;
+    el.dataset.estado = est; el.querySelector('span').textContent = txt;
+    if (est === 'online' && el.dataset.antes === 'reconectando') sistema('Conexão restabelecida');
+    if (est === 'reconectando' || est === 'offline') el.dataset.antes = 'reconectando'; else el.dataset.antes = '';
   }
 
   function sairSala() {
@@ -962,30 +982,59 @@
   $('#entrar').onclick = entrarSala;
   $('#btSair').onclick = sairSala;
   $('#btVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#btVoz').textContent = vozLigada ? '🔊' : '🔇'; if (!vozLigada) { if (plugin('TextToSpeech')) plugin('TextToSpeech').stop().catch(() => {}); else if (window.speechSynthesis) speechSynthesis.cancel(); } };
-  const linkSala = () => location.origin + location.pathname + '?sala=' + $('#salaCod').textContent;
+  // Link do convite: no APK (que roda em https://localhost) usa o site publicado do Clã Speak;
+  // no navegador usa o próprio endereço. Quem abre o link entra direto na sala (ou abre o app, se tiver).
+  const SITE = 'https://golesecocopocheio-eng.github.io/Caderno-m-sical-/tradutor.html';
+  const linkSala = () => (NATIVO || !/^https?:$/.test(location.protocol) ? SITE : location.origin + location.pathname) + '?sala=' + $('#salaCod').textContent;
+  const textoConvite = () => 'Vem conversar comigo no Clã Speak (tradução de voz ao vivo)! Toque no link para entrar na sala:\n' + linkSala() + '\nCódigo da sala: ' + $('#salaCod').textContent;
   $('#btConvidar').onclick = () => {
     const box = $('#convite'); box.hidden = !box.hidden;
     if (box.hidden) return;
-    if (NATIVO) { // no APK não há link (o app roda em https://localhost): convida pelo código
-      $('#qrImg').innerHTML = '<div style="font-size:2.6rem;font-weight:800;letter-spacing:.2em;color:#0b0b0b">' + esc($('#salaCod').textContent) + '</div>';
-      $('#qrLink').textContent = 'Peça para a outra pessoa abrir o app Clã Speak e entrar na sala com este código.';
-      $('#btCopiar').textContent = 'Copiar código';
-      return;
-    }
     const L = linkSala();
+    $('#qrCodigo').textContent = $('#salaCod').textContent;
     $('#qrLink').textContent = L;
-    try { const qr = qrcode(0, 'M'); qr.addData(L); qr.make(); $('#qrImg').innerHTML = qr.createImgTag(6, 0); } catch (e) { $('#qrImg').textContent = ''; }
+    try { const qr = qrcode(0, 'M'); qr.addData(L); qr.make(); $('#qrImg').innerHTML = qr.createImgTag(5, 8); } catch (e) { $('#qrImg').textContent = ''; }
   };
-  const copiado = (txt, volta) => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = volta; }, 1500); };
+  const avisoBotao = (bt, txt) => { const v = bt.textContent; bt.textContent = txt; setTimeout(() => { bt.textContent = v; }, 1500); };
+  const copiar = (txt, bt, nome) => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => avisoBotao(bt, 'Copiado ✓')).catch(() => prompt(nome + ':', txt));
   $('#btCompart').onclick = () => {
     const Sh = plugin('Share');
-    if (Sh) return Sh.share({ title: 'Clã Speak', text: 'Entre na minha sala do Clã Speak. Código: ' + $('#salaCod').textContent, dialogTitle: 'Convidar para a sala' }).catch(() => {});
-    if (navigator.share) return navigator.share({ title: 'Clã Speak', text: 'Entre na minha sala do Clã Speak: ' + $('#salaCod').textContent, url: linkSala() }).catch(() => {});
-    $('#btCopiar').onclick();
+    if (Sh) return Sh.share({ title: 'Clã Speak', text: textoConvite(), dialogTitle: 'Compartilhar convite' }).catch(() => {});
+    if (navigator.share) return navigator.share({ title: 'Clã Speak', text: textoConvite() }).catch(() => {});
+    copiar(textoConvite(), $('#btCompart'), 'Convite');
   };
-  $('#btCopiar').onclick = () => NATIVO
-    ? navigator.clipboard.writeText($('#salaCod').textContent).then(() => copiado(0, 'Copiar código')).catch(() => prompt('Código da sala:', $('#salaCod').textContent))
-    : navigator.clipboard.writeText(linkSala()).then(() => { $('#btCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#btCopiar').textContent = 'Copiar link'; }, 1500); }).catch(() => prompt('Copie o link:', linkSala()));
+  $('#btCopiar').onclick = () => copiar(linkSala(), $('#btCopiar'), 'Link da sala');
+  $('#btCopiarCod').onclick = () => copiar($('#salaCod').textContent, $('#btCopiarCod'), 'Código da sala');
+
+  // Convite aberto pelo link: entra na sala indicada (APK: link claspeak://sala/CODIGO ou o link do site)
+  function salaDoLink(url) {
+    const m = String(url || '').match(/(?:[?&]sala=|claspeak:\/\/sala\/)([A-Za-z0-9]{4,12})/);
+    return m ? m[1].toUpperCase() : '';
+  }
+  function abrirConvite(cod) {
+    if (!cod) return;
+    salaEl.value = cod;
+    if (conexao && $('#salaCod').textContent === cod) return;
+    if (conexao) sairSala();
+    mostrarTela('inicio');
+    if (nomeEl.value.trim()) entrarSala();
+    else { nomeEl.focus(); gatoInicio.dizer('Convite para a sala ' + cod + ': digite seu nome e toque em Entrar na sala.'); }
+  }
+  const AppP = plugin('App');
+  if (AppP) {
+    AppP.addListener('appUrlOpen', (d) => abrirConvite(salaDoLink(d && d.url))).catch(() => {});
+    AppP.getLaunchUrl().then((d) => d && d.url && setTimeout(() => abrirConvite(salaDoLink(d.url)), 600)).catch(() => {});
+  }
+  // No navegador do Android, quem tem o app instalado pode abrir a sala nele
+  if (!NATIVO && params.get('sala') && /Android/i.test(navigator.userAgent)) {
+    const cod = params.get('sala').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const a = $('#abrirNoApp');
+    if (a && cod) {
+      a.href = 'intent://sala/' + cod + '#Intent;scheme=claspeak;package=br.tradutor.aovivo;S.browser_fallback_url=' + encodeURIComponent(location.href) + ';end';
+      $('#barraApp').hidden = false;
+      $('#fecharBarraApp').onclick = () => { $('#barraApp').hidden = true; };
+    }
+  }
   window.addEventListener('pagehide', () => { conexao && conexao.sair(); });
   // Voltou para a página pelo botão Voltar (cópia guardada pelo navegador): entra de novo na sala.
   window.addEventListener('pageshow', (e) => { if (e.persisted && $('#salaTela').classList.contains('on')) { conexao = null; entrarSala(); } });
@@ -1019,6 +1068,7 @@
 
   // Para a aba Estudar (tradutor-estudo.js)
   window.ClaSpeak = {
+    abrirConvite: (u) => abrirConvite(salaDoLink(u)),
     nuvem: () => (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey ? preparaNuvem(window.FIREBASE_CONFIG) : Promise.reject(new Error('sem-config'))), plugin, nativo: NATIVO,
     gatoInicio, motor, testarExecutivo: (t) => traduzirExecutivo(t, 'pt-BR', 'en-US'), traduzir, traduzirVarias, falar, melhorVoz, ronrom, miauVoz: (o) => { if (sons || o.forcar) try { miauSintetico(o); } catch (e) {} }, ctxAudio, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
     vozCtl, pararVoz,

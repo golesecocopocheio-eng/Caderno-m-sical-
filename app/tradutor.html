@@ -1084,6 +1084,25 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 
 .diagEv{margin-top:10px}.diagEv summary{cursor:pointer;color:var(--c2);font-weight:600;font-size:13px}
 #diagEventos{margin-top:6px;font:12px/1.5 ui-monospace,Menlo,monospace;max-height:260px;overflow:auto;white-space:pre-wrap;color:var(--tx)}
+
+/* ===== Sala remota: convite, conexão e abrir no app ===== */
+#qrBox{text-align:center}
+.convTit{display:block;font-size:17px;margin-bottom:4px}
+.btConvite{width:100%;height:54px;margin:10px 0 14px;border:0;border-radius:16px;font-size:16px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#7C3AED,#A21CAF 60%,#DB2777);box-shadow:0 10px 24px rgba(124,58,237,.4)}
+.convCod{display:inline-flex;align-items:baseline;gap:10px;padding:8px 16px;border-radius:12px;background:rgba(124,58,237,.08);margin-bottom:10px}
+.convCod span{font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em}
+.convCod b{font:800 26px ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#4C1D95}
+#qrImg img{width:190px;height:190px;border-radius:12px;background:#fff;padding:6px;margin:4px auto 6px;display:block}
+.conexao{display:inline-flex;align-items:center;gap:6px;margin-left:6px;padding:2px 9px;border-radius:999px;font-style:normal;font-size:11.5px;font-weight:600;letter-spacing:0;vertical-align:3px;background:rgba(255,255,255,.16);color:#fff}
+.conexao i{width:8px;height:8px;border-radius:50%;background:#FBBF24}
+.conexao[data-estado=online] i{background:#34D399;box-shadow:0 0 0 3px rgba(52,211,153,.25)}
+.conexao[data-estado=reconectando] i,.conexao[data-estado=conectando] i{animation:veGira 1s linear infinite;border-radius:2px}
+.conexao[data-estado=offline] i{background:#F87171}
+.conexao[data-estado=local] i{background:#93C5FD}
+.barraApp{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 8px);z-index:9000;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(20,8,48,.9);color:#fff;font-size:14px;box-shadow:0 10px 26px rgba(10,3,32,.4)}
+.barraApp span{flex:1}
+.barraApp a{padding:8px 12px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#DB2777);color:#fff;font-weight:700;text-decoration:none}
+.barraApp button{background:transparent;border:0;color:#E9DDFF;padding:4px 6px}
 </style>
 </head>
 <body>
@@ -1390,7 +1409,7 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
 
 <section id="salaTela" class="tela">
   <header>
-    <div style="flex:1;min-width:0"><h1>Sala <span id="salaCod"></span></h1><div id="pessoas"></div></div>
+    <div style="flex:1;min-width:0"><h1>Sala <span id="salaCod"></span> <em id="salaConexao" class="conexao" data-estado="conectando"><i></i><span>Conectando…</span></em></h1><div id="pessoas"></div></div>
     <button id="btFone" title="Modo fone de ouvido">🎧</button>
     <button id="btVoz" title="Ler em voz alta">🔊</button>
     <button id="btConvidar">Convidar</button>
@@ -1398,9 +1417,13 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
   </header>
   <div id="convite" class="box" hidden>
     <div class="card" id="qrBox">
+      <b class="convTit">Convide para a sala</b>
+      <p class="mu">Quem tocar no link entra direto na sala — pelo app Clã Speak ou pelo navegador, sem instalar nada.</p>
+      <button id="btCompart" class="btConvite">Compartilhar convite</button>
+      <div class="convCod"><span>Código</span><b id="qrCodigo"></b></div>
       <div id="qrImg"></div>
-      <p class="mu" id="qrLink" style="word-break:break-all"></p>
-      <div class="row"><button id="btCopiar">Copiar link</button><button class="sec" id="btCompart">Compartilhar</button></div>
+      <p class="mu" id="qrLink" style="word-break:break-all;font-size:12px"></p>
+      <div class="row"><button class="sec" id="btCopiar">Copiar link</button><button class="sec" id="btCopiarCod">Copiar código</button></div>
     </div>
   </div>
   <div id="avisoSala" class="aviso" hidden style="margin:10px 12px 0"></div>
@@ -1433,6 +1456,7 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
   </div>
 </section>
 
+<div id="barraApp" class="barraApp" hidden><span>Tem o app Clã Speak?</span><a id="abrirNoApp" href="#">Abrir no app</a><button id="fecharBarraApp" aria-label="Fechar">✖</button></div>
 <div id="vozEstado" class="vozEstado" hidden role="status" aria-live="polite"><i></i><span></span></div>
 <nav class="abas" id="abas">
   <button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button>

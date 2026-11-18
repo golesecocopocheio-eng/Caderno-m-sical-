@@ -93,6 +93,15 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
 - **Frente a frente Automático:** com Auto ligado, o app passa a vez sozinho entre os dois lados.
 - **Sala:** bandeiras dos idiomas, som de mensagem nova, copiar, avatares, aviso de quem entrou e saiu,
   emojis e reações nas mensagens e "fulano está falando...".
+- **Sala remota com convite de verdade:** ao entrar numa sala vazia, o painel de convite abre sozinho com o botão
+  **COMPARTILHAR CONVITE** (WhatsApp, Telegram etc.), o código em destaque, QR Code e o link
+  `https://golesecocopocheio-eng.github.io/Caderno-m-sical-/tradutor.html?sala=CÓDIGO` (também no APK). Quem toca no link
+  entra direto na sala pelo navegador; no Android aparece "Abrir no app", que abre o APK na mesma sala
+  (`claspeak://sala/CÓDIGO`, intent-filter adicionado no workflow e plugin `@capacitor/app`). Indicador de conexão
+  (Conectado / Reconectando / Sem internet / Só neste aparelho), reconexão automática do Firestore com aviso, mensagens
+  enviadas sem internet chegam depois e só valem falas das últimas 24 h (salas paradas expiram). **Para funcionar entre
+  celulares é obrigatório publicar o `firestore.rules` completo** (testado em 18/11: o Firebase do projeto recusa
+  `salas` e `copias` — as regras publicadas não têm essas partes).
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
 - **APK Android próprio ("Clã Speak", logo redondo da lua amarela em roxo-escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta

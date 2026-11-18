@@ -177,12 +177,19 @@
     if (!res) return;
     if (!M.length) { res.textContent = 'Ainda não há medidas. Use o frente a frente e volte aqui.'; lista.innerHTML = ''; return; }
     const media = (k) => { const v = M.map((m) => m[k]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
-    res.innerHTML = M.length + ' frases · média: tradução <b>' + seg(media('traducao')) + '</b> · da frase fechada até a voz <b>' + seg(media('total')) + '</b>';
-    lista.innerHTML = '<div class="cab"><span>Fala</span><span>Tradução</span><span>Até a voz</span><span>Voz</span></div>' +
-      M.slice(-8).reverse().map((m) => '<div><span>' + seg(m.fala) + '</span><span>' + seg(m.traducao) + '</span><span>' + seg(m.total) + '</span><span>' + seg(m.voz) + '</span></div>').join('');
+    res.innerHTML = M.length + ' frases · média: tradução <b>' + seg(media('traducao')) + '</b> · da frase fechada até a voz <b>' + seg(media('total')) + '</b> · microfone volta em <b>' + seg(media('reabre')) + '</b>';
+    lista.innerHTML = '<div class="cab"><span>Fala</span><span>Tradução</span><span>Até a voz</span><span>Voz</span><span>Mic volta</span></div>' +
+      M.slice(-8).reverse().map((m) => '<div><span>' + seg(m.fala) + '</span><span>' + seg(m.traducao) + '</span><span>' + seg(m.total) + '</span><span>' + seg(m.voz) + '</span><span>' + seg(m.reabre) + '</span></div>').join('');
+  }
+  function mostrarEventos() {
+    const el = $('#diagEventos'); if (!el) return;
+    const R = C.vozCtl.registro.slice(-40);
+    if (!R.length) { el.textContent = 'Nenhum evento ainda.'; return; }
+    const t0 = R[0].t;
+    el.textContent = R.map((r) => '+' + ((r.t - t0) / 1000).toFixed(1).replace('.', ',') + 's  ' + r.ev).join('\n');
   }
   const diagL = $('#diagLimpar'); if (diagL) diagL.onclick = () => { C.vozCtl.limparMedidas(); mostrarDiag(); };
-  C.ganchosAba.ajustes = () => { mostrarMotor(); mostrarAjustes(); mostrarMiau(); mostrarDiag(); setTimeout(() => gAj.dizer('Aqui você deixa o app do seu jeito! ⚙️'), 200); };
+  C.ganchosAba.ajustes = () => { mostrarMotor(); mostrarAjustes(); mostrarMiau(); mostrarDiag(); mostrarEventos(); setTimeout(() => gAj.dizer('Aqui você deixa o app do seu jeito! ⚙️'), 200); };
 
   // Gatinho da tela inicial também comenta quando volta para ela
   C.ganchosAba.inicio = () => {};

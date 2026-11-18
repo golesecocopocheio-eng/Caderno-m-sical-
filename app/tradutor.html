@@ -1070,7 +1070,7 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 #f2fAuto.ligado .ic{color:#fff}
 
 .diagLista{display:grid;gap:4px;margin-top:8px;font-size:12.5px;font-variant-numeric:tabular-nums}
-.diagLista div{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:6px 8px;border-radius:8px;background:rgba(124,58,237,.06)}
+.diagLista div{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:6px 8px;border-radius:8px;background:rgba(124,58,237,.06)}
 .diagLista div.cab{background:transparent;color:var(--mu);font-weight:600}
 #diagResumo b{color:var(--c2)}
 
@@ -1081,6 +1081,9 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 .nativo .abas{padding-bottom:max(env(safe-area-inset-bottom),14px)}
 .nativo #salaTela .barra{padding-bottom:max(env(safe-area-inset-bottom),16px)}
 .nativo .vozEstado{top:calc(max(env(safe-area-inset-top),26px) + 10px)}
+
+.diagEv{margin-top:10px}.diagEv summary{cursor:pointer;color:var(--c2);font-weight:600;font-size:13px}
+#diagEventos{margin-top:6px;font:12px/1.5 ui-monospace,Menlo,monospace;max-height:260px;overflow:auto;white-space:pre-wrap;color:var(--tx)}
 </style>
 </head>
 <body>
@@ -1294,6 +1297,7 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
       <p class="mu">Tempos medidos de verdade nas últimas frases do frente a frente: fala (do início até a frase fechar), tradução e até a voz começar.</p>
       <div id="diagResumo" class="mu">Ainda não há medidas. Use o frente a frente e volte aqui.</div>
       <div id="diagLista" class="diagLista"></div>
+      <details class="diagEv"><summary>Últimos eventos do microfone</summary><div id="diagEventos"></div></details>
       <button class="sec" id="diagLimpar" style="width:100%;margin-top:8px">Limpar medidas</button>
     </div>
     <div class="card" id="cardMotor">
@@ -1318,9 +1322,9 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
       <div class="chave"><span>Segurar para falar<br><span class="mu">Fale enquanto segura o 🎤 e solte para enviar. Capta melhor em lugar barulhento.</span></span><input type="checkbox" id="ajSegurar"></div>
       <label for="ajResposta">Rapidez para fechar a frase</label>
       <select id="ajResposta">
-        <option value="rapida">Rápida (0,55 s de pausa)</option>
-        <option value="equilibrada">Equilibrada (0,8 s de pausa)</option>
-        <option value="paciente">Paciente (1,3 s de pausa: frases longas)</option>
+        <option value="rapida">Rápida (respostas curtas)</option>
+        <option value="equilibrada">Equilibrada</option>
+        <option value="paciente">Paciente (frases longas, quem pausa ao falar)</option>
       </select>
       <p class="mu">Quando você para de falar por esse tempo, a frase é traduzida na hora, sem esperar o silêncio longo do celular.</p>
       <div class="chave"><span>🎧 Estou de fone de ouvido<br><span class="mu">O microfone continua ouvindo enquanto a tradução toca.</span></span><input type="checkbox" id="ajFone"></div>

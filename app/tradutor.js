@@ -182,7 +182,7 @@
           P.isListening().then((r) => { if (!r.listening) setTimeout(() => this._fim(), 300); }).catch(() => {});
         }, 500);
         await P.start({ language: this.lang, maxResults: 1, partialResults: true, popup: false });
-      } catch (e) { this._fim(); }
+      } catch (e) { window.ClaSpeak && ClaSpeak.vozCtl && ClaSpeak.vozCtl.anotar('Android recusou abrir o microfone: ' + ((e && e.message) || e)); this._fim(); }
     }
     _fim() {
       if (this.acabou) return;
@@ -215,7 +215,7 @@
     const avisos = [], recentes = [], registro = [];
     let ultimaFinal = { n: '', t: 0 };
     const LIMITE = { PROCESSANDO: 8000, TRADUZINDO: 12000, RETOMANDO: 4000 };
-    const MARGEM = NATIVO ? 500 : 350; // ms de silêncio do microfone depois da voz do app
+    const MARGEM = NATIVO ? 400 : 350; // ms de silêncio do microfone depois da voz do app
     const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
     function anotar(ev) { registro.push({ t: Date.now(), ev }); if (registro.length > 200) registro.shift(); }
     function definir(e) {
@@ -247,13 +247,22 @@
     const medidas = (() => { try { return JSON.parse(localStorage.getItem('trad-latencia') || '[]'); } catch (e) { return []; } })();
     function marcar(etapa) {
       const t = Date.now();
-      if (etapa === 'inicio') { if (!atual || atual.fim) atual = { inicio: t }; return; }
+      if (etapa === 'inicio') {
+        // novo começo se não há frase em andamento ou se o último texto parcial foi há mais de 3 s
+        if (!atual || atual.fim || (!atual.frase && t - (atual.ult || atual.inicio) > 3000)) atual = { inicio: t };
+        atual.ult = t; return;
+      }
+      if (etapa === 'reabre') { // microfone aberto de novo depois da voz
+        const m = medidas[medidas.length - 1];
+        if (m && m.fimVoz && m.reabre == null && t - m.fimVoz < 15000) { m.reabre = t - m.fimVoz; try { localStorage.setItem('trad-latencia', JSON.stringify(medidas)); } catch (e) {} }
+        return;
+      }
       if (!atual) atual = { inicio: t };
       if (!atual[etapa]) atual[etapa] = t;
       if (etapa === 'fim' || etapa === 'semVoz') {
         const m = atual; atual = null;
         const d = (a, b) => (m[a] && m[b] ? m[b] - m[a] : null);
-        medidas.push({ t, fala: d('inicio', 'frase'), traducao: d('frase', 'traduzido'), ateVoz: d('traduzido', 'voz'), voz: d('voz', 'fim'), total: d('frase', m.voz ? 'voz' : 'traduzido') });
+        medidas.push({ t, fimVoz: m.fim || null, fala: d('inicio', 'frase'), traducao: d('frase', 'traduzido'), ateVoz: d('traduzido', 'voz'), voz: d('voz', 'fim'), total: d('frase', m.voz ? 'voz' : 'traduzido') });
         while (medidas.length > 40) medidas.shift();
         try { localStorage.setItem('trad-latencia', JSON.stringify(medidas)); } catch (e) {}
       }
@@ -288,7 +297,10 @@
     return melhor;
   }
   // Quanto tempo o texto precisa ficar parado para a frase ser fechada (Ajustes → Resposta)
-  const tempoCedo = () => ({ rapida: 550, equilibrada: 800, paciente: 1300 })[localStorage.getItem('trad-resposta') || 'equilibrada'] || 800;
+  const tempoCedo = () => {
+    const t = NATIVO ? { rapida: 1100, equilibrada: 1600, paciente: 2400 } : { rapida: 600, equilibrada: 900, paciente: 1400 };
+    return t[localStorage.getItem('trad-resposta') || 'equilibrada'] || t.equilibrada;
+  };
   function falar(texto, lingua, opc = {}) {
     if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) { opc.aoTerminar && opc.aoTerminar(); return; } // aviso de falha não é lido
     const vel = (opc.vel || 1) * velVoz;
@@ -296,9 +308,11 @@
     falando.n++;
     if (!fone) ouvinte.pausar(true); // sem fone, o microfone não pode ouvir a própria tradução
     vozCtl.definir('REPRODUZINDO');
+    vozCtl.anotar('voz começou');
     let acabou = false;
     const terminar = () => {
       if (acabou) return; acabou = true; clearTimeout(segura);
+      vozCtl.anotar('voz terminou');
       falando.n = Math.max(0, falando.n - 1);
       if (!falando.n) {
         vozCtl.ficarSurdo(vozCtl.MARGEM); // o fim do som ainda pode estar saindo do alto-falante
@@ -367,7 +381,7 @@
           const espera = this.cb && this.cb.cedo ? tempoCedo() : 0;
           clearTimeout(this._estavel);
           const pt = parcial.trim();
-          if (espera && pt && pt.split(/\s+/).length >= 2) this._estavel = setTimeout(() => this._fecharCedo(r, pt), espera);
+          if (espera && pt && pt.split(/\s+/).length >= 3) this._estavel = setTimeout(() => this._fecharCedo(r, pt), espera);
         }
       };
       r.onerror = (e) => {
@@ -379,10 +393,13 @@
       r.onend = () => {
         if (this.rec !== r) return;
         this.rec = null;
-        if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 60);
+        vozCtl.anotar('microfone fechou');
+        if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), NATIVO ? 250 : 60);
         else if (!this.ativo) { this.cb && this.cb.fim && this.cb.fim(); }
       };
       this.rec = r;
+      vozCtl.anotar('microfone aberto (' + this.lingua + ')');
+      vozCtl.marcar('reabre');
       if (vozCtl.estado === 'AGUARDANDO' || vozCtl.estado === 'RETOMANDO') vozCtl.definir('ESCUTANDO');
       try { r.start(); } catch (e) { this.rec = null; vozCtl.anotar('falha ao abrir o microfone'); if (this.ativo) setTimeout(() => this._abrir(), 400); }
     },
@@ -392,10 +409,11 @@
       try { r.abort(); } catch (e) {}
       vozCtl.anotar('frase fechada cedo: ' + texto);
       if (vozCtl.aceitar(texto)) { vozCtl.definir('PROCESSANDO'); this.cb.final(texto); }
-      if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 60);
+      if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), NATIVO ? 350 : 60);
     },
     pausar(sim) {
       clearTimeout(this._estavel);
+      if (this.pausado !== sim) vozCtl.anotar(sim ? 'microfone em pausa' : 'microfone liberado');
       this.pausado = sim;
       if (sim && this.rec) { const r = this.rec; this.rec = null; try { r.abort(); } catch (e) {} }
       else if (!sim) this._abrir();

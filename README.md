@@ -102,6 +102,13 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   enviadas sem internet chegam depois e só valem falas das últimas 24 h (salas paradas expiram). **Para funcionar entre
   celulares é obrigatório publicar o `firestore.rules` completo** (testado em 18/11: o Firebase do projeto recusa
   `salas` e `copias` — as regras publicadas não têm essas partes).
+- **Sala com aprovação do dono:** quem cria a sala vira o dono. Quem chega pelo link ou código vê "Pedindo para entrar
+  na sala…" e só entra quando o dono toca em **Aprovar** (o dono vê o pedido com nome e idioma; também pode **Recusar**
+  e, no painel de convite, **Remover** quem já entrou). O bloqueio é feito pelas regras do Firebase (`salas/{sala}` com
+  `dono` e `membros/{uid}`), não só pela tela: sem aprovação o servidor recusa ler e escrever na sala, e ninguém consegue
+  se aprovar sozinho. Testado com o emulador do Firebase (12 verificações) com as regras unificadas.
+- **`firestore.rules` unificado:** junta a proteção do app do bar feita no `main` (dono, PIN do dono, equipe só com a
+  Portaria) com as regras do Clã Speak (salas com aprovação e backup `copias`). Publique este arquivo inteiro.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
 - **APK Android próprio ("Clã Speak", logo redondo da lua amarela em roxo-escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta

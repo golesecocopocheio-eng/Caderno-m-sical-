@@ -39,6 +39,13 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   estrelas vindo na direção da tela (como viajar no espaço) e estrelas cadentes; a lua chega do fundo, depois aparecem
   "Clã Speak", a frase e "by Sanka Brunelli". Em ~3,6 s tudo avança para dentro do app. Feita só com animações de
   GPU (não trava enquanto o app carrega). No Android, splash, janela e WebView usam o mesmo roxo-escuro (sem branco).
+- **Controle de áudio (Tradutor 2.0 · Etapa 1)** (`vozCtl` em `app/tradutor.js`): um só controlador com os estados
+  AGUARDANDO → ESCUTANDO → PROCESSANDO → TRADUZINDO → REPRODUZINDO → RETOMANDO. O microfone fica fechado enquanto a
+  frase é traduzida e enquanto a voz do app fala (exceto no modo fone) e só reabre depois de uma margem de segurança;
+  o que for reconhecido parecido com a voz do app é descartado (eco); a mesma frase não é traduzida duas vezes; nunca
+  há dois reconhecimentos ao mesmo tempo; um vigia destrava qualquer estado preso. Sem bipes: um indicador na tela
+  mostra Ouvindo / Entendendo / Traduzindo / Falando / Preparando. Tocar no microfone durante a voz interrompe a voz.
+  Teste automático (microfone e voz simulados): 22 verificações passando.
 - **Paleta:** roxo, lilás, rosa e azul-claro, com um toque de dourado (cabeçalhos das abas, planetas, estrelas,
   cometas e o nome "Speak" em degradê).
 - **Planetas e estrelas em todo o app:** no fundo de todas as abas há 6 planetas flutuando devagar (dois com

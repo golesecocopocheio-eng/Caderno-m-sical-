@@ -1048,6 +1048,26 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 #abertura.sai .abEsp{animation-duration:.9s}
 #abertura.sai .abAutor{opacity:0}
 @media (prefers-reduced-motion:reduce){#abertura *{animation:none!important;opacity:1}}
+
+/* ===== Indicador do estado da voz (Etapa 1: sem bipes) ===== */
+.vozEstado{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 10px);transform:translateX(-50%);z-index:60;display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;border-radius:999px;background:rgba(20,8,48,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(233,213,255,.28);color:#fff;font-size:13px;font-weight:600;letter-spacing:.02em;box-shadow:0 6px 18px rgba(10,3,32,.35);pointer-events:none}
+.vozEstado i{position:relative;width:10px;height:10px;border-radius:50%;background:#A78BFA}
+.vozEstado i::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid currentColor;opacity:.0}
+.vozEstado[data-estado=ESCUTANDO] i{background:#34D399;color:#34D399;animation:vePulso 1.2s ease-out infinite}
+.vozEstado[data-estado=PROCESSANDO] i,.vozEstado[data-estado=TRADUZINDO] i{background:#FBBF24;animation:veGira 1s linear infinite;border-radius:3px}
+.vozEstado[data-estado=REPRODUZINDO] i{background:#F472B6;animation:veFala .6s ease-in-out infinite alternate}
+.vozEstado[data-estado=RETOMANDO] i{background:#7DD3FC}
+@keyframes vePulso{0%{box-shadow:0 0 0 0 rgba(52,211,153,.7)}100%{box-shadow:0 0 0 10px rgba(52,211,153,0)}}
+@keyframes veGira{to{transform:rotate(360deg)}}
+@keyframes veFala{from{transform:scale(.7)}to{transform:scale(1.25)}}
+#salaTela.on ~ .vozEstado{top:calc(env(safe-area-inset-top) + 128px)}
+#f2f.on ~ .vozEstado{top:auto;bottom:calc(env(safe-area-inset-bottom) + 84px)}
+
+#f2f .pista .vez{position:absolute;top:4px;left:50%;right:auto;transform:translateX(-50%);font-size:11px;padding:3px 10px;white-space:nowrap;z-index:3;border-radius:999px}
+#f2f .pista .vez.cima{transform:translateX(-50%) rotate(180deg)}
+
+#f2fAuto.ligado,.meio button.ligado{background:linear-gradient(135deg,#7C3AED,#DB2777)!important;color:#fff!important;border-color:transparent!important}
+#f2fAuto.ligado .ic{color:#fff}
 </style>
 </head>
 <body>
@@ -1382,6 +1402,7 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
   </div>
 </section>
 
+<div id="vozEstado" class="vozEstado" hidden role="status" aria-live="polite"><i></i><span></span></div>
 <nav class="abas" id="abas">
   <button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button>
   <button data-aba="saber"><b>🎓</b>Saber</button>

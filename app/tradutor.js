@@ -202,6 +202,63 @@
   let velVoz = Number(localStorage.getItem('trad-vel')) || 1;
   let sons = localStorage.getItem('trad-sons') !== '0';
   const falando = { n: 0 };
+
+  // ---------- Controle de áudio (Etapa 1) ----------
+  // Um só "maestro" decide o que o áudio está fazendo. Estados:
+  // AGUARDANDO → ESCUTANDO → PROCESSANDO → TRADUZINDO → REPRODUZINDO → RETOMANDO → (ESCUTANDO | AGUARDANDO)
+  // Regras: enquanto a voz do app fala, o microfone fica fechado (salvo modo fone) e só reabre depois de
+  // uma margem de segurança; o que for reconhecido parecido com a voz do app é descartado (eco);
+  // a mesma frase não é entregue duas vezes; nenhum estado fica preso (vigia destrava sozinho).
+  const vozCtl = (() => {
+    let estado = 'AGUARDANDO', vigia = null, surdoAte = 0;
+    const avisos = [], recentes = [], registro = [];
+    let ultimaFinal = { n: '', t: 0 };
+    const LIMITE = { PROCESSANDO: 8000, TRADUZINDO: 12000, RETOMANDO: 4000 };
+    const MARGEM = NATIVO ? 500 : 350; // ms de silêncio do microfone depois da voz do app
+    const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+    function anotar(ev) { registro.push({ t: Date.now(), ev }); if (registro.length > 200) registro.shift(); }
+    function definir(e) {
+      if (estado === e) return;
+      anotar(estado + '→' + e); estado = e;
+      clearTimeout(vigia);
+      if (LIMITE[e]) vigia = setTimeout(() => { anotar('vigia destravou ' + e); destravar(); }, LIMITE[e]);
+      avisos.forEach((f) => { try { f(e); } catch (x) {} });
+    }
+    function destravar() {
+      falando.n = 0;
+      const TTS = plugin('TextToSpeech'); if (TTS) TTS.stop().catch(() => {}); else if (window.speechSynthesis) speechSynthesis.cancel();
+      if (ouvinte.pausado) ouvinte.pausar(false);
+      definir(ouvinte.ativo ? 'ESCUTANDO' : 'AGUARDANDO');
+    }
+    // Eco: o texto ouvido é (quase) igual a algo que a voz do app falou há pouco
+    function ehEco(texto) {
+      const n = norm(texto); if (!n) return false;
+      const agora = Date.now(), pal = new Set(n.split(' '));
+      return recentes.some((r) => {
+        if (agora - r.t > 25000) return false;
+        if (r.n === n || r.n.includes(n) || n.includes(r.n)) return true;
+        const rp = r.n.split(' '); let comum = 0; rp.forEach((w) => { if (pal.has(w)) comum++; });
+        return comum / Math.max(pal.size, rp.length) >= 0.6;
+      });
+    }
+    return {
+      get estado() { return estado; }, definir, destravar, anotar, registro, norm,
+      aoMudar(f) { avisos.push(f); },
+      lembrarFala(texto) { recentes.push({ t: Date.now(), n: norm(texto) }); if (recentes.length > 20) recentes.shift(); },
+      surdo() { return Date.now() < surdoAte || (falando.n > 0 && !fone); },
+      ficarSurdo(ms) { surdoAte = Math.max(surdoAte, Date.now() + ms); },
+      // Decide se uma frase reconhecida deve ser usada (não é eco nem repetida)
+      aceitar(texto) {
+        if (ehEco(texto)) { anotar('eco descartado: ' + texto); return false; }
+        const n = norm(texto), agora = Date.now();
+        if (n && n === ultimaFinal.n && agora - ultimaFinal.t < 5000) { anotar('repetida descartada: ' + texto); return false; }
+        ultimaFinal = { n, t: agora };
+        return true;
+      },
+      MARGEM
+    };
+  })();
+
   // Escolhe a voz mais natural do aparelho para o idioma (as "Natural"/"Google"/"Enhanced" soam melhor)
   function melhorVoz(lingua) {
     if (!window.speechSynthesis) return null;
@@ -213,74 +270,110 @@
     return melhor;
   }
   function falar(texto, lingua, opc = {}) {
-    if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) return; // aviso de falha não é lido
+    if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) { opc.aoTerminar && opc.aoTerminar(); return; } // aviso de falha não é lido
     const vel = (opc.vel || 1) * velVoz;
+    vozCtl.lembrarFala(texto);
+    falando.n++;
+    if (!fone) ouvinte.pausar(true); // sem fone, o microfone não pode ouvir a própria tradução
+    vozCtl.definir('REPRODUZINDO');
+    let acabou = false;
+    const terminar = () => {
+      if (acabou) return; acabou = true; clearTimeout(segura);
+      falando.n = Math.max(0, falando.n - 1);
+      if (!falando.n) {
+        vozCtl.ficarSurdo(vozCtl.MARGEM); // o fim do som ainda pode estar saindo do alto-falante
+        vozCtl.definir('RETOMANDO');
+        setTimeout(() => {
+          if (falando.n) return;
+          if (ouvinte.pausado && !ouvinte.segurando) ouvinte.pausar(false);
+          if (vozCtl.estado === 'RETOMANDO') vozCtl.definir(ouvinte.ativo && !ouvinte.pausado ? 'ESCUTANDO' : 'AGUARDANDO');
+        }, vozCtl.MARGEM);
+      }
+      opc.aoTerminar && opc.aoTerminar();
+    };
+    // Se o aparelho não avisar o fim da fala, destrava sozinho pelo tamanho do texto
+    const segura = setTimeout(() => { vozCtl.anotar('voz sem aviso de fim'); terminar(); }, 2500 + texto.length * 90 / vel);
     const TTS = plugin('TextToSpeech');
     if (TTS) {
-      falando.n++;
-      if (!fone) ouvinte.pausar(true);
-      const fimN = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n && ouvinte.pausado) setTimeout(() => ouvinte.pausar(false), 250); };
       opc.aoComecar && opc.aoComecar();
-      const fimN2 = () => { fimN(); opc.aoTerminar && opc.aoTerminar(); };
-      TTS.speak({ text: texto, lang: lingua, rate: vel, pitch: opc.tom || 1, queueStrategy: 1 }).then(fimN2, fimN2);
+      TTS.speak({ text: texto, lang: lingua, rate: vel, pitch: opc.tom || 1, queueStrategy: 1 }).then(terminar, terminar);
       return;
     }
-    if (!window.speechSynthesis) return;
+    if (!window.speechSynthesis) { terminar(); return; }
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = lingua; u.rate = vel; u.pitch = opc.tom || 1;
     const v = melhorVoz(lingua);
     try { if (v) u.voice = v; } catch (e) { /* voz recusada: usa a padrão do idioma */ }
     u.onstart = () => opc.aoComecar && opc.aoComecar();
-    falando.n++;
-    if (!fone) ouvinte.pausar(true); // sem fone, o microfone não pode ouvir a própria tradução
-    const fim = () => { falando.n = Math.max(0, falando.n - 1); if (!falando.n && ouvinte.pausado) setTimeout(() => ouvinte.pausar(false), 250); };
-    const fim2 = () => { fim(); opc.aoTerminar && opc.aoTerminar(); };
-    u.onend = fim2; u.onerror = fim2;
+    u.onend = terminar; u.onerror = terminar;
     speechSynthesis.speak(u);
+  }
+  function pararVoz() {
+    const TTS = plugin('TextToSpeech'); if (TTS) TTS.stop().catch(() => {}); else if (window.speechSynthesis) speechSynthesis.cancel();
   }
 
   // ---------- Voz: ouvir ----------
   const SR = plugin('SpeechRecognition') ? ReconhecimentoNativo : (window.SpeechRecognition || window.webkitSpeechRecognition);
   const ouvinte = {
-    rec: null, ativo: false, pausado: false, lingua: 'pt-BR', cb: null,
+    rec: null, ativo: false, pausado: false, segurando: false, lingua: 'pt-BR', cb: null,
     iniciar(lingua, cb) {
       if (!SR) { alert('Este navegador não reconhece voz. Use o Chrome (Android) ou o Safari (iPhone), ou digite.'); return false; }
       this.parar();
-      this.lingua = lingua; this.cb = cb; this.ativo = true;
+      this.lingua = lingua; this.cb = cb; this.ativo = true; this.segurando = false;
       this._abrir();
       return true;
     },
     _abrir() {
-      if (!this.ativo || this.pausado) return;
+      if (!this.ativo || this.pausado || this.rec) return; // nunca dois reconhecimentos ao mesmo tempo
       const r = new SR();
       r.lang = this.lingua; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
       r.onresult = (e) => {
+        if (this.rec !== r) return; // resultado atrasado de um reconhecimento já fechado
+        if (vozCtl.surdo()) return; // a voz do app está tocando (ou acabou agora): ignora
         let parcial = '', teveFinal = false;
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) { if (t.trim()) { teveFinal = true; this.cb.final(t.trim()); } }
-          else parcial += t;
+          if (e.results[i].isFinal) {
+            if (t.trim() && vozCtl.aceitar(t.trim())) { teveFinal = true; vozCtl.definir('PROCESSANDO'); this.cb.final(t.trim()); }
+          } else parcial += t;
         }
-        if (parcial.trim() || !teveFinal) this.cb.parcial(parcial.trim());
+        if (parcial.trim() || !teveFinal) {
+          if (parcial.trim()) vozCtl.definir('ESCUTANDO');
+          this.cb && this.cb.parcial(parcial.trim());
+        }
       };
       r.onerror = (e) => {
+        vozCtl.anotar('erro do reconhecimento: ' + (e && e.error));
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
           this.ativo = false; this.cb.erro && this.cb.erro('Permita o uso do microfone para falar.');
         }
       };
-      r.onend = () => { if (this.rec === r) { this.rec = null; if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 60); else if (!this.ativo) this.cb && this.cb.fim && this.cb.fim(); } };
+      r.onend = () => {
+        if (this.rec !== r) return;
+        this.rec = null;
+        if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 60);
+        else if (!this.ativo) { this.cb && this.cb.fim && this.cb.fim(); }
+      };
       this.rec = r;
-      try { r.start(); } catch (e) { /* já iniciado */ }
+      if (vozCtl.estado === 'AGUARDANDO' || vozCtl.estado === 'RETOMANDO') vozCtl.definir('ESCUTANDO');
+      try { r.start(); } catch (e) { this.rec = null; vozCtl.anotar('falha ao abrir o microfone'); if (this.ativo) setTimeout(() => this._abrir(), 400); }
     },
     pausar(sim) {
       this.pausado = sim;
       if (sim && this.rec) { const r = this.rec; this.rec = null; try { r.abort(); } catch (e) {} }
       else if (!sim) this._abrir();
     },
+    // Segura o microfone fechado enquanto a frase é traduzida e falada; soltar() reabre
+    segurar() { this.segurando = true; this.pausar(true); },
+    soltar() {
+      this.segurando = false;
+      setTimeout(() => { if (!this.segurando && this.pausado && (!falando.n || fone)) this.pausar(false); }, vozCtl.surdo() ? vozCtl.MARGEM : 0);
+    },
     parar() {
       const cb = this.cb;
-      this.ativo = false;
+      this.ativo = false; this.pausado = false; this.segurando = false;
       if (this.rec) { const r = this.rec; this.rec = null; try { r.stop(); } catch (e) {} }
+      if (!falando.n && vozCtl.estado !== 'TRADUZINDO') vozCtl.definir('AGUARDANDO');
       cb && cb.fim && cb.fim();
     }
   };
@@ -341,7 +434,8 @@
       src.start(t); mod.start(t); src.stop(t + seg); mod.stop(t + seg);
     } catch (e) {}
   }
-  function bipe(subindo) { // aviso curto: microfone ligou (sobe) / desligou (desce)
+  function bipe() { // sem bipes: o estado do microfone aparece na tela (indicador de voz)
+    return;
     if (!sons) return;
     try {
       const ctx = ctxAudio(), t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
@@ -870,6 +964,7 @@
   window.ClaSpeak = {
     nuvem: () => (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey ? preparaNuvem(window.FIREBASE_CONFIG) : Promise.reject(new Error('sem-config'))), plugin, nativo: NATIVO,
     gatoInicio, motor, testarExecutivo: (t) => traduzirExecutivo(t, 'pt-BR', 'en-US'), traduzir, traduzirVarias, falar, melhorVoz, ronrom, miauVoz: (o) => { if (sons || o.forcar) try { miauSintetico(o); } catch (e) {} }, ctxAudio, musiquinha, reggae, notasDe, plop, bandeira, mostrarTela, ganchosAba, definirFone, arrumar,
+    vozCtl, pararVoz,
     get fone() { return fone; },
     get velVoz() { return velVoz; }, set velVoz(v) { velVoz = v; localStorage.setItem('trad-vel', v); },
     get sons() { return sons; }, set sons(v) { sons = v; localStorage.setItem('trad-sons', v ? '1' : '0'); },
@@ -914,6 +1009,7 @@
     l.sel.onchange = () => { localStorage.setItem('trad-f2f-' + k, l.sel.value); if (!l.escrita.textContent.trim() || l.escrita.querySelector('.dica')) l.vazio(); };
     l.mic.onclick = () => {
       const outro = lados[k === 'a' ? 'b' : 'a'];
+      if (falando.n) { pararVoz(); return; } // tocar no microfone durante a voz só interrompe a voz
       if (ouvinte.ativo && l.mic.classList.contains('on')) { if (autoF2f) definirAuto(false); ouvinte.parar(); return; }
       let falou = false;
       ouvinte.parar();
@@ -928,19 +1024,26 @@
         final: async (t) => {
           clearTimeout(tm);
           t = arrumar(t); falou = true;
+          // Microfone fechado enquanto traduz e fala (nada de capturar a própria tradução)
           if (autoF2f) ouvinte.parar(); // no automático, cada um fala uma frase e passa a vez
+          else ouvinte.segurar();
           l.mostrar(t); if (ouvinte.ativo) l.estado('atento');
+          vozCtl.definir('TRADUZINDO');
           const r = await traduzir(t, l.sel.value, outro.sel.value);
           entregar(k, r);
-          setTimeout(() => {
-            outro.digitar(r);
-            pulaF2f();
-            const para = k === 'a' ? 'b' : 'a';
-            const passaVez = () => { if (autoF2f) setTimeout(() => autoF2f && !ouvinte.ativo && iniciarLado(para), 350); };
-            festaEntrega(para);
-            if (vozLigada && !r.startsWith('⚠️')) falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => { notas(para, false); passaVez(); } });
-            else setTimeout(passaVez, 1200);
-          }, 650);
+          outro.digitar(r);
+          pulaF2f();
+          const para = k === 'a' ? 'b' : 'a';
+          const liberar = () => {
+            if (autoF2f) setTimeout(() => autoF2f && !ouvinte.ativo && iniciarLado(para), vozCtl.MARGEM);
+            else if (ouvinte.ativo) ouvinte.soltar();
+            if (!falando.n && vozCtl.estado === 'TRADUZINDO') vozCtl.definir(ouvinte.ativo ? 'ESCUTANDO' : 'AGUARDANDO');
+          };
+          festaEntrega(para);
+          if (vozLigada && !r.startsWith('⚠️')) {
+            if (fone && !autoF2f) ouvinte.soltar(); // com fone o microfone pode seguir ouvindo
+            falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => { notas(para, false); liberar(); } });
+          } else liberar();
         },
         erro: (m) => { definirAuto(false); alert(m); },
         fim: () => {
@@ -953,6 +1056,16 @@
       if (ok) { ultimaPalavras = 0; l.mic.classList.add('on'); ator.escutar(k); bipe(true); mostrarVez(k); }
     };
   });
+  // ----- Indicador do estado da voz (sem bipes) -----
+  const ROTULO = { ESCUTANDO: 'Ouvindo', PROCESSANDO: 'Entendendo', TRADUZINDO: 'Traduzindo', REPRODUZINDO: 'Falando', RETOMANDO: 'Preparando' };
+  const vozEl = $('#vozEstado');
+  vozCtl.aoMudar((e) => {
+    if (!vozEl) return;
+    const visivel = !!ROTULO[e] && ($('#f2f').classList.contains('on') || $('#salaTela').classList.contains('on'));
+    vozEl.hidden = !visivel;
+    vozEl.dataset.estado = e;
+    vozEl.querySelector('span').textContent = ROTULO[e] || '';
+  });
   // ----- 🔄 Automático: o app passa a vez sozinho (fala um, traduz, fala o outro…) -----
   let autoF2f = false;
   const iniciarLado = (k) => { if ($('#f2f').classList.contains('on')) lados[k].mic.onclick(); };
@@ -963,7 +1076,7 @@
   }
   function definirAuto(v) {
     autoF2f = v; $('#f2fAuto').classList.toggle('ligado', v);
-    $('#f2fAuto').innerHTML = '🔄<span> Auto' + (v ? ' ✓' : '') + '</span>';
+    $('#f2fAuto').innerHTML = '🔄<span> Auto</span>';
     if (v) { if (!ouvinte.ativo) iniciarLado('a'); else mostrarVez(lados.b.mic.classList.contains('on') ? 'b' : 'a'); }
     else $('#f2fVez').classList.remove('on');
   }

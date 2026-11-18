@@ -46,6 +46,11 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   há dois reconhecimentos ao mesmo tempo; um vigia destrava qualquer estado preso. Sem bipes: um indicador na tela
   mostra Ouvindo / Entendendo / Traduzindo / Falando / Preparando. Tocar no microfone durante a voz interrompe a voz.
   Teste automático (microfone e voz simulados): 22 verificações passando.
+- **Menos atraso (Tradutor 2.0 · Etapa 2):** no frente a frente e na sala, quando o texto reconhecido para de mudar
+  por um instante (Ajustes → "Rapidez para fechar a frase": 0,55 s, 0,8 s ou 1,3 s), a frase é fechada e traduzida
+  na hora, sem esperar o silêncio longo do celular; o final atrasado do aparelho é ignorado (sem duplicar). A frase
+  em andamento já vai sendo traduzida (prévia), então a tradução final costuma sair do cache. Ajustes → "Diagnóstico
+  de voz" mostra os tempos reais de cada frase (fala, tradução, até a voz começar, duração da voz).
 - **Paleta:** roxo, lilás, rosa e azul-claro, com um toque de dourado (cabeçalhos das abas, planetas, estrelas,
   cometas e o nome "Speak" em degradê).
 - **Planetas e estrelas em todo o app:** no fundo de todas as abas há 6 planetas flutuando devagar (dois com

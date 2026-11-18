@@ -241,7 +241,24 @@
         return comum / Math.max(pal.size, rp.length) >= 0.6;
       });
     }
+    // Medição de tempos de cada frase: início da fala → frase fechada → tradução pronta → voz começou → voz terminou
+    let atual = null;
+    const medidas = (() => { try { return JSON.parse(localStorage.getItem('trad-latencia') || '[]'); } catch (e) { return []; } })();
+    function marcar(etapa) {
+      const t = Date.now();
+      if (etapa === 'inicio') { if (!atual || atual.fim) atual = { inicio: t }; return; }
+      if (!atual) atual = { inicio: t };
+      if (!atual[etapa]) atual[etapa] = t;
+      if (etapa === 'fim' || etapa === 'semVoz') {
+        const m = atual; atual = null;
+        const d = (a, b) => (m[a] && m[b] ? m[b] - m[a] : null);
+        medidas.push({ t, fala: d('inicio', 'frase'), traducao: d('frase', 'traduzido'), ateVoz: d('traduzido', 'voz'), voz: d('voz', 'fim'), total: d('frase', m.voz ? 'voz' : 'traduzido') });
+        while (medidas.length > 40) medidas.shift();
+        try { localStorage.setItem('trad-latencia', JSON.stringify(medidas)); } catch (e) {}
+      }
+    }
     return {
+      marcar, medidas, limparMedidas() { medidas.length = 0; localStorage.removeItem('trad-latencia'); },
       get estado() { return estado; }, definir, destravar, anotar, registro, norm,
       aoMudar(f) { avisos.push(f); },
       lembrarFala(texto) { recentes.push({ t: Date.now(), n: norm(texto) }); if (recentes.length > 20) recentes.shift(); },
@@ -269,6 +286,8 @@
     vs.forEach((v) => { const n = nota(v); if (n > mn) { mn = n; melhor = v; } });
     return melhor;
   }
+  // Quanto tempo o texto precisa ficar parado para a frase ser fechada (Ajustes → Resposta)
+  const tempoCedo = () => ({ rapida: 550, equilibrada: 800, paciente: 1300 })[localStorage.getItem('trad-resposta') || 'equilibrada'] || 800;
   function falar(texto, lingua, opc = {}) {
     if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) { opc.aoTerminar && opc.aoTerminar(); return; } // aviso de falha não é lido
     const vel = (opc.vel || 1) * velVoz;
@@ -289,12 +308,14 @@
           if (vozCtl.estado === 'RETOMANDO') vozCtl.definir(ouvinte.ativo && !ouvinte.pausado ? 'ESCUTANDO' : 'AGUARDANDO');
         }, vozCtl.MARGEM);
       }
+      if (opc.medir) vozCtl.marcar('fim');
       opc.aoTerminar && opc.aoTerminar();
     };
     // Se o aparelho não avisar o fim da fala, destrava sozinho pelo tamanho do texto
     const segura = setTimeout(() => { vozCtl.anotar('voz sem aviso de fim'); terminar(); }, 2500 + texto.length * 90 / vel);
     const TTS = plugin('TextToSpeech');
     if (TTS) {
+      if (opc.medir) vozCtl.marcar('voz');
       opc.aoComecar && opc.aoComecar();
       TTS.speak({ text: texto, lang: lingua, rate: vel, pitch: opc.tom || 1, queueStrategy: 1 }).then(terminar, terminar);
       return;
@@ -304,7 +325,7 @@
     u.lang = lingua; u.rate = vel; u.pitch = opc.tom || 1;
     const v = melhorVoz(lingua);
     try { if (v) u.voice = v; } catch (e) { /* voz recusada: usa a padrão do idioma */ }
-    u.onstart = () => opc.aoComecar && opc.aoComecar();
+    u.onstart = () => { if (opc.medir) vozCtl.marcar('voz'); opc.aoComecar && opc.aoComecar(); };
     u.onend = terminar; u.onerror = terminar;
     speechSynthesis.speak(u);
   }
@@ -337,9 +358,15 @@
             if (t.trim() && vozCtl.aceitar(t.trim())) { teveFinal = true; vozCtl.definir('PROCESSANDO'); this.cb.final(t.trim()); }
           } else parcial += t;
         }
+        if (teveFinal) clearTimeout(this._estavel);
         if (parcial.trim() || !teveFinal) {
-          if (parcial.trim()) vozCtl.definir('ESCUTANDO');
+          if (parcial.trim()) { vozCtl.definir('ESCUTANDO'); vozCtl.marcar('inicio'); }
           this.cb && this.cb.parcial(parcial.trim());
+          // Frase estável: se o texto parou de mudar, fecha a frase sem esperar o silêncio longo do aparelho
+          const espera = this.cb && this.cb.cedo ? tempoCedo() : 0;
+          clearTimeout(this._estavel);
+          const pt = parcial.trim();
+          if (espera && pt && pt.split(/\s+/).length >= 2) this._estavel = setTimeout(() => this._fecharCedo(r, pt), espera);
         }
       };
       r.onerror = (e) => {
@@ -358,7 +385,16 @@
       if (vozCtl.estado === 'AGUARDANDO' || vozCtl.estado === 'RETOMANDO') vozCtl.definir('ESCUTANDO');
       try { r.start(); } catch (e) { this.rec = null; vozCtl.anotar('falha ao abrir o microfone'); if (this.ativo) setTimeout(() => this._abrir(), 400); }
     },
+    _fecharCedo(r, texto) {
+      if (this.rec !== r || !this.ativo || vozCtl.surdo()) return;
+      this.rec = null; // os resultados que ainda chegarem deste reconhecimento são ignorados
+      try { r.abort(); } catch (e) {}
+      vozCtl.anotar('frase fechada cedo: ' + texto);
+      if (vozCtl.aceitar(texto)) { vozCtl.definir('PROCESSANDO'); this.cb.final(texto); }
+      if (this.ativo && !this.pausado) setTimeout(() => this._abrir(), 60);
+    },
     pausar(sim) {
+      clearTimeout(this._estavel);
       this.pausado = sim;
       if (sim && this.rec) { const r = this.rec; this.rec = null; try { r.abort(); } catch (e) {} }
       else if (!sim) this._abrir();
@@ -370,6 +406,7 @@
       setTimeout(() => { if (!this.segurando && this.pausado && (!falando.n || fone)) this.pausar(false); }, vozCtl.surdo() ? vozCtl.MARGEM : 0);
     },
     parar() {
+      clearTimeout(this._estavel);
       const cb = this.cb;
       this.ativo = false; this.pausado = false; this.segurando = false;
       if (this.rec) { const r = this.rec; this.rec = null; try { r.stop(); } catch (e) {} }
@@ -885,6 +922,7 @@
     const ok = ouvinte.iniciar(eu.lingua, {
       parcial: (t) => { $('#digitar').placeholder = t || 'Ouvindo…'; if (t) { ondaForte(salaOnda); salaImg.classList.remove('assente'); void salaImg.offsetWidth; salaImg.classList.add('assente'); } conexao && conexao.vivo(t); },
       final: (t) => { enviarTexto(t); if (ouvinte.ativo) $('#digitar').placeholder = 'Ouvindo…'; },
+      cedo: !segurar, // no "segurar para falar" a frase só vai quando soltar
       erro: (m) => alert(m),
       fim: () => { if (mic.classList.contains('on')) bipe(false); mic.classList.remove('on'); salaOnda.classList.remove('on'); gatoSala.ouvindo(false); $('#digitar').placeholder = 'Fale no microfone ou digite…'; conexao && conexao.vivo(''); }
     });
@@ -1019,8 +1057,10 @@
           if (t) gatoOuveFala(k, t);
           l.aoVivo(t || 'Ouvindo…', true);
           clearTimeout(tm);
-          if (t) tm = setTimeout(() => traduzir(t, l.sel.value, outro.sel.value, { rapido: true }).then((r) => { outro.aoVivo(r, false); outro.estado('atento'); }), 250);
+          // prévia: já traduz a frase em andamento (e deixa a tradução pronta no cache para o final)
+          if (t) tm = setTimeout(() => traduzir(arrumar(t), l.sel.value, outro.sel.value, { rapido: true }).then((r) => { outro.aoVivo(r, false); outro.estado('atento'); }), 200);
         },
+        cedo: true,
         final: async (t) => {
           clearTimeout(tm);
           t = arrumar(t); falou = true;
@@ -1028,8 +1068,10 @@
           if (autoF2f) ouvinte.parar(); // no automático, cada um fala uma frase e passa a vez
           else ouvinte.segurar();
           l.mostrar(t); if (ouvinte.ativo) l.estado('atento');
+          vozCtl.marcar('frase');
           vozCtl.definir('TRADUZINDO');
           const r = await traduzir(t, l.sel.value, outro.sel.value);
+          vozCtl.marcar('traduzido');
           entregar(k, r);
           outro.digitar(r);
           pulaF2f();
@@ -1042,8 +1084,8 @@
           festaEntrega(para);
           if (vozLigada && !r.startsWith('⚠️')) {
             if (fone && !autoF2f) ouvinte.soltar(); // com fone o microfone pode seguir ouvindo
-            falar(r, outro.sel.value, { aoComecar: () => notas(para, true), aoTerminar: () => { notas(para, false); liberar(); } });
-          } else liberar();
+            falar(r, outro.sel.value, { medir: true, aoComecar: () => notas(para, true), aoTerminar: () => { notas(para, false); liberar(); } });
+          } else { vozCtl.marcar('semVoz'); liberar(); }
         },
         erro: (m) => { definirAuto(false); alert(m); },
         fim: () => {

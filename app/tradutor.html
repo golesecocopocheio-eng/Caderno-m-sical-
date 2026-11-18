@@ -1068,6 +1068,11 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 
 #f2fAuto.ligado,.meio button.ligado{background:linear-gradient(135deg,#7C3AED,#DB2777)!important;color:#fff!important;border-color:transparent!important}
 #f2fAuto.ligado .ic{color:#fff}
+
+.diagLista{display:grid;gap:4px;margin-top:8px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.diagLista div{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:6px 8px;border-radius:8px;background:rgba(124,58,237,.06)}
+.diagLista div.cab{background:transparent;color:var(--mu);font-weight:600}
+#diagResumo b{color:var(--c2)}
 </style>
 </head>
 <body>
@@ -1276,6 +1281,13 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
   <header><h1 class="marca"><img src="icons/tradutor-gato.png" alt="">Ajustes</h1></header>
   <div class="rolavel"><div class="box">
     <div class="status" id="gatoAjustes" role="status" aria-live="polite"></div>
+    <div class="card" id="cardDiag">
+      <b>Diagnóstico de voz</b>
+      <p class="mu">Tempos medidos de verdade nas últimas frases do frente a frente: fala (do início até a frase fechar), tradução e até a voz começar.</p>
+      <div id="diagResumo" class="mu">Ainda não há medidas. Use o frente a frente e volte aqui.</div>
+      <div id="diagLista" class="diagLista"></div>
+      <button class="sec" id="diagLimpar" style="width:100%;margin-top:8px">Limpar medidas</button>
+    </div>
     <div class="card" id="cardMotor">
       <b>Motor de tradução</b>
       <p class="mu">O motor Padrão usa o Google Tradutor (rápido e gratuito). O Executivo usa o Claude da Anthropic: precisão terminológica por setor, registro formal/técnico e saída limpa. Prévias ao vivo continuam no motor Padrão.</p>
@@ -1296,6 +1308,13 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
     <div class="card">
       <b>🎤 Microfone</b>
       <div class="chave"><span>Segurar para falar<br><span class="mu">Fale enquanto segura o 🎤 e solte para enviar. Capta melhor em lugar barulhento.</span></span><input type="checkbox" id="ajSegurar"></div>
+      <label for="ajResposta">Rapidez para fechar a frase</label>
+      <select id="ajResposta">
+        <option value="rapida">Rápida (0,55 s de pausa)</option>
+        <option value="equilibrada">Equilibrada (0,8 s de pausa)</option>
+        <option value="paciente">Paciente (1,3 s de pausa: frases longas)</option>
+      </select>
+      <p class="mu">Quando você para de falar por esse tempo, a frase é traduzida na hora, sem esperar o silêncio longo do celular.</p>
       <div class="chave"><span>🎧 Estou de fone de ouvido<br><span class="mu">O microfone continua ouvindo enquanto a tradução toca.</span></span><input type="checkbox" id="ajFone"></div>
     </div>
     <div class="card">

@@ -168,7 +168,21 @@
     catch (e) { $('#ajMotorStatus').textContent = 'Falha na conexão: ' + ((e && (e.status ? e.status + ' ' : '') + (e.message || '')) || 'erro desconhecido') + '. Confira a chave e a internet.'; }
   };
   mostrarMotor();
-  C.ganchosAba.ajustes = () => { mostrarMotor(); mostrarAjustes(); mostrarMiau(); setTimeout(() => gAj.dizer('Aqui você deixa o app do seu jeito! ⚙️'), 200); };
+  // ----- Rapidez para fechar a frase + diagnóstico de voz (tempos reais) -----
+  const ajResp = $('#ajResposta');
+  if (ajResp) { ajResp.value = localStorage.getItem('trad-resposta') || 'equilibrada'; ajResp.onchange = () => localStorage.setItem('trad-resposta', ajResp.value); }
+  const seg = (ms) => (ms == null ? '—' : (ms / 1000).toFixed(2).replace('.', ',') + ' s');
+  function mostrarDiag() {
+    const M = C.vozCtl.medidas, res = $('#diagResumo'), lista = $('#diagLista');
+    if (!res) return;
+    if (!M.length) { res.textContent = 'Ainda não há medidas. Use o frente a frente e volte aqui.'; lista.innerHTML = ''; return; }
+    const media = (k) => { const v = M.map((m) => m[k]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+    res.innerHTML = M.length + ' frases · média: tradução <b>' + seg(media('traducao')) + '</b> · da frase fechada até a voz <b>' + seg(media('total')) + '</b>';
+    lista.innerHTML = '<div class="cab"><span>Fala</span><span>Tradução</span><span>Até a voz</span><span>Voz</span></div>' +
+      M.slice(-8).reverse().map((m) => '<div><span>' + seg(m.fala) + '</span><span>' + seg(m.traducao) + '</span><span>' + seg(m.total) + '</span><span>' + seg(m.voz) + '</span></div>').join('');
+  }
+  const diagL = $('#diagLimpar'); if (diagL) diagL.onclick = () => { C.vozCtl.limparMedidas(); mostrarDiag(); };
+  C.ganchosAba.ajustes = () => { mostrarMotor(); mostrarAjustes(); mostrarMiau(); mostrarDiag(); setTimeout(() => gAj.dizer('Aqui você deixa o app do seu jeito! ⚙️'), 200); };
 
   // Gatinho da tela inicial também comenta quando volta para ela
   C.ganchosAba.inicio = () => {};

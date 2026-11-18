@@ -245,12 +245,7 @@ const nome=()=>(localStorage.getItem('bar-nome')||'').trim();
 window.__barFotoCardapio=cam=>{const i=document.getElementById(cam?'cardCam':'cardGal');i.value='';i.click()};
 function fotoCardapioEscolhida(e){const a=[...(e.target.files||[])];if(!a.length)return;abrir('cardapio');
   const f=document.getElementById('f-cardapio');const ir=()=>{try{f.contentWindow.__cardLerFotos(a)}catch(x){setTimeout(ir,500)}};ir()}
-/* Celular da equipe (não é dono): só vê a Portaria e os Ajustes. Faturamento, Caixa, Estoque,
-   Cardápio, Preços, Fechamento e Backup ficam fechados (as regras do Firebase também bloqueiam). */
-let SO_PORTARIA=false;
-const ABAS_EQUIPE=['portaria','ajustes'];
 function abrir(t){
-  if(SO_PORTARIA&&!ABAS_EQUIPE.includes(t))t='portaria';
   if(t==='ajustes'&&window.__barFerramentasAtualizar)setTimeout(window.__barFerramentasAtualizar,50);
   if(t==='ajustes')setTimeout(mostrarDono,60);
   const nomes={caixa:'Caixa',portaria:'Portaria',estoque:'Estoque',cardapio:'Cardápio',precos:'Preços',foto:'Fechamento',backup:'Backup',ajustes:'Ajustes'};const ma=document.getElementById('marcaAba');if(ma)ma.textContent=nomes[t]||'';
@@ -272,7 +267,7 @@ function carregarAbas(){
 async function mostrarDono(){const box=$('#donoBox');if(!box||!window.__barDono)return;
   let e;try{e=await window.__barDono.estado()}catch(x){return}if(!e.nuvem){box.hidden=true;return}box.hidden=false;
   $('#donoTxt').innerHTML=e.dono?'✅ <b>Este celular é dono.</b> Pode editar valores, apagar e restaurar. '+(e.temPin?'Para liberar outro celular como dono, use o PIN do dono nele. Aqui você pode trocar o PIN.':'Crie um <b>PIN do dono</b> para poder liberar outro celular (ou este, se trocar de aparelho).')
-    :'Este celular <b>não é dono</b>: aqui só abre a Portaria, para lançar entradas. Faturamento, lançamentos do dia e as outras abas ficam fechados. Se este celular for seu, digite o <b>PIN do dono</b> para liberar.';
+    :'Este celular <b>não é dono</b>: editar valores, apagar e restaurar ficam escondidos. '+(e.temPin?'Digite o <b>PIN do dono</b> para liberar.':'Ainda não existe PIN do dono: o PIN que você criar aqui vira o PIN do bar e este celular passa a ser dono.');
   $('#donoBtn').textContent=e.dono?(e.temPin?'Trocar o PIN do dono':'Criar o PIN do dono'):'👑 Tornar este celular dono';
   $('#donoBtn').onclick=async()=>{const m=$('#donoMsg');m.textContent='Conferindo…';try{const r=await window.__barDono.virar($('#donoPin').value);$('#donoPin').value='';
     if(e.dono){m.textContent='✅ PIN do dono salvo. Guarde esse número.';mostrarDono();return}
@@ -316,13 +311,6 @@ async function iniciar(){
   $('#nav').hidden=false;
   $('#entrar').classList.remove('on');
   await aplicarDadosIniciais().catch(()=>{});
-  if(nuvem&&codigo()&&window.__barDono){
-    try{const e=await Promise.race([window.__barDono.estado(),new Promise(ok=>setTimeout(()=>ok(null),8000))]);SO_PORTARIA=!!(e&&e.nuvem&&!e.dono)}catch(x){}
-  }
-  if(SO_PORTARIA){
-    document.querySelectorAll('nav button').forEach(b=>b.hidden=!ABAS_EQUIPE.includes(b.dataset.tab));
-    document.querySelectorAll('iframe').forEach(f=>{if(f.id!=='f-portaria')f.remove()});
-  }
   carregarAbas();mostrarInfo();
   abrir(localStorage.getItem('bar-aba')||'caixa');
 }

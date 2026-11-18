@@ -39,7 +39,6 @@ h1{font-size:20px;margin:4px 0 2px}
 input{width:100%;box-sizing:border-box;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:16px}
 label{font-size:13px;color:var(--mut);flex:1}
 .msg{color:var(--mut);font-size:13px;text-align:center;margin:6px 0}
-[hidden]{display:none!important}
 .btn{width:100%;padding:11px;border:0;border-radius:10px;background:var(--ok);color:var(--on);font-weight:700;font-size:15px;margin-top:8px}
 </style>
 </head>
@@ -47,9 +46,9 @@ label{font-size:13px;color:var(--mut);flex:1}
 <main>
   <h1>🚪 Portaria do Bar</h1>
   <div class="sub" id="noite"></div>
-  <input type="date" id="dia" class="dono" hidden style="margin-bottom:10px" aria-label="Escolher data">
+  <input type="date" id="dia" style="margin-bottom:10px" aria-label="Escolher data">
   <div class="msg" id="status">Conectando…</div>
-  <div class="msg" id="msgDono" hidden>Você lança as entradas e pode desfazer as suas. Totais e lançamentos da noite ficam só com o dono.</div>
+  <div class="msg" id="msgDono" hidden>Somente o dono muda os valores. Dar baixa em entradas: qualquer pessoa do bar (fica registrado quem deu).</div>
 
   <div class="card">
     <div class="sub" style="margin:0 0 6px">Forma de pagamento</div>
@@ -59,7 +58,7 @@ label{font-size:13px;color:var(--mut);flex:1}
 
   <div id="cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
   <div class="card" id="casa" style="border:2px solid var(--bd)">
-    <div class="grid dono" hidden style="margin-top:0"><div><b id="cEnt">0</b><span>Entraram</span></div><div><b id="cSai">0</b><span>Saíram</span></div><div><b id="cDentro" style="color:var(--ac)">0</b><span>Dentro agora</span></div></div>
+    <div class="grid" style="margin-top:0"><div><b id="cEnt">0</b><span>Entraram</span></div><div><b id="cSai">0</b><span>Saíram</span></div><div><b id="cDentro" style="color:var(--ac)">0</b><span>Dentro agora</span></div></div>
     <div class="row" style="margin-top:10px"><button class="big" id="saida" style="background:#334155;color:#fff">🚶 +1 Saída<small>não mexe no dinheiro</small></button></div>
     <div class="row" style="justify-content:flex-end;margin-top:6px"><button class="link" id="saidaDesf" hidden>↩️ Desfazer a última saída</button></div>
   </div>
@@ -70,7 +69,7 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="row" style="margin-top:6px"><button class="btn" id="listaOk" style="margin-top:0">✅ Lançar</button><button class="btn" id="listaCancela" style="margin-top:0;background:var(--bd);color:var(--tx)">Cancelar</button></div>
   </div>
 
-  <div class="card dono" hidden>
+  <div class="card">
     <div class="sub" style="margin:0">Total da noite</div>
     <div class="tot" id="total">R$ 0,00</div>
     <div class="grid" id="resumo"></div>
@@ -85,7 +84,7 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="msg" id="envMsg"></div>
   </div>
 
-  <div class="card dono" hidden>
+  <div class="card">
     <b>Resumo de lançados e apagados</b>
     <div class="grid" id="audit"></div>
     <div id="apagadas"></div>
@@ -110,11 +109,11 @@ label{font-size:13px;color:var(--mut);flex:1}
   </div>
 
   <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:center"><b id="ultTit">Últimas entradas</b><span><button class="link" id="desfazer" hidden style="margin-right:12px">↩️ Desfazer a última</button><button class="link dono" id="limpar" hidden>Apagar todas</button></span></div>
-    <div id="lista" class="dono" hidden></div>
+    <div class="row" style="justify-content:space-between;align-items:center"><b>Últimas entradas</b><span><button class="link" id="desfazer" hidden style="margin-right:12px">↩️ Desfazer a última</button><button class="link dono" id="limpar" hidden>Apagar todas</button></span></div>
+    <div id="lista"></div>
   </div>
 
-  <div class="card dono" hidden>
+  <div class="card">
     <b>♻️ Backup</b>
     <div class="sub" style="margin:4px 0 0">Restaurar aceita qualquer backup (do Caixa, da Portaria, do Estoque ou o dados-do-bar.json) e também o resumo da noite da portaria em texto. Cada parte volta para a aba certa.</div>
     <div class="row" style="margin-top:8px">
@@ -124,7 +123,7 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div id="bkBox"></div>
   </div>
 
-  <div class="card dono" hidden style="text-align:center">
+  <div class="card" style="text-align:center">
     <button class="btn" id="qrBtn" style="margin-top:0">📱 QR Code para a equipe</button>
     <div id="qrBox" hidden>
       <div class="sub" style="margin:10px 0">Aponte a câmera do celular (iPhone ou Android) para abrir só a portaria</div>
@@ -173,7 +172,7 @@ function render(){
   $("#total").textContent=brl(tot)+" · "+ents.length+" pessoas";
   {const sa=saidas.length;$("#cEnt").textContent=ents.length;$("#cSai").textContent=sa;$("#cDentro").textContent=Math.max(0,ents.length-sa);
    $("#saida").disabled=ver!==noite;$("#saidaDesf").hidden=!sa||ver!==noite}
-  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k);return `<div><b>${l.length}</b><span>${n} · ${brl(soma(l))}</span></div>`}).join("");
+  $("#resumo").style.gridTemplateColumns="1fr 1fr";$("#resumo").innerHTML=CATS.map(([k,n])=>{const l=ents.filter(e=>e.cat===k),cz=k!=="clan"?l.filter(e=>e.pg==="cortesia").length:0;return `<div><b>${l.length}</b><span>${n} · ${brl(soma(l))}${cz?`<br><small style="color:#b45309">🎁 ${cz} cortesia${cz>1?"s":""}</small>`:""}</span></div>`}).join("");
   $("#resumoPg").innerHTML=PGS.slice(0,3).map(([k,n])=>`<div><b>${brl(soma(ents.filter(e=>e.pg===k)))}</b><span>${PGI[k]} ${n}</span></div>`).join("");
   {// ✅ conferência: total = categorias = formas de pagamento; pessoas = categorias
    const tc=cent(tot),porCat=CATS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.cat===k))*100),0),porPg=PGS.reduce((s,[k])=>s+Math.round(soma(ents.filter(e=>e.pg===k))*100),0);
@@ -184,7 +183,7 @@ function render(){
    $("#confere").style.color=ok?"var(--ok)":"#b45309"}
   $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"||!preco(k)?"Grátis":brl(precos[k]))).join(" · ");
   const ls=ents.filter(e=>e.cat==="lista").sort((a,b)=>a.ts-b.ts);
-  $("#listaCard").hidden=!ls.length||!owner;
+  $("#listaCard").hidden=!ls.length;
   $("#listaNomes").innerHTML=ls.map((e,i)=>`<div class="item"><span>${i+1}. <b>${escN(e.nome||"(sem nome)")}</b> · ${new Date(e.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span><span>${brl(e.valor)}</span></div>`).join("");
   $("#listaQtd").textContent=ls.length;
   const rec=[...ents].sort((a,b)=>b.ts-a.ts).slice(0,15);
@@ -194,12 +193,11 @@ function render(){
     return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} <button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button></span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
   const sm=a=>soma(a);
-  $("#audit").innerHTML=`<div><b>${lan.length}</b><span>Lançadas · ${brl(sm(lan))}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(sm(lan)-sm(apg))}</b><span>Saldo</span></div>`;
+  {const nL=ents.length+apg.length,vL=Math.round((soma(ents)+sm(apg))*100)/100;$("#audit").innerHTML=`<div><b>${nL}</b><span>Lançadas · ${brl(vL)}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(soma(ents))}</b><span>Saldo</span></div>`}
   $("#apagadas").innerHTML=apg.sort((a,b)=>b.ts-a.ts).slice(0,10).map(l=>{const h=new Date(l.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});const c=(CATS.find(x=>x[0]===l.cat)||[0,"?"])[1];return `<div class="item"><span>🗑 ${h} · ${c}${l.nome?" · "+escN(l.nome):""}${l.quem?" · por <b>"+escN(l.quem)+"</b>":""}</span><span>${brl(l.valor)}</span></div>`}).join("");
   document.querySelectorAll(".dono").forEach(el=>el.hidden=!owner);
   {const minha=[...ents].filter(e=>me&&e.u===me).sort((a,b)=>b.ts-a.ts)[0]||[...ents].sort((a,b)=>b.ts-a.ts)[0];const d=$("#desfazer");d.hidden=!minha||ver!==noite;if(minha)d.dataset.alvo=minha.id}
   $("#msgDono").hidden=owner;
-  $("#ultTit").textContent=owner?"Últimas entradas":"Você lançou "+ents.length+(ents.length===1?" entrada":" entradas")+" hoje";
 }
 
 let armed=null;
@@ -230,6 +228,7 @@ document.addEventListener("click",async ev=>{
       const en={cat,pg:free?"cortesia":pg,valor:free?0:cent(preco(cat))/100,noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
+      if(pg==="cortesia"&&cat!=="clan"){pg="dinheiro";render();$("#status").textContent="🎁 Cortesia lançada. Pagamento voltou para 💵 Dinheiro."}
     }else if(t.id==="saida"){
       if(ver!==noite){$("#status").textContent="Você está vendo outra noite. Escolha a data de hoje para lançar saídas.";return}
       if(navigator.vibrate)navigator.vibrate(15);
@@ -279,11 +278,9 @@ document.addEventListener("click",async ev=>{
     render()},e=>{$("#status").textContent="Erro ao ler valores"});
   const sub=()=>{
     if(unsub)unsub();if(unsubLog)unsubLog();
-    // Equipe (não é dono): só enxerga o que ela mesma lançou; o registro e os totais são do dono.
-    const daNoite=c=>{const q=db.collection(c).where("noite","==",ver);return owner?q:q.where("u","==",me)};
-    unsubLog=owner?db.collection("log").where("noite","==",ver).onSnapshot(s=>{logs=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{}):null;
-    if(unsubSai)unsubSai();unsubSai=daNoite("saidas").onSnapshot(s=>{saidas=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
-    unsub=daNoite("entradas").onSnapshot(s=>{
+    unsubLog=db.collection("log").where("noite","==",ver).onSnapshot(s=>{logs=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
+    if(unsubSai)unsubSai();unsubSai=db.collection("saidas").where("noite","==",ver).onSnapshot(s=>{saidas=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
+    unsub=db.collection("entradas").where("noite","==",ver).onSnapshot(s=>{
       clearTimeout(timer);$("#status").textContent=NUVEM_BAR?"● Sincronizado ao vivo":"📱 Salvo neste celular";
       ents=s.docs.map(d=>({id:d.id,...d.data()}));render();
     },e=>{clearTimeout(timer);$("#status").textContent="Erro ao ler entradas"});

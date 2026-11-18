@@ -184,23 +184,20 @@
       // (bares/{codigo}/acesso/donos: { pin: hash, uids: [...] }).
       let acesso = {};
       try { const a = await bar.collection('acesso').doc('donos').get(); if (a.exists) acesso = a.data() || {}; } catch (e) {}
-      let liberado = false;
-      try { const d = await bar.collection('donos').doc(user.uid).get(); liberado = d.exists; } catch (e) {}
-      const dono = (!!info && info.dono === user.uid) || liberado || (Array.isArray(acesso.uids) && acesso.uids.includes(user.uid));
+      const dono = (!!info && info.dono === user.uid) || (Array.isArray(acesso.uids) && acesso.uids.includes(user.uid));
       // Uma vez por bar: sobe para a nuvem o que a Portaria e o Estoque já tinham guardado só
       // neste celular. Não apaga nada; registros com o mesmo id são substituídos. Valores e
-      // configurações só sobem do celular do dono. Do celular da equipe sobem só as entradas e
-      // saídas da Portaria lançadas nele (marcadas como dele), porque é só isso que a equipe pode gravar.
+      // configurações só sobem do celular do dono.
       const MIG = 'bar-migrado:' + codigo();
       if (!localStorage.getItem(MIG)) {
         try {
           let lote = fs.batch(); let n = 0;
-          for (const app of (dono ? ['portaria', 'estoque'] : ['portaria'])) {
+          for (const app of ['portaria', 'estoque']) {
             let local = {};
             try { local = JSON.parse(localStorage.getItem('app-bar-db:' + app + '.html')) || {}; } catch (e) {}
             for (const [col, docs] of Object.entries(local)) {
-              if (!dono && !['entradas', 'saidas', 'log'].includes(col)) continue;
-              for (const [id, v0] of Object.entries(docs || {})) { const v = dono ? v0 : { ...v0, u: user.uid }; lote.set(bar.collection(app + '_' + col).doc(id), v); if (++n === 400) { await lote.commit(); lote = fs.batch(); n = 0; } }
+              if (!dono && (col === 'config' || col === 'meta' || col === 'price')) continue;
+              for (const [id, v] of Object.entries(docs || {})) { lote.set(bar.collection(app + '_' + col).doc(id), v); if (++n === 400) { await lote.commit(); lote = fs.batch(); n = 0; } }
             }
           }
           if (n) await lote.commit();
@@ -219,23 +216,16 @@
     return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
   };
   window.__barDono = {
-    // temPin: true/false para o dono; null para a equipe (ela não pode ver se existe PIN).
-    async estado() { const c = await iniciarCore().catch(() => null); if (!c) return { nuvem: false, dono: true }; return { nuvem: true, dono: c.dono, temPin: c.dono ? !!(c.acesso && c.acesso.pin) : null }; },
+    async estado() { const c = await iniciarCore().catch(() => null); if (!c) return { nuvem: false, dono: true }; return { nuvem: true, dono: c.dono, temPin: !!(c.acesso && c.acesso.pin) }; },
     async virar(pin) {
       const c = await iniciarCore(); if (!c) throw new Error('a nuvem não está ligada');
       if (!/^\d{4,8}$/.test(String(pin).trim())) throw new Error('o PIN precisa ter de 4 a 8 números');
+      const ref = c.bar.collection('acesso').doc('donos'); const s = await ref.get(); const a = s.exists ? (s.data() || {}) : {};
       const h = await hashPin(pin);
-      if (c.dono) {
-        // Dono cria ou troca o PIN. Só o dono lê e grava este documento.
-        const ref = c.bar.collection('acesso').doc('donos'); const s = await ref.get(); const a = s.exists ? (s.data() || {}) : {};
-        const uids = [...new Set([...(a.uids || []), c.user.uid, ...(c.info && c.info.dono ? [c.info.dono] : [])])];
-        await ref.set({ pin: h, uids, t: Date.now() });
-        return { novoPin: !a.pin || a.pin !== h };
-      }
-      // Equipe: o banco só aceita se o PIN for igual ao do dono (conferido nas regras do Firebase).
-      try { await c.bar.collection('donos').doc(c.user.uid).set({ pin: h, nome: nome() || '', t: Date.now() }); }
-      catch (e) { throw new Error('PIN errado (ou o dono ainda não criou o PIN)'); }
-      return { novoPin: false };
+      if (a.pin && a.pin !== h && !c.dono) throw new Error('PIN errado');
+      const uids = [...new Set([...(a.uids || []), c.user.uid, ...(c.info && c.info.dono ? [c.info.dono] : [])])];
+      await ref.set({ pin: c.dono ? h : (a.pin || h), uids, t: Date.now() });
+      return { novoPin: !a.pin || (c.dono && a.pin !== h) };
     },
   };
 

@@ -1068,7 +1068,7 @@
       const outro = lados[k === 'a' ? 'b' : 'a'];
       if (falando.n) { pararVoz(); return; } // tocar no microfone durante a voz só interrompe a voz
       if (ouvinte.ativo && l.mic.classList.contains('on')) { if (autoF2f) definirAuto(false); ouvinte.parar(); return; }
-      let falou = false;
+      let falou = false, previa = null;
       ouvinte.parar();
       let tm = null;
       const ok = ouvinte.iniciar(l.sel.value, {
@@ -1077,7 +1077,11 @@
           l.aoVivo(t || 'Ouvindo…', true);
           clearTimeout(tm);
           // prévia: já traduz a frase em andamento (e deixa a tradução pronta no cache para o final)
-          if (t) tm = setTimeout(() => traduzir(arrumar(t), l.sel.value, outro.sel.value, { rapido: true }).then((r) => { outro.aoVivo(r, false); outro.estado('atento'); }), 200);
+          if (t) tm = setTimeout(() => {
+            const pr = traduzir(arrumar(t), l.sel.value, outro.sel.value, { rapido: true });
+            previa = { n: vozCtl.norm(t), de: l.sel.value, para: outro.sel.value, p: pr };
+            pr.then((r) => { outro.aoVivo(r, false); outro.estado('atento'); });
+          }, 200);
         },
         cedo: true,
         final: async (t) => {
@@ -1089,7 +1093,11 @@
           l.mostrar(t); if (ouvinte.ativo) l.estado('atento');
           vozCtl.marcar('frase');
           vozCtl.definir('TRADUZINDO');
-          const r = await traduzir(t, l.sel.value, outro.sel.value);
+          // Se a prévia já traduziu o mesmo texto (só muda pontuação/maiúscula), usa ela: economiza uma ida à internet
+          const mesma = previa && !motor.ativo && previa.n === vozCtl.norm(t) && previa.de === l.sel.value && previa.para === outro.sel.value;
+          const r = mesma ? await previa.p : await traduzir(t, l.sel.value, outro.sel.value);
+          if (mesma) vozCtl.anotar('tradução reaproveitada da prévia');
+          previa = null;
           vozCtl.marcar('traduzido');
           entregar(k, r);
           outro.digitar(r);

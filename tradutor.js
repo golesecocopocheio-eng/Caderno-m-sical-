@@ -706,6 +706,7 @@
     const cfg = window.FIREBASE_CONFIG;
     if (cfg) {
       try { return await conectarFirebase(cfg, sala, eu, h); } catch (e) {
+        if (e && (e.code === 'recusado' || e.code === 'cancelado')) throw e;
         console.warn('Firebase indisponível, usando só este aparelho', e);
         h.aviso(e && e.code === 'permission-denied'
           ? 'A nuvem recusou a sala: falta publicar no Firebase a regra das salas (firestore.rules). Por enquanto a sala funciona só entre abas deste aparelho.'
@@ -725,6 +726,8 @@
       const fb = window.firebase;
       const app = fb.apps.length ? fb.app() : fb.initializeApp(cfg);
       const auth = app.auth();
+      const emu = localStorage.getItem('trad-fb-emulador'); // só para testes: host:portaFirestore:portaAuth
+      if (emu && !app.__emu) { const [h, fp, ap] = emu.split(':'); app.firestore().useEmulator(h, Number(fp)); auth.useEmulator('http://' + h + ':' + ap, { disableWarnings: true }); app.__emu = true; }
       const user = await new Promise((ok, err) => {
         const t = setTimeout(() => err(new Error('tempo esgotado')), 12000);
         const off = auth.onAuthStateChanged((u) => { if (u) { clearTimeout(t); off(); ok(u); } else auth.signInAnonymously().catch(err); });
@@ -743,11 +746,39 @@
     const base = db.collection('salas').doc(sala);
     const pessoa = base.collection('pessoas').doc(meu);
     const entrada = Date.now();
+    const limite = (p, ms) => Promise.race([p, new Promise((_, err) => setTimeout(() => err(new Error('tempo esgotado')), ms))]);
+    // ----- Autorização: quem cria a sala é o dono; os outros pedem para entrar e esperam a aprovação -----
+    let souDono = false;
+    const meta = await limite(base.get(), 15000);
+    if (!meta.exists) { await limite(base.set({ dono: user.uid, criado: Date.now() }), 15000); souDono = true; }
+    else souDono = meta.data().dono === user.uid;
+    if (!souDono) {
+      const pedido = base.collection('membros').doc(user.uid);
+      let st = null;
+      try { const p = await limite(pedido.get(), 15000); st = p.exists ? p.data().status : null; } catch (e) { st = null; }
+      if (st !== 'aprovado') {
+        if (st !== 'pendente') await limite(pedido.set({ status: 'pendente', nome: eu.nome, lingua: eu.lingua, t: Date.now() }), 15000);
+        h.espera && h.espera('pedindo');
+        await new Promise((ok, falha) => {
+          const off = pedido.onSnapshot({ includeMetadataChanges: true }, (d) => {
+            if (d.metadata.hasPendingWrites || d.metadata.fromCache) return; // só vale o que o servidor confirmou
+            const s = d.exists ? d.data().status : 'recusado';
+            if (s === 'aprovado') { off(); h.espera && h.espera(''); ok(); }
+            else if (s === 'recusado' || !d.exists) { off(); falha(Object.assign(new Error('O dono da sala não autorizou a sua entrada.'), { code: 'recusado' })); }
+          }, () => {});
+          h.cancelarEspera = () => { off(); pedido.delete().catch(() => {}); falha(Object.assign(new Error('cancelado'), { code: 'cancelado' })); };
+        });
+      }
+    }
     // Sem internet o Firestore não responde nem dá erro: depois de 15 s desiste.
     await Promise.race([pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now(), vivo: '' }),
       new Promise((_, err) => setTimeout(() => err(new Error('tempo esgotado')), 15000))]);
     const pulso = setInterval(() => pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now() }, { merge: true }).catch(() => {}), 30000);
     const offs = [];
+    // Dono: recebe os pedidos de entrada e a lista de quem foi aprovado
+    if (souDono) offs.push(base.collection('membros').onSnapshot((s) => h.pedidos && h.pedidos(s.docs.map((d) => ({ uid: d.id, ...d.data() }))), () => {}));
+    // Convidado: se o dono remover, sai da sala
+    else offs.push(base.collection('membros').doc(user.uid).onSnapshot({ includeMetadataChanges: true }, (d) => { if (d.metadata.hasPendingWrites || d.metadata.fromCache) return; if (!d.exists || d.data().status !== 'aprovado') h.removido && h.removido(); }, () => {}));
     // Salas paradas expiram: só valem as falas das últimas 24 horas
     const desde = Date.now() - 24 * 3600 * 1000;
     offs.push(base.collection('falas').where('t', '>', desde).orderBy('t').limitToLast(60).onSnapshot((s) => {
@@ -772,7 +803,8 @@
       else if (!tm) tm = setTimeout(() => { tm = null; if (pend !== null) { ultimo = Date.now(); pessoa.update({ vivo: pend }).catch(() => {}); pend = null; } }, 300);
     };
     return {
-      nuvem: true,
+      nuvem: true, dono: souDono,
+      decidir: (uid, aprovar) => (aprovar ? base.collection('membros').doc(uid).update({ status: 'aprovado' }) : base.collection('membros').doc(uid).update({ status: 'recusado' })).catch(() => {}),
       enviar: (texto) => { pend = null; pessoa.update({ vivo: '' }).catch(() => {}); return base.collection('falas').add({ uid: meu, nome: eu.nome, lingua: eu.lingua, texto, t: Date.now() }); },
       evento: (ev) => base.collection('falas').add({ ...ev, uid: meu, nome: eu.nome, lingua: eu.lingua, t: Date.now() }).catch(() => {}),
       vivo,
@@ -927,15 +959,44 @@
     $('#btVoz').textContent = vozLigada ? '🔊' : '🔇';
     try {
       mostrarConexao('conectando');
-      conexao = await conectar(sala, eu, { fala: bolha, pessoas: atualizarPessoas, conexao: mostrarConexao, aviso: (t) => { const a = $('#avisoSala'); a.textContent = '⚠️ ' + t; a.hidden = false; } });
+      const ganchos = { fala: bolha, pessoas: atualizarPessoas, conexao: mostrarConexao, pedidos: mostrarPedidos,
+        espera: (e) => { $('#salaEspera').hidden = !e; if (e) mostrarConexao('aguardando'); },
+        removido: () => { if (!conexao) return; alert('O dono da sala removeu você desta sala.'); sairSala(); },
+        aviso: (t) => { const a = $('#avisoSala'); a.textContent = '⚠️ ' + t; a.hidden = false; } };
+      $('#salaCancelar').onclick = () => { ganchos.cancelarEspera && ganchos.cancelarEspera(); };
+      $('#salaPedidos').hidden = true; $('#salaPedidos').innerHTML = '';
+      conexao = await conectar(sala, eu, ganchos);
+      $('#salaEspera').hidden = true;
       if (!conexao.nuvem) mostrarConexao('local');
       if (!presentes || !presentes.size) setTimeout(() => { if ((!presentes || !presentes.size) && $('#convite').hidden) $('#btConvidar').onclick(); }, 1200);
-    } catch (e) { alert('Não foi possível entrar na sala: ' + e.message); mostrarTela('inicio'); }
+    } catch (e) {
+      $('#salaEspera').hidden = true;
+      if (e && e.code !== 'cancelado') alert(e.code === 'recusado' ? e.message : 'Não foi possível entrar na sala: ' + e.message);
+      conexao = null; mostrarTela('inicio');
+    }
+  }
+
+  // Dono da sala: pedidos de entrada (Aprovar / Recusar) e pessoas aprovadas (Remover)
+  let pedidosVistos = new Set();
+  function mostrarPedidos(lista) {
+    const box = $('#salaPedidos'), pend = lista.filter((m) => m.status === 'pendente');
+    box.hidden = !pend.length;
+    box.innerHTML = pend.map((m) => '<div class="pedido"><span><b>' + esc(m.nome || 'Alguém') + '</b> ' + bandeira(m.lingua || '') + ' quer entrar na sala</span>' +
+      '<button data-ok="' + esc(m.uid) + '">Aprovar</button><button class="sec" data-nao="' + esc(m.uid) + '">Recusar</button></div>').join('');
+    box.querySelectorAll('[data-ok]').forEach((b) => { b.onclick = () => { b.disabled = true; conexao && conexao.decidir(b.dataset.ok, true); }; });
+    box.querySelectorAll('[data-nao]').forEach((b) => { b.onclick = () => { b.disabled = true; conexao && conexao.decidir(b.dataset.nao, false); }; });
+    pend.forEach((m) => { if (!pedidosVistos.has(m.uid)) { pedidosVistos.add(m.uid); plop(); if (navigator.vibrate) navigator.vibrate(120); } });
+    const aprov = lista.filter((m) => m.status === 'aprovado'), el = $('#salaMembros');
+    if (el) {
+      el.hidden = !aprov.length;
+      el.innerHTML = '<b>Pessoas autorizadas</b>' + aprov.map((m) => '<div class="membro"><span>' + esc(m.nome || 'Alguém') + ' ' + bandeira(m.lingua || '') + '</span><button class="sec" data-rem="' + esc(m.uid) + '">Remover</button></div>').join('');
+      el.querySelectorAll('[data-rem]').forEach((b) => { b.onclick = () => { if (confirm('Remover ' + b.previousSibling.textContent.trim() + ' da sala?')) conexao && conexao.decidir(b.dataset.rem, false); }; });
+    }
   }
 
   function mostrarConexao(est) {
     const el = $('#salaConexao'); if (!el) return;
-    const txt = { conectando: 'Conectando…', online: 'Conectado', reconectando: 'Reconectando…', offline: 'Sem internet', local: 'Só neste aparelho' }[est] || '';
+    const txt = { aguardando: 'Aguardando aprovação', conectando: 'Conectando…', online: 'Conectado', reconectando: 'Reconectando…', offline: 'Sem internet', local: 'Só neste aparelho' }[est] || '';
     if (el.dataset.estado === est) return;
     el.dataset.estado = est; el.querySelector('span').textContent = txt;
     if (est === 'online' && el.dataset.antes === 'reconectando') sistema('Conexão restabelecida');
@@ -986,7 +1047,7 @@
   // no navegador usa o próprio endereço. Quem abre o link entra direto na sala (ou abre o app, se tiver).
   const SITE = 'https://golesecocopocheio-eng.github.io/Caderno-m-sical-/tradutor.html';
   const linkSala = () => (NATIVO || !/^https?:$/.test(location.protocol) ? SITE : location.origin + location.pathname) + '?sala=' + $('#salaCod').textContent;
-  const textoConvite = () => 'Vem conversar comigo no Clã Speak (tradução de voz ao vivo)! Toque no link para entrar na sala:\n' + linkSala() + '\nCódigo da sala: ' + $('#salaCod').textContent;
+  const textoConvite = () => 'Vem conversar comigo no Clã Speak (tradução de voz ao vivo)! Toque no link para entrar na sala (eu aprovo a sua entrada):\n' + linkSala() + '\nCódigo da sala: ' + $('#salaCod').textContent;
   $('#btConvidar').onclick = () => {
     const box = $('#convite'); box.hidden = !box.hidden;
     if (box.hidden) return;

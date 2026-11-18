@@ -1103,6 +1103,19 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 .barraApp span{flex:1}
 .barraApp a{padding:8px 12px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#DB2777);color:#fff;font-weight:700;text-decoration:none}
 .barraApp button{background:transparent;border:0;color:#E9DDFF;padding:4px 6px}
+
+/* ===== Sala com aprovação do dono ===== */
+.salaPedidos{display:grid;gap:8px;margin:10px 12px 0}
+.pedido{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#422006;box-shadow:0 8px 20px rgba(120,53,15,.2);animation:heroEntra .35s ease}
+.pedido span{flex:1;font-size:14px}
+.pedido button{height:36px;padding:0 12px;border-radius:10px;font-weight:700}
+.pedido button.sec{background:#fff;color:#7C2D12}
+.salaEspera{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(20,8,48,.45);backdrop-filter:blur(4px)}
+.salaEspera .card{max-width:340px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.salaEspera .giro{width:34px;height:34px;border-radius:50%;border:3px solid rgba(124,58,237,.2);border-top-color:#7C3AED;animation:veGira .9s linear infinite}
+.salaMembros{margin-top:12px;text-align:left;display:grid;gap:6px}
+.salaMembros .membro{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:10px;background:rgba(124,58,237,.06)}
+.salaMembros .membro button{height:32px;padding:0 10px;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -1424,7 +1437,15 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
       <div id="qrImg"></div>
       <p class="mu" id="qrLink" style="word-break:break-all;font-size:12px"></p>
       <div class="row"><button class="sec" id="btCopiar">Copiar link</button><button class="sec" id="btCopiarCod">Copiar código</button></div>
+      <p class="mu" style="margin-top:10px">🔒 Ninguém entra sem a sua aprovação: cada pedido aparece aqui na sala para você aprovar ou recusar.</p>
+      <div id="salaMembros" class="salaMembros" hidden></div>
     </div>
+  </div>
+  <div id="salaPedidos" class="salaPedidos" hidden></div>
+  <div id="salaEspera" class="salaEspera" hidden>
+    <div class="card"><i class="giro"></i><b>Pedindo para entrar na sala…</b>
+      <p class="mu">O dono da sala precisa aprovar a sua entrada. Assim que ele aprovar, a conversa começa aqui.</p>
+      <button class="sec" id="salaCancelar">Cancelar</button></div>
   </div>
   <div id="avisoSala" class="aviso" hidden style="margin:10px 12px 0"></div>
   <div id="msgs"></div>

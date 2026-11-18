@@ -153,6 +153,7 @@
   // usa os plugins nativos do Capacitor (SpeechRecognition e TextToSpeech).
   const NATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const plugin = (n) => (NATIVO && window.Capacitor.Plugins && window.Capacitor.Plugins[n]) || null;
+  if (NATIVO) document.documentElement.classList.add('nativo'); // APK: a tela vai por baixo da barra de status
 
   // Imita a SpeechRecognition do navegador usando o plugin nativo. O Android ouve uma frase
   // por vez: quando ela termina, entrega o texto final e o ouvinte abre a próxima.

@@ -1073,6 +1073,14 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 .diagLista div{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:6px 8px;border-radius:8px;background:rgba(124,58,237,.06)}
 .diagLista div.cab{background:transparent;color:var(--mu);font-weight:600}
 #diagResumo b{color:var(--c2)}
+
+/* ===== APK (Android de ponta a ponta): não ficar embaixo da barra de status nem da barra de gestos ===== */
+.nativo header{padding-top:calc(max(env(safe-area-inset-top),26px) + 10px)}
+.nativo #f2f .lado.cima{padding-bottom:max(env(safe-area-inset-top),28px)}
+.nativo #f2f .lado:not(.cima){padding-bottom:max(env(safe-area-inset-bottom),18px)}
+.nativo .abas{padding-bottom:max(env(safe-area-inset-bottom),14px)}
+.nativo #salaTela .barra{padding-bottom:max(env(safe-area-inset-bottom),16px)}
+.nativo .vozEstado{top:calc(max(env(safe-area-inset-top),26px) + 10px)}
 </style>
 </head>
 <body>

@@ -26,7 +26,9 @@
     const vis = c.ordem.filter((id) => !c.ocultas.includes(id));
     c.ordem.forEach((id, i) => { const b = nav.querySelector(`[data-tab="${id}"]`); if (b) { b.style.order = i; b.style.display = c.ocultas.includes(id) ? 'none' : ''; } });
     const a = nav.querySelector('[data-tab="ajustes"]'); if (a) a.style.order = 99;
-    nav.style.gridTemplateColumns = `repeat(${vis.length + 1},1fr)`;
+    // conta só os botões que aparecem (no celular da equipe as abas do dono ficam escondidas)
+    const mostrados = [...nav.querySelectorAll('button')].filter((b) => !b.hidden && b.style.display !== 'none').length;
+    nav.style.gridTemplateColumns = `repeat(${mostrados || vis.length + 1},1fr)`;
     const atual = localStorage.getItem('bar-aba');
     if (atual && c.ocultas.includes(atual)) { const b = nav.querySelector(`[data-tab="${vis[0] || 'ajustes'}"]`); if (b) b.click(); }
   }

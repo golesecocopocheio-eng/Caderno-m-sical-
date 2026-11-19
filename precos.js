@@ -33,6 +33,11 @@
   // valor da garrafa (ou unidade) e da dose, a partir do preço unitário e dos ml
   const garrafaDose = (it) => it.tipo === 'ml' && it.conteudo > 0 ? 'garrafa ' + brl(it.preco) + ' · dose ' + doseMl() + ' ml ' + brl(it.preco * doseMl() / it.conteudo) : '';
 
+  // 🥃 dose: garrafa de X ml rende X/dose doses; custo da dose = preço da garrafa × dose / X
+  // só garrafas servidas em dose (destilados, licores, vinhos): 375 ml ou mais, sem cerveja/refri/água/suco
+  const NAO_DOSE = /cerveja|chopp|refri|refrigerante|agua|água|suco|energ|tonica|tônica|lata|long\s*neck|\bln\b|soda|xarope|leite/i;
+  const doses = (p) => p.tipo === 'ml' && p.conteudo >= 375 && !NAO_DOSE.test(p.nome || p.produto || '') ? { n: Math.floor(p.conteudo / doseMl() * 10) / 10, custo: p.preco * doseMl() / p.conteudo } : null;
+  const doseTxt = (p) => { const d = doses(p); return d ? `🥃 garrafa ${brl(p.preco)} · ${campo(p.conteudo, 0)} ml = ${String(d.n).replace('.', ',')} doses de ${doseMl()} ml · <b>${brl(d.custo)} por dose</b>` : ''; };
   /* ---------- leitor do Android (Google ML Kit): scanner de documentos + texto com posição ---------- */
   const leitorNativo = () => { try { const C = window.Capacitor; return C && C.isPluginAvailable && C.isPluginAvailable('LeitorTexto') ? C.Plugins.LeitorTexto : null; } catch (e) { return null; } };
   // junta as palavras da mesma linha da nota (descrição, qtd, preço un., total ficam em colunas)
@@ -179,6 +184,7 @@
     </div>
     <h1 style="margin-top:26px">📋 Produtos</h1>
     <input id="pcBusca" placeholder="Buscar produto…" style="margin-top:4px">
+    <div class="ft-card" id="pcDoses"></div>
     <div class="ft-card ft-tot" id="pcResumo"></div>
     <div id="pcTabela"></div>`;
 
@@ -353,7 +359,7 @@
       $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d">
         <b>✅ Nota lançada: ${r.n} produto(s) · ${brl(r.total)}</b>
         <p style="margin:6px 0 8px;font-size:13px">${r.nEst} compra(s) somada(s) no Estoque${r.novos ? ' (' + r.novos + ' item(ns) novo(s) no grupo “Compras (notas)”)' : ''} · ${r.nFicha} custo(s) da Ficha técnica atualizado(s) · preços guardados na tabela abaixo.</p>
-        ${ultimaNota.itens.map((x) => `<div class="ft-r"><span>${esc(x.produto)}<small style="display:block;color:#667085">${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)} × ${brl(x.preco)}${x.ficha ? ' · 🍸 ' + esc(x.ficha) : ''}${x.estoque ? ' · 📦 ' + esc(((estoque.items || {})[x.estoque] || {}).n || 'estoque') : ''}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}
+        ${ultimaNota.itens.map((x) => `<div class="ft-r"><span>${esc(x.produto)}<small style="display:block;color:#667085">${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)} × ${brl(x.preco)}${x.ficha ? ' · 🍸 ' + esc(x.ficha) : ''}${x.estoque ? ' · 📦 ' + esc(((estoque.items || {})[x.estoque] || {}).n || 'estoque') : ''}${doses(x) && x.un !== 'KG' ? '<br>' + doseTxt(x) : ''}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}
         <div class="ft-chips" style="margin-top:10px"><button id="pcCorrigir" style="background:#e5e7eb;color:#111">✏️ Corrigir</button><button id="pcDesfazer" style="background:#fee2e2;color:#991b1b">↩️ Desfazer nota</button></div>
         <details style="margin-top:8px"><summary style="font-size:13px">Ver o texto que o app leu</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(window.__barNotaTexto || '')}</pre></details></div>`;
       $('#pcDesfazer', painel).onclick = () => desfazerNota(false);
@@ -398,6 +404,12 @@
       return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div></div>`;
     }).join('');
     $('#pcTabela', painel).innerHTML = linhas || '<p>Nenhum produto ainda. Tire foto de uma nota de compra.</p>';
+    {const gs = Object.values(tabela().produtos || {}).filter((p) => doses(p) && p.un !== 'KG' && (!busca || chaveNome(p.nome).includes(busca))).sort((a, b) => a.nome.localeCompare(b.nome));
+     $('#pcDoses', painel).hidden = !gs.length;
+     $('#pcDoses', painel).innerHTML = `<div class="ft-r" style="align-items:center"><b>🥃 Custo das doses</b><label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px">dose de<input id="pcDoseMl" inputmode="numeric" value="${doseMl()}" style="width:56px;text-align:center;padding:6px">ml</label></div>
+       <div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px"><span style="flex:2">Garrafa</span><span style="flex:1;text-align:right">Preço</span><span style="flex:1;text-align:right">Doses</span><span style="flex:1;text-align:right">Custo/dose</span></div>
+       ${gs.map((p) => { const d = doses(p); return `<div class="ft-r" style="font-size:14px"><span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${campo(p.conteudo, 0)} ml</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><span style="flex:1;text-align:right">${String(d.n).replace('.', ',')}</span><b style="flex:1;text-align:right">${brl(d.custo)}</b></div>`; }).join('')}`;
+     const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); desenharTabela(); } };}
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
   }
   $('#pcBusca', painel).oninput = desenharTabela;

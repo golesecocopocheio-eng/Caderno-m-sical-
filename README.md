@@ -62,7 +62,15 @@ dados ficam salvos só no aparelho.
 
 - `app/firebase-config.js`: configuração do projeto Firebase (`null` = sem sincronização).
 - `app/vendor/`: bibliotecas do Firebase (v10, compat), guardadas no site para funcionar offline.
-- `firestore.rules`: regras de segurança do banco.
+- `firestore.rules`: regras de segurança do banco. **Publique de novo no Console do Firebase**
+  (Firestore Database → Regras → colar → Publicar) sempre que este arquivo mudar.
+
+**Equipe x dono.** Quem não é dono (equipe que abriu a Portaria pelo link ou QR Code, ou entrou com o
+código do bar) só vê a aba Portaria: lança entradas e saídas e desfaz as próprias. Não vê total da
+noite, lista de entradas, resumo de lançados e apagados, outras noites, Backup nem QR Code, e as outras
+abas (Caixa, Estoque, Cardápio, Preços, Fechamento, Backup) ficam escondidas. As regras do Firebase
+garantem isso no banco também: a equipe só lê os valores da entrada e o que ela mesma lançou. O PIN do
+dono só pode ser lido e trocado pelo dono; outro celular vira dono digitando o PIN certo em Ajustes.
 
 **Como configurar (uma vez):**
 
@@ -128,12 +136,10 @@ devolver um item ao que era naquele momento (só o dono). Sem o Firebase, o hist
 aparelho (últimas alterações); com o Firebase, fica na nuvem (`bares/{codigo}/historico`), vale
 para todos os celulares e as regras não deixam editar nem apagar registros.
 
-### Dados iniciais do APK
+### Dados do bar
 
-`android-build/dados-iniciais.json` vai **só dentro do APK** (não vai para o site). Na primeira abertura
-de cada versão desse pacote, o app **preenche o que falta** no aparelho, sem substituir nada que já foi
-lançado: no Caixa, dias que faltam e campos vazios; na Portaria, noites sem nenhuma entrada; no
-Estoque, itens e registros que faltam. Atenção: este repositório é público, então esse arquivo também é.
+Nenhum dado do bar fica neste repositório (ele é público). Os dados ficam no aparelho e, com a
+sincronização ligada, no Firebase. Um celular novo puxa tudo da nuvem ao entrar com o código do bar.
 
 ### Publicação
 

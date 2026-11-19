@@ -1,0 +1,207 @@
+name: Limpeza dos dados do bar (roda uma vez)
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/limpeza-dados.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  limpar:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Apagar as versões do APK que levavam os dados do bar
+        run: |
+          for t in $APAGAR; do
+            gh release delete "$t" --cleanup-tag -y -R "$REPO" && echo "apagada $t" || echo "falhou $t"
+          done
+        env:
+          APAGAR: >-
+            apk-100
+            apk-101
+            apk-13
+            apk-14
+            apk-15
+            apk-16
+            apk-17
+            apk-18
+            apk-19
+            apk-20
+            apk-21
+            apk-22
+            apk-23
+            apk-24
+            apk-26
+            apk-27
+            apk-28
+            apk-29
+            apk-30
+            apk-32
+            apk-34
+            apk-35
+            apk-36
+            apk-37
+            apk-38
+            apk-39
+            apk-40
+            apk-41
+            apk-42
+            apk-43
+            apk-44
+            apk-45
+            apk-46
+            apk-47
+            apk-48
+            apk-49
+            apk-50
+            apk-51
+            apk-52
+            apk-53
+            apk-54
+            apk-55
+            apk-56
+            apk-57
+            apk-58
+            apk-59
+            apk-60
+            apk-61
+            apk-62
+            apk-63
+            apk-64
+            apk-65
+            apk-66
+            apk-67
+            apk-68
+            apk-69
+            apk-70
+            apk-71
+            apk-72
+            apk-73
+            apk-74
+            apk-75
+            apk-76
+            apk-77
+            apk-78
+            apk-79
+            apk-80
+            apk-81
+            apk-82
+            apk-83
+            apk-84
+            apk-85
+            apk-86
+            apk-87
+            apk-88
+            apk-89
+            apk-90
+            apk-91
+            apk-92
+            apk-93
+            apk-94
+            apk-95
+            apk-96
+            apk-97
+            apk-98
+            apk-99
+      - name: Apontar as outras tags para o histórico limpo
+        run: |
+          while read t s; do
+            [ -z "$t" ] && continue
+            gh api -X PATCH "repos/$REPO/git/refs/tags/$t" -f sha="$s" -F force=true >/dev/null && echo "ok $t" || echo "falhou $t"
+          done <<'LISTA'
+          apk-1 05fc234cd3acd90cd6262d4625a0b1bcb9afdb79
+          apk-10 0f51cbf713e97f26c5e8baf2587f3bd7fd9af73d
+          apk-11 0638e2251101a16aa97a1eae955d71869fdb720a
+          apk-12 ffb9df3e7314c22e587777719098c0b755aab4b7
+          apk-2 a5c8a4b3b392a37b00152ef8c9808e873199f29e
+          apk-3 daaf1e8a8ad3625c12f5da792cdafe604699673a
+          apk-4 e2222fa62b636f71c3cf682b3d831a12f7e73c89
+          apk-5 2eb6191d0c367a6179b3a1f2dc02ff9c0e1f82ce
+          apk-6 eace1be70a4fd2b88c1d761822f1b4aaf53ea3d3
+          apk-7 7640c2264e01728be993ea7226f2ed0bdcebfe87
+          apk-8 278a4e7ef2d07ff0a9ee4d43c0f90f5f76d8ba94
+          apk-9 05e07a8fd993cc0a0008aa85421fce6d5280dfd0
+          musica-apk-1 309bfbf1f604b0205c74ac6de16fb20e163b1760
+          musica-apk-10 0dad724e2445c8030f13fe978a679d86583c4303
+          musica-apk-11 c7c665215b28612f3a44fea0134c0d958fbdd9c8
+          musica-apk-12 6d6190db92a1124cadd51761c24e899ec03d3ea3
+          musica-apk-13 d1a6e74b343f4dc0fd8c8eb95004d2d9ff795faa
+          musica-apk-14 699f0e4d836938e59652ea86d1cffd6d2c42712f
+          musica-apk-15 9c9bf19ac17a8de2421a297f1b67d2669220aa1a
+          musica-apk-16 cbb29798f40775e419539d71412d26511c0c64a9
+          musica-apk-17 acfc672da3771500ba07d1e7a256f538661712da
+          musica-apk-18 10177ddbaaf6fcc8b6356f68070630cccb56ece0
+          musica-apk-19 6b29bfc273af9188ce843bcd405a4d686300936d
+          musica-apk-2 b1827ff9222c11666bb0722b0a0f259df39022d4
+          musica-apk-20 c670310506db120acafbdace98004af639326c8d
+          musica-apk-21 bba1d20823d4fae4dfc1e1d3bd47f5f0a5a9d913
+          musica-apk-22 3ca46a07e05c6bcda534564bb1a87c0be506eec8
+          musica-apk-23 e5c9a9465205ce1a76262fa54b7ee62e574b57b5
+          musica-apk-24 3e1bc40052f902419595f15314e13d2d7749dc08
+          musica-apk-25 577a9004fbf5b624d4fe8d73e1a04b521613b447
+          musica-apk-26 70a99fd0a632fe67ffdaf48bd76cf4acf6661e25
+          musica-apk-27 6d55db77a2182a0359189f4285a3e9a8c6ea5719
+          musica-apk-28 81a8194cb828cbba5fea544a9ce47aea611e851b
+          musica-apk-29 44588b5402fbb54213f62f3ac1d2b425c4573d00
+          musica-apk-30 6d8e804e2a803f3db0585644736f09ad2e4e9060
+          musica-apk-31 8061d4b41cb9e67953819518806028b902418c4a
+          musica-apk-32 7fdcb8926ee16d1f144c0b646222c4ef5a267989
+          musica-apk-5 6bbdb6fc042be327a3acae6649cc2fb4ee622005
+          musica-apk-6 2a63309ef57626a4e85e0578faa4b1c6d08e6887
+          musica-apk-7 81db73215f67c64c78742adc94034c2a3f3368b2
+          musica-apk-8 e98a4d1c09ecf73d13aaf285f61a1f7f1b7c42df
+          musica-apk-9 64a2106a3cb05eb25ff16e75d33d17be645ab001
+          tradutor-apk-1 bafb68c01a1b4601f313d119b81d891e7dbf15ac
+          tradutor-apk-10 a2bb59ee1adcf397e842f158588c5807dc0856ce
+          tradutor-apk-11 3d44c69df7d35fbe1d58f99f987521062017cf01
+          tradutor-apk-12 fc78cb1c1e12d20b2c8eaf44ae3289251786db4b
+          tradutor-apk-13 13e3a05c5e5f3d02bc3c953a8c003d7cd5ce5d00
+          tradutor-apk-14 9ee65fe1bdf38fa981667cfee062f2539f1b8ab2
+          tradutor-apk-15 0ed5209f1feccdbbad1385f552d9a0d55bf95f76
+          tradutor-apk-16 dc6c48fb052510cdcb7a66829bdfe6854346e62f
+          tradutor-apk-17 e25322214e23857bea9a7ab33cc32919817e6648
+          tradutor-apk-18 cdacfb8315db78c1ac243d84806d0d4596286dc7
+          tradutor-apk-19 01231eff4f3c55110ead79157d924c171c3d8fbe
+          tradutor-apk-2 caeb521477875cf10729f16d1ad202f288fab8ce
+          tradutor-apk-20 18e01144c2cf5bac444339c85f86febc5bd09337
+          tradutor-apk-21 55ce05e1130492023f6382ef1ac8bcebbc3330a7
+          tradutor-apk-22 622ec09a5b659a696af5fcf011b577bd06fc4bec
+          tradutor-apk-23 52d092e3ef2d8ac4f1995e7f64a236120d4ce97e
+          tradutor-apk-24 bffb1dff0bc9ae6fdf798b1b0b9ee6b1d2ce9655
+          tradutor-apk-25 0038346928c760d6f944d81ef4185927a3c483f6
+          tradutor-apk-26 d639884c952e3eb584a2de24f565cc94c58f3c01
+          tradutor-apk-27 3108cf909516b432bf05371a619de1b86115fc2a
+          tradutor-apk-28 65c879d0d34ce47b744c9f89bfdd9bd23c82fe74
+          tradutor-apk-29 af8ed48ec2d68eb2018e6b2595a756efeb1c9432
+          tradutor-apk-3 a38434689a18c317718e929eea81d29d185f178f
+          tradutor-apk-30 d879f4ed7bd1695cadeeff5d34ac5ab3d71dcd89
+          tradutor-apk-31 28b6363166f048707338126e6684170b580ed14f
+          tradutor-apk-32 cf0fc994e3b5db88fa86fa59ae96b083a38bc5f2
+          tradutor-apk-34 e5eb1293e04a52f498ef63e54e2db562bc89cd6b
+          tradutor-apk-36 9db01c33aed82e26136a217eb4511c7dde954e89
+          tradutor-apk-37 508815593a94f3c198e9e5ec42560da10c8b1366
+          tradutor-apk-39 245e6d05ff2e39887f757135ffcba914f28e8806
+          tradutor-apk-4 0c3e5e9ceca3249d2be6dbee3c6b88b219da562c
+          tradutor-apk-44 b6dabf7b4be13bb791b660c14dca1be486ef9c84
+          tradutor-apk-5 e69eacc7323d3a50c6ed7bbfa7aa02799c521591
+          tradutor-apk-51 9bbe3e5f961fdd3c57e5d5094b51eb2f02812379
+          tradutor-apk-53 c6c570fa8ac2eda824eca289530ba95a751ab9f2
+          tradutor-apk-54 bdfa1906ba4d4eca68a71311e1805306c5f49095
+          tradutor-apk-57 5c2530b53ecc7a6f0d13521d9b61bbbe8d136d59
+          tradutor-apk-58 407cdcd1aad5a82cb87531180cfb7aab8e052b3d
+          tradutor-apk-59 2a316f74c5c31b6636af5bf0f7f6d87264fc23f7
+          tradutor-apk-6 58c146f4bb2c93d8197d2e5b12d834d9678747ee
+          tradutor-apk-60 e4dbab6dfb2f61a2853677582abfbd7870b700f2
+          tradutor-apk-61 b7d07421ce892e486e1c2f455627589a62d9cada
+          tradutor-apk-62 de5e888d8d861e00932b337e36b1257f5328c753
+          tradutor-apk-63 536e3d171d2771a091c276a2ff33fe90f8e5f642
+          tradutor-apk-64 1d722876474004faa21770109a8620fa85e33dc4
+          tradutor-apk-7 0ca7cef65fc3316b7768670cc96779c4422b9f8a
+          tradutor-apk-8 14bc67cdfdf817f43121be003d0515d5c74d980a
+          tradutor-apk-9 b4e4ba5999aa7b036e2fdf5643883b5b32efcaf5
+          LISTA

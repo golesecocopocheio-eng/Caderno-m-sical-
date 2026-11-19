@@ -33,6 +33,34 @@
   // valor da garrafa (ou unidade) e da dose, a partir do preço unitário e dos ml
   const garrafaDose = (it) => it.tipo === 'ml' && it.conteudo > 0 ? 'garrafa ' + brl(it.preco) + ' · dose ' + doseMl() + ' ml ' + brl(it.preco * doseMl() / it.conteudo) : '';
 
+  // 🥃 dose: garrafa de X ml rende X/dose doses; custo da dose = preço da garrafa × dose / X
+  // só garrafas servidas em dose (destilados, licores, vinhos): 375 ml ou mais, sem cerveja/refri/água/suco
+  const NAO_DOSE = /cerveja|chopp|refri|refrigerante|agua|água|suco|energ|tonica|tônica|lata|long\s*neck|\bln\b|soda|xarope|leite/i;
+  const doses = (p) => p.tipo === 'ml' && p.conteudo >= 375 && !NAO_DOSE.test(p.nome || p.produto || '') ? { n: Math.floor(p.conteudo / doseMl() * 10) / 10, custo: p.preco * doseMl() / p.conteudo } : null;
+  const doseTxt = (p) => { const d = doses(p); return d ? `🥃 garrafa ${brl(p.preco)} · ${campo(p.conteudo, 0)} ml = ${String(d.n).replace('.', ',')} doses de ${doseMl()} ml · <b>${brl(d.custo)} por dose</b>` : ''; };
+  /* ---------- leitor do Android (Google ML Kit): scanner de documentos + texto com posição ---------- */
+  const leitorNativo = () => { try { const C = window.Capacitor; return C && C.isPluginAvailable && C.isPluginAvailable('LeitorTexto') ? C.Plugins.LeitorTexto : null; } catch (e) { return null; } };
+  // junta as palavras da mesma linha da nota (descrição, qtd, preço un., total ficam em colunas)
+  function linhasParaTexto(linhas) {
+    const L = (linhas || []).filter((l) => l && l.t && l.h > 0).map((l) => ({ t: String(l.t), x: +l.x || 0, h: +l.h, cy: (+l.y || 0) + (+l.h) / 2 }));
+    if (!L.length) return '';
+    const hs = L.map((l) => l.h).sort((a, b) => a - b), hm = hs[Math.floor(hs.length / 2)] || 10;
+    L.sort((a, b) => a.cy - b.cy);
+    const rows = [];
+    for (const l of L) { const r = rows[rows.length - 1]; if (r && Math.abs(r.cy - l.cy) < hm * 0.55) { r.it.push(l); r.cy = r.it.reduce((s, x) => s + x.cy, 0) / r.it.length; } else rows.push({ cy: l.cy, it: [l] }); }
+    return rows.map((r) => r.it.sort((a, b) => a.x - b.x).map((x) => x.t).join('  ')).join('\n');
+  }
+  window.__barNotaLinhas = linhasParaTexto; // usado nos testes
+  async function paraBase64(arq, max) {
+    const url = URL.createObjectURL(arq);
+    try {
+      const img = await new Promise((ok, er) => { const i = new Image(); i.onload = () => ok(i); i.onerror = er; i.src = url; });
+      const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.9);
+    } finally { URL.revokeObjectURL(url); }
+  }
+
   /* ---------- leitura da nota ---------- */
   const PULAR = /\b(TOTAL|SUBTOTAL|SUB-TOTAL|DESCONTO|ACRESCIMO|TROCO|ICMS|IPI|PIS|COFINS|CNPJ|CPF|IE\b|VALOR A PAGAR|FORMA DE PAG|DINHEIRO|CARTAO|CREDITO|DEBITO|PIX|TRIBUTOS|FRETE|QTD\.? TOTAL|ITENS)\b/;
   const UNID = /\b(UN|UND|UNID|CX|KG|PCT|PC|PT|FD|FDO|GF|GFA|LT|DZ|SC|BD|BJ)\b/;
@@ -55,7 +83,8 @@
       const vs = (L.match(VALOR) || []).map(num);
       if (!vs.length) return;
       // descrição: começa no primeiro texto com letras, até o primeiro número longo (NCM) ou valor
-      let desc = L.replace(/^\s*\d{1,14}\s+/, '');
+      // tira o número do item e o código de barras (EAN) do começo
+      let desc = L.replace(/^\s*(\d{1,4}\s+)?(\d{6,14}\s+)?/, '');
       const descInteira = desc;
       const corte = desc.search(/\s\d{6,}\s|\s\d+,\d{2,4}\b|\s\d+(?:[.,]\d+)?\s+(UN|UND|UNID|CX|KG|PCT|PC|FD|DZ)\b|\s(UN|UND|UNID|CX|KG|PCT|PC|FD|DZ)\s+\d|\s(UN|UND|UNID|CX|KG|PCT|PC|FD|DZ)\s*$/);
       if (corte > 2) desc = desc.slice(0, corte);
@@ -80,7 +109,8 @@
       if (!qtd && vs.length === 1) { qtd = 1; unit = vs[0]; total = vs[0]; }
       if (!total) return;
       const um = (L.match(UNID) || [])[1] || 'UN';
-      const c = conteudoDe(desc) || conteudoDe(descInteira.replace(/\s\d+(?:[.,]\d+)?\s*X\s.*$/, '')) || (um === 'KG' ? { conteudo: 1000, tipo: 'g' } : null);
+      // comprado por kg: o preço é por kg (1000 g), não importa o peso da linha
+      const c = um === 'KG' ? { conteudo: 1000, tipo: 'g' } : (conteudoDe(desc) || conteudoDe(descInteira.replace(/\s\d+(?:[.,]\d+)?\s*X\s.*$/, '')));
       itens.push({ produto: desc, qtd, un: um === 'UND' || um === 'UNID' ? 'UN' : um, preco: Math.round(unit * 100) / 100, total, conteudo: c ? c.conteudo : 0, tipo: c ? c.tipo : 'un' });
     });
     return itens;
@@ -104,7 +134,11 @@
       const s = comum.length / tn.length + comum.length * 0.05;
       if (comum.length && s > score) { score = s; best = id; }
     });
-    return score >= 0.5 ? best : '';
+    if (score >= 0.5) return best;
+    // marca/nome marcante (6+ letras) que aparece em um único item: liga (ex.: HEINEKEN → Heineken long neck)
+    const fortes = td.filter((t) => t.length >= 6 && !/^(cerveja|bebida|garrafa|refrigerante|tahiti)$/.test(t));
+    for (const f of fortes) { const achou = opcoes.filter(([, nome]) => tokens(nome).includes(f)); if (achou.length === 1) return achou[0][0]; }
+    return '';
   }
   // rendimento padrão (unidades por kg) para itens comprados por peso e usados por unidade
   const RENDE_KG = [[/limao siciliano/, 6], [/limao/, 8], [/laranja/, 5], [/maracuja/, 6], [/abacaxi/, 0.7], [/gengibre/, 20], [/manjericao|capim/, 40]];
@@ -137,10 +171,11 @@
     <h1>💲 Tabela de preços</h1>
     <p>Tire foto da nota de compra. O app lê cada produto, atualiza o <b>custo das receitas</b> da Ficha técnica, soma no <b>Estoque</b> e guarda o preço aqui.</p>
     <div class="ft-chips" style="margin-top:12px">
-      <label class="ft-foto-btn" style="margin:0!important;background:#ec4899">📷 Foto da nota<input type="file" id="pcCam" accept="image/*" capture="environment" hidden></label>
+      <button class="ft-foto-btn" id="pcScan" style="margin:0!important;background:#ec4899;border:0;font-size:16px">📷 Escanear nota</button><input type="file" id="pcCam" accept="image/*" capture="environment" hidden>
       <label class="ft-foto-btn" style="margin:0!important;background:#9d174d">🖼️ Galeria<input type="file" id="pcArq" accept="image/*" multiple hidden></label>
     </div>
     <button class="sec" id="pcManual">✍️ Adicionar produto sem foto</button>
+    <div id="pcResultado"></div>
     <div id="pcLeitura"></div>
     <div id="pcAcoes" hidden>
       <label>Fornecedor / número da nota<input id="pcNF" placeholder="ex.: Zumbi Atacado NF 1234"></label>
@@ -149,6 +184,7 @@
     </div>
     <h1 style="margin-top:26px">📋 Produtos</h1>
     <input id="pcBusca" placeholder="Buscar produto…" style="margin-top:4px">
+    <div class="ft-card" id="pcDoses"></div>
     <div class="ft-card ft-tot" id="pcResumo"></div>
     <div id="pcTabela"></div>`;
 
@@ -219,74 +255,132 @@
   });
   $('#pcManual', painel).onclick = async () => { await carregarFontes(); const it = { produto: 'Produto', qtd: 1, un: 'UN', preco: 0, total: 0, conteudo: 0, tipo: 'ml' }; sugerir(it); rascunho.push(it); desenharLeitura(); };
 
+  // lê uma foto: leitor do Android (rápido, com posição) ou o do navegador
+  async function textoDaFoto(arq, aoProgredir) {
+    const nat = leitorNativo();
+    if (nat) { aoProgredir('Lendo a nota…'); const r = await nat.ler({ imagem: await paraBase64(arq, 2400) }); return linhasParaTexto(r.linhas) || r.texto || ''; }
+    const r = await window.__barOCR(arq, (m) => { if (m.status === 'recognizing text') aoProgredir('Lendo… ' + Math.round(m.progress * 100) + '%'); }, 2400);
+    return r.texto;
+  }
+  function mostrarLendo(t) { $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #ec4899"><b>📷 ${esc(t)}</b></div>`; }
+  async function processarTextos(textos) {
+    await carregarFontes();
+    const itens = [];
+    textos.forEach((t) => itens.push(...lerNota(t)));
+    window.__barNotaTexto = textos.join('\n----\n');
+    if (!itens.length) {
+      $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #b45309"><b>❌ Não achei produtos com preço nesta nota.</b><p style="margin:6px 0 0">Tente de novo com a nota inteira, reta e com luz, ou adicione sem foto.</p><details><summary>Ver o texto que o app leu</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(window.__barNotaTexto)}</pre></details></div>`;
+      return;
+    }
+    itens.forEach(sugerir);
+    await distribuir(itens);
+  }
+  // 📷 Escanear nota: scanner do Google (bordas, recorte, nitidez) quando existe; senão a câmera
+  $('#pcScan', painel).onclick = async () => {
+    const nat = leitorNativo();
+    if (!nat || typeof nat.digitalizar !== 'function') { $('#pcCam', painel).click(); return; }
+    let r;
+    try { r = await nat.digitalizar({ paginas: 6 }); }
+    catch (e) { const c = (e && (e.code || '')) + (e && e.message || ''); if (/CANCEL/i.test(c)) return; if (/INDISPON/i.test(c)) { $('#pcCam', painel).click(); return; } alert('Não consegui escanear: ' + (e.message || e)); return; }
+    const pags = (r && r.paginas) || []; if (!pags.length) return;
+    mostrarLendo('Montando a nota…');
+    await processarTextos(pags.map((p) => linhasParaTexto(p.linhas) || p.texto || ''));
+  };
   async function lerFotos(e) {
     const arquivos = [...e.target.files]; e.target.value = '';
-    await carregarFontes();
-    for (const arq of arquivos) {
-      const marca = { lendo: 'Preparando a foto…' };
-      rascunho.push(marca); desenharLeitura();
-      try {
-        const r = await window.__barOCR(arq, (m) => { if (m.status === 'recognizing text') { marca.lendo = 'Lendo… ' + Math.round(m.progress * 100) + '% (a primeira vez demora um pouco)'; desenharLeitura(); } }, 2400);
-        const itens = lerNota(r.texto);
-        itens.forEach(sugerir);
-        const pos = rascunho.indexOf(marca);
-        rascunho.splice(pos, 1, ...itens);
-        if (!itens.length) $('#pcMsg', painel) && ($('#pcMsg', painel).textContent = 'Não encontrei produtos com preço nesta foto. Tente uma foto mais de perto, com a nota reta e bem iluminada, ou adicione sem foto.');
-        window.__barNotaTexto = r.texto;
-      } catch (err) {
-        rascunho.splice(rascunho.indexOf(marca), 1);
-        alert('Não consegui ler esta foto: ' + (err.message || err));
-      }
-      desenharLeitura();
+    if (!arquivos.length) return;
+    const textos = [];
+    for (const [k, arq] of arquivos.entries()) {
+      try { textos.push(await textoDaFoto(arq, (t) => mostrarLendo((arquivos.length > 1 ? 'Foto ' + (k + 1) + ' de ' + arquivos.length + ': ' : '') + t))); }
+      catch (err) { alert('Não consegui ler esta foto: ' + (err.message || err)); }
     }
+    if (textos.length) await processarTextos(textos);
   }
   $('#pcCam', painel).onchange = lerFotos;
   $('#pcArq', painel).onchange = lerFotos;
   $('#pcNF', painel).oninput = (e) => (nf = e.target.value);
 
-  /* ---------- aplicar ---------- */
+  /* ---------- aplicar (distribuir) ---------- */
+  // Guarda os preços na tabela, atualiza o custo da Ficha técnica e soma no Estoque.
+  // Produto que não existe no Estoque vira item novo no grupo "Compras (notas)".
+  let ultimaNota = null;
+  async function aplicarItens(itens, criarNoEstoque) {
+    const m = meta(), t = Date.now(), d = hoje();
+    const antes = { custo: JSON.stringify(m.custo || {}), tab: JSON.stringify(m.tabPrecos || { produtos: {}, alias: {} }), price: {} };
+    m.custo = m.custo || {}; m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} };
+    const est = { mov: {}, price: {}, pg: {}, items: {} };
+    let novos = 0;
+    itens.forEach((it, i) => {
+      if (!it.estoque && criarNoEstoque) {
+        const id = 'i_nf' + t.toString(36) + i;
+        est.items[id] = { n: it.produto.slice(0, 60), g: 'Compras (notas)', base: 0, min: 0, bt: 0 };
+        it.estoque = id; it.somar = true; novos++;
+      }
+      const chave = chaveNome(it.produto);
+      if (it.ficha) { const c = custoFicha(it); m.custo[it.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }; }
+      if (it.estoque && it.somar) {
+        const id = 'nfp' + t.toString(36) + i;
+        est.mov['m' + id] = { d: it.qtd, i: it.estoque, k: 'p', t: t + i };
+        est.pg['p' + id] = { i: it.estoque, nf: nf || ('Nota ' + d.split('-').reverse().join('/')), q: it.qtd, t: t + i, u: it.qtd, v: campo(it.qtd * it.preco) };
+      }
+      if (it.estoque) { antes.price[it.estoque] = ((estoque.price || {})[it.estoque]) || null; est.price[it.estoque] = Object.assign({}, (estoque.price || {})[it.estoque] || {}, { pu: campo(it.preco).replace(/,00$/, '') }); }
+      m.tabPrecos.produtos[chave] = { nome: it.produto, un: it.un, preco: it.preco, conteudo: it.conteudo, tipo: it.tipo, ficha: it.ficha || '', estoque: it.estoque || '', rende: it.rende || 1, data: d, nf: nf || '' };
+      m.tabPrecos.alias[chave] = { ficha: it.ficha || '', estoque: it.estoque || '', conteudo: it.conteudo, tipo: it.tipo, rende: it.rende || 1, mlkg: it.mlkg || 0 };
+    });
+    localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
+    const temEst = ['mov', 'price', 'pg', 'items'].some((k) => Object.keys(est[k]).length);
+    if (temEst) await window.__barImportar({ apps: { estoque: est } });
+    ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
+    ultimaNota = { antes, est, itens: itens.map((x) => ({ ...x })) };
+    return { n: itens.length, nFicha: itens.filter((x) => x.ficha).length, nEst: Object.keys(est.mov).length, novos, total: itens.reduce((s, x) => s + x.qtd * x.preco, 0) };
+  }
+  async function desfazerNota(editar) {
+    const u = ultimaNota; if (!u) return;
+    const m = meta(); m.custo = JSON.parse(u.antes.custo); m.tabPrecos = JSON.parse(u.antes.tab);
+    localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
+    try {
+      await window.__barApagar('estoque', 'mov', Object.keys(u.est.mov));
+      await window.__barApagar('estoque', 'pg', Object.keys(u.est.pg));
+      await window.__barApagar('estoque', 'items', Object.keys(u.est.items));
+      const volta = {}; Object.entries(u.antes.price).forEach(([id, v]) => { if (v) volta[id] = v; });
+      if (Object.keys(volta).length) await window.__barImportar({ apps: { estoque: { price: volta } } });
+    } catch (e) {}
+    ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
+    ultimaNota = null; await carregarFontes();
+    if (editar) { rascunho = u.itens.map((x) => { const y = { ...x }; if (u.est.items[y.estoque]) { y.estoque = ''; y.somar = false; } return y; }); desenharLeitura(); }
+    $('#pcResultado', painel).innerHTML = `<div class="ft-card"><b>↩️ Nota desfeita.</b>${editar ? ' Corrija abaixo e toque em ✅ Aplicar.' : ''}</div>`;
+    desenharTabela();
+  }
+  async function distribuir(itens) {
+    mostrarLendo('Distribuindo: preços, ficha técnica e estoque…');
+    try {
+      const r = await aplicarItens(itens, true);
+      await carregarFontes(); desenharTabela();
+      $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d">
+        <b>✅ Nota lançada: ${r.n} produto(s) · ${brl(r.total)}</b>
+        <p style="margin:6px 0 8px;font-size:13px">${r.nEst} compra(s) somada(s) no Estoque${r.novos ? ' (' + r.novos + ' item(ns) novo(s) no grupo “Compras (notas)”)' : ''} · ${r.nFicha} custo(s) da Ficha técnica atualizado(s) · preços guardados na tabela abaixo.</p>
+        ${ultimaNota.itens.map((x) => `<div class="ft-r"><span>${esc(x.produto)}<small style="display:block;color:#667085">${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)} × ${brl(x.preco)}${x.ficha ? ' · 🍸 ' + esc(x.ficha) : ''}${x.estoque ? ' · 📦 ' + esc(((estoque.items || {})[x.estoque] || {}).n || 'estoque') : ''}${doses(x) && x.un !== 'KG' ? '<br>' + doseTxt(x) : ''}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}
+        <div class="ft-chips" style="margin-top:10px"><button id="pcCorrigir" style="background:#e5e7eb;color:#111">✏️ Corrigir</button><button id="pcDesfazer" style="background:#fee2e2;color:#991b1b">↩️ Desfazer nota</button></div>
+        <details style="margin-top:8px"><summary style="font-size:13px">Ver o texto que o app leu</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(window.__barNotaTexto || '')}</pre></details></div>`;
+      $('#pcDesfazer', painel).onclick = () => desfazerNota(false);
+      $('#pcCorrigir', painel).onclick = () => desfazerNota(true);
+    } catch (err) { $('#pcResultado', painel).innerHTML = `<div class="ft-card"><b>Não consegui lançar: ${esc(err.message || err)}</b></div>`; }
+  }
+  window.__barNotaDistribuir = processarTextos; // usado nos testes
+
+  // botão Aplicar (produtos adicionados à mão ou corrigidos)
   let armado = false;
   $('#pcAplicar', painel).onclick = async () => {
     const msg = $('#pcMsg', painel);
     const itens = rascunho.filter((x) => !x.lendo && x.produto && x.preco > 0);
     if (!itens.length) { msg.textContent = 'Nenhum produto com preço para aplicar.'; return; }
-    const nFicha = itens.filter((x) => x.ficha).length, nEst = itens.filter((x) => x.estoque && x.somar).length;
-    if (!armado) {
-      armado = true; setTimeout(() => (armado = false), 8000);
-      msg.textContent = `Vou guardar ${itens.length} preço(s), atualizar ${nFicha} ingrediente(s) da ficha técnica e somar ${nEst} compra(s) no estoque. Toque em Aplicar de novo para confirmar.`;
-      return;
-    }
+    if (!armado) { armado = true; setTimeout(() => (armado = false), 8000); msg.textContent = `Vou guardar ${itens.length} preço(s) e lançar na ficha técnica e no estoque. Toque em Aplicar de novo para confirmar.`; return; }
     armado = false; msg.textContent = 'Aplicando…';
     try {
-      const m = meta(), t = Date.now(), d = hoje();
-      m.custo = m.custo || {}; m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} };
-      const est = { mov: {}, price: {}, pg: {} };
-      itens.forEach((it, i) => {
-        const chave = chaveNome(it.produto);
-        // ficha técnica
-        if (it.ficha) {
-          const c = custoFicha(it);
-          // valores menores que R$ 1 vão com 4 casas: o Caixa lê "0,874" como 874 (três casas = milhar)
-          m.custo[it.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' };
-        }
-        // estoque: compra + preço + registro
-        if (it.estoque && it.somar) {
-          const id = 'nfp' + t.toString(36) + i;
-          est.mov['m' + id] = { d: it.qtd, i: it.estoque, k: 'p', t: t + i };
-          est.pg['p' + id] = { i: it.estoque, nf: nf || ('Nota ' + d.split('-').reverse().join('/')), q: it.qtd, t: t + i, u: it.qtd, v: campo(it.qtd * it.preco) };
-        }
-        if (it.estoque) est.price[it.estoque] = Object.assign({}, (estoque.price || {})[it.estoque] || {}, { pu: campo(it.preco).replace(/,00$/, '') });
-        // tabela de preços e memória dos vínculos
-        m.tabPrecos.produtos[chave] = { nome: it.produto, un: it.un, preco: it.preco, conteudo: it.conteudo, tipo: it.tipo, ficha: it.ficha || '', estoque: it.estoque || '', rende: it.rende || 1, data: d, nf: nf || '' };
-        m.tabPrecos.alias[chave] = { ficha: it.ficha || '', estoque: it.estoque || '', conteudo: it.conteudo, tipo: it.tipo, rende: it.rende || 1, mlkg: it.mlkg || 0 };
-      });
-      localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
-      if (Object.keys(est.mov).length || Object.keys(est.price).length) await window.__barImportar({ apps: { estoque: est } });
-      ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
+      const r = await aplicarItens(itens, false);
       rascunho = []; nf = ''; $('#pcNF', painel).value = '';
-      await carregarFontes();
-      desenharLeitura(); desenharTabela();
-      msg.textContent = `✅ Pronto: ${itens.length} preço(s) guardado(s), ${nFicha} ingrediente(s) da ficha técnica e ${nEst} compra(s) no estoque.`;
+      await carregarFontes(); desenharLeitura(); desenharTabela();
+      msg.textContent = `✅ Pronto: ${r.n} preço(s) guardado(s), ${r.nFicha} ingrediente(s) da ficha técnica e ${r.nEst} compra(s) no estoque.`;
       $('#pcAcoes', painel).hidden = false;
     } catch (err) { msg.textContent = 'Não consegui aplicar: ' + (err.message || err); }
   };
@@ -310,6 +404,12 @@
       return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div></div>`;
     }).join('');
     $('#pcTabela', painel).innerHTML = linhas || '<p>Nenhum produto ainda. Tire foto de uma nota de compra.</p>';
+    {const gs = Object.values(tabela().produtos || {}).filter((p) => doses(p) && p.un !== 'KG' && (!busca || chaveNome(p.nome).includes(busca))).sort((a, b) => a.nome.localeCompare(b.nome));
+     $('#pcDoses', painel).hidden = !gs.length;
+     $('#pcDoses', painel).innerHTML = `<div class="ft-r" style="align-items:center"><b>🥃 Custo das doses</b><label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px">dose de<input id="pcDoseMl" inputmode="numeric" value="${doseMl()}" style="width:56px;text-align:center;padding:6px">ml</label></div>
+       <div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px"><span style="flex:2">Garrafa</span><span style="flex:1;text-align:right">Preço</span><span style="flex:1;text-align:right">Doses</span><span style="flex:1;text-align:right">Custo/dose</span></div>
+       ${gs.map((p) => { const d = doses(p); return `<div class="ft-r" style="font-size:14px"><span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${campo(p.conteudo, 0)} ml</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><span style="flex:1;text-align:right">${String(d.n).replace('.', ',')}</span><b style="flex:1;text-align:right">${brl(d.custo)}</b></div>`; }).join('')}`;
+     const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); desenharTabela(); } };}
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
   }
   $('#pcBusca', painel).oninput = desenharTabela;
@@ -318,7 +418,7 @@
   window.__barPrecosAtualizar = async () => { await carregarFontes(); desenharLeitura(); desenharTabela(); };
   window.__barAbrirNota = () => {
     const b = document.querySelector('nav [data-tab=precos]'); if (b) b.click();
-    $('#pcCam', painel).click();
+    $('#pcScan', painel).click();
   };
   window.__barNotaLer = lerNota; // usado nos testes
   desenharTabela();

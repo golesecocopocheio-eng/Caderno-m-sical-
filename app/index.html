@@ -35,6 +35,7 @@ iframe.on,.painel.on{display:block}
 @media (prefers-color-scheme:dark){.painel input,.painel .info{background:#1a1b27;color:#ecedf6;border-color:#2c2e40}.painel p,.painel label{color:#9aa0b5}}
 nav{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;padding:8px 8px calc(8px + var(--sab));background:linear-gradient(180deg,#1e0b36,#12051f);border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(15,16,24,.18);position:relative;z-index:2}
 nav[hidden]{display:none}
+nav button[hidden]{display:none!important}
 nav button{border:0;background:none;color:#9aa0b5;padding:7px 0 6px;font:600 10.5px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;transition:background .2s,color .2s}
 nav button span{font-size:23px;line-height:1;transition:transform .2s}
 nav button.on{color:#fcd34d;background:linear-gradient(180deg,rgba(245,158,11,.22),rgba(245,158,11,.08));box-shadow:inset 0 0 0 1px rgba(252,211,77,.25)}
@@ -321,6 +322,7 @@ async function iniciar(){
   }
   if(SO_PORTARIA){
     document.querySelectorAll('nav button').forEach(b=>b.hidden=!ABAS_EQUIPE.includes(b.dataset.tab));
+    document.getElementById('nav').style.gridTemplateColumns='repeat('+ABAS_EQUIPE.length+',1fr)';
     document.querySelectorAll('iframe').forEach(f=>{if(f.id!=='f-portaria')f.remove()});
   }
   carregarAbas();mostrarInfo();

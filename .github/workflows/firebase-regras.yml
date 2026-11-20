@@ -1,0 +1,45 @@
+name: Publicar regras do Firebase (firestore.rules)
+
+# Publica o firestore.rules no projeto bar-conect sempre que ele muda neste ramo.
+# Precisa do segredo FIREBASE_SERVICE_ACCOUNT (chave da conta de serviço do Firebase, em JSON)
+# em Settings → Secrets and variables → Actions. Sem o segredo, o passo de publicar é pulado.
+on:
+  push:
+    branches: [ccr-4277b803-nnu57g]
+    paths: ['firestore.rules', 'firebase.json', '.github/workflows/firebase-regras.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-regras
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    env:
+      CHAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Falta a chave do Firebase
+        if: env.CHAVE == ''
+        run: |
+          echo "::warning::O segredo FIREBASE_SERVICE_ACCOUNT ainda não foi criado. As regras NÃO foram publicadas."
+          echo "Firebase → Configurações do projeto → Contas de serviço → Gerar nova chave privada;"
+          echo "GitHub → Settings → Secrets and variables → Actions → New repository secret: FIREBASE_SERVICE_ACCOUNT (cole o JSON)."
+
+      - uses: actions/setup-node@v4
+        if: env.CHAVE != ''
+        with:
+          node-version: 22
+
+      - name: Publicar firestore.rules no projeto bar-conect
+        if: env.CHAVE != ''
+        run: |
+          printf '%s' "$CHAVE" > "$RUNNER_TEMP/chave.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/chave.json"
+          npx --yes firebase-tools@15 deploy --only firestore:rules --project bar-conect --non-interactive
+          rm -f "$RUNNER_TEMP/chave.json"

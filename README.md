@@ -109,6 +109,11 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   se aprovar sozinho. Testado com o emulador do Firebase (12 verificações) com as regras unificadas.
 - **`firestore.rules` unificado:** junta a proteção do app do bar feita no `main` (dono, PIN do dono, equipe só com a
   Portaria) com as regras do Clã Speak (salas com aprovação e backup `copias`). Publique este arquivo inteiro.
+- **Publicação automática das regras do Firebase** (`.github/workflows/firebase-regras.yml` + `firebase.json`): quando o
+  `firestore.rules` muda no ramo do Clã Speak (ou ao rodar o workflow manualmente), ele é publicado no projeto
+  `bar-conect`. Precisa, uma vez, do segredo `FIREBASE_SERVICE_ACCOUNT` (Firebase → Configurações do projeto → Contas de
+  serviço → Gerar nova chave privada; GitHub → Settings → Secrets and variables → Actions). Sem o segredo, o workflow
+  só avisa e não publica.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
 - **APK Android próprio ("Clã Speak", logo redondo da lua amarela em roxo-escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta

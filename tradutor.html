@@ -1134,6 +1134,12 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 .turno .orig{font-size:13px;color:var(--mu)}
 .turno .trad{font-size:16px;font-weight:600;margin:2px 0 6px}
 .turno button{height:32px;padding:0 10px;font-size:12.5px}
+
+.erroApp{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:20000;padding:10px 12px;border-radius:12px;background:#7F1D1D;color:#fff;font-size:12.5px;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+/* Segurança: a abertura some sozinha mesmo se algum script falhar, e nunca bloqueia toques depois */
+#abertura{animation:abSome .01s 6s forwards}
+@keyframes abSome{to{visibility:hidden;opacity:0}}
+#abertura.sai,#abertura[style*="hidden"]{pointer-events:none}
 </style>
 </head>
 <body>
@@ -1521,6 +1527,11 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
   <button data-aba="ajustes"><b>⚙️</b>Ajustes</button>
 </nav>
 
+<script>
+// Mostra na tela qualquer erro do app (para diagnóstico rápido no celular)
+(function(){var n=0;function mostrar(m){if(n++>3)return;try{var d=document.createElement('div');d.className='erroApp';d.textContent='⚠️ Erro no app: '+String(m).slice(0,180);d.onclick=function(){d.remove()};document.body.appendChild(d);setTimeout(function(){d.remove()},12000)}catch(e){}}
+window.addEventListener('error',function(e){mostrar((e.message||'')+(e.filename?' ('+e.filename.split('/').pop()+':'+e.lineno+')':''))});})();
+</script>
 <script src="firebase-config.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="tradutor.js"></script>

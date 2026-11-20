@@ -320,7 +320,9 @@
   async function vozNativa(lingua) {
     const TTS = plugin('TextToSpeech'); if (!TTS) return null;
     const g = prefVoz().genero; if (g === 'auto') return null;
-    try { if (!vozesNativas) vozesNativas = ((await TTS.getSupportedVoices()) || {}).voices || []; } catch (e) { vozesNativas = []; }
+    try {
+      if (!vozesNativas) vozesNativas = ((await Promise.race([TTS.getSupportedVoices(), new Promise((ok) => setTimeout(() => ok(null), 1500))])) || {}).voices || [];
+    } catch (e) { vozesNativas = []; }
     const alvo = lingua.toLowerCase(), nl = (l) => String(l || '').replace('_', '-').toLowerCase();
     let melhor = -1, nota = -99;
     vozesNativas.forEach((v, i) => {
@@ -1135,11 +1137,14 @@
     if (nomeEl.value.trim()) entrarSala();
     else { nomeEl.focus(); gatoInicio.dizer('Convite para a sala ' + cod + ': digite seu nome e toque em Entrar na sala.'); }
   }
-  const AppP = plugin('App');
-  if (AppP) {
-    AppP.addListener('appUrlOpen', (d) => abrirConvite(salaDoLink(d && d.url))).catch(() => {});
-    AppP.getLaunchUrl().then((d) => d && d.url && setTimeout(() => abrirConvite(salaDoLink(d.url)), 600)).catch(() => {});
-  }
+  // Protegido: se o plugin do Android responder diferente, o resto do app continua funcionando
+  try {
+    const AppP = plugin('App');
+    if (AppP) {
+      Promise.resolve().then(() => AppP.addListener('appUrlOpen', (d) => abrirConvite(salaDoLink(d && d.url)))).catch(() => {});
+      Promise.resolve().then(() => AppP.getLaunchUrl()).then((d) => d && d.url && setTimeout(() => abrirConvite(salaDoLink(d.url)), 600)).catch(() => {});
+    }
+  } catch (e) { console.warn('Link de convite indisponível', e); }
   // No navegador do Android, quem tem o app instalado pode abrir a sala nele
   if (!NATIVO && params.get('sala') && /Android/i.test(navigator.userAgent)) {
     const cod = params.get('sala').toUpperCase().replace(/[^A-Z0-9]/g, '');

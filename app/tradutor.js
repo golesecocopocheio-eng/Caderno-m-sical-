@@ -748,11 +748,18 @@
     const entrada = Date.now();
     const limite = (p, ms) => Promise.race([p, new Promise((_, err) => setTimeout(() => err(new Error('tempo esgotado')), ms))]);
     // ----- Autorização: quem cria a sala é o dono; os outros pedem para entrar e esperam a aprovação -----
-    let souDono = false;
-    const meta = await limite(base.get(), 15000);
-    if (!meta.exists) { await limite(base.set({ dono: user.uid, criado: Date.now() }), 15000); souDono = true; }
-    else souDono = meta.data().dono === user.uid;
-    if (!souDono) {
+    // Se as regras publicadas no Firebase ainda não têm a aprovação (salas/{sala} com dono), a sala funciona
+    // no modo aberto: quem tem o código ou o link entra direto. A aprovação liga sozinha quando as regras novas forem publicadas.
+    let souDono = false, aprovacao = true;
+    try {
+      const meta = await limite(base.get(), 15000);
+      if (!meta.exists) { await limite(base.set({ dono: user.uid, criado: Date.now() }), 15000); souDono = true; }
+      else souDono = meta.data().dono === user.uid;
+    } catch (e) {
+      if (e && e.code === 'permission-denied') { aprovacao = false; console.warn('Sala sem aprovação: regras do Firebase antigas'); }
+      else throw e;
+    }
+    if (aprovacao && !souDono) {
       const pedido = base.collection('membros').doc(user.uid);
       let st = null;
       try { const p = await limite(pedido.get(), 15000); st = p.exists ? p.data().status : null; } catch (e) { st = null; }
@@ -776,7 +783,8 @@
     const pulso = setInterval(() => pessoa.set({ nome: eu.nome, lingua: eu.lingua, t: Date.now() }, { merge: true }).catch(() => {}), 30000);
     const offs = [];
     // Dono: recebe os pedidos de entrada e a lista de quem foi aprovado
-    if (souDono) offs.push(base.collection('membros').onSnapshot((s) => h.pedidos && h.pedidos(s.docs.map((d) => ({ uid: d.id, ...d.data() }))), () => {}));
+    if (!aprovacao) { /* modo aberto: sem pedidos de entrada */ }
+    else if (souDono) offs.push(base.collection('membros').onSnapshot((s) => h.pedidos && h.pedidos(s.docs.map((d) => ({ uid: d.id, ...d.data() }))), () => {}));
     // Convidado: se o dono remover, sai da sala
     else offs.push(base.collection('membros').doc(user.uid).onSnapshot({ includeMetadataChanges: true }, (d) => { if (d.metadata.hasPendingWrites || d.metadata.fromCache) return; if (!d.exists || d.data().status !== 'aprovado') h.removido && h.removido(); }, () => {}));
     // Salas paradas expiram: só valem as falas das últimas 24 horas
@@ -803,7 +811,7 @@
       else if (!tm) tm = setTimeout(() => { tm = null; if (pend !== null) { ultimo = Date.now(); pessoa.update({ vivo: pend }).catch(() => {}); pend = null; } }, 300);
     };
     return {
-      nuvem: true, dono: souDono,
+      nuvem: true, dono: souDono, aprovacao,
       decidir: (uid, aprovar) => (aprovar ? base.collection('membros').doc(uid).update({ status: 'aprovado' }) : base.collection('membros').doc(uid).update({ status: 'recusado' })).catch(() => {}),
       enviar: (texto) => { pend = null; pessoa.update({ vivo: '' }).catch(() => {}); return base.collection('falas').add({ uid: meu, nome: eu.nome, lingua: eu.lingua, texto, t: Date.now() }); },
       evento: (ev) => base.collection('falas').add({ ...ev, uid: meu, nome: eu.nome, lingua: eu.lingua, t: Date.now() }).catch(() => {}),
@@ -958,6 +966,7 @@
     mostrarTela('salaTela');
     $('#btVoz').textContent = vozLigada ? '🔊' : '🔇';
     try {
+      { const el = $('#salaConexao'); if (el) { el.dataset.jaOnline = ''; el.dataset.antes = ''; } }
       mostrarConexao('conectando');
       const ganchos = { fala: bolha, pessoas: atualizarPessoas, conexao: mostrarConexao, pedidos: mostrarPedidos,
         espera: (e) => { $('#salaEspera').hidden = !e; if (e) mostrarConexao('aguardando'); },
@@ -999,8 +1008,11 @@
     const txt = { aguardando: 'Aguardando aprovação', conectando: 'Conectando…', online: 'Conectado', reconectando: 'Reconectando…', offline: 'Sem internet', local: 'Só neste aparelho' }[est] || '';
     if (el.dataset.estado === est) return;
     el.dataset.estado = est; el.querySelector('span').textContent = txt;
-    if (est === 'online' && el.dataset.antes === 'reconectando') sistema('Conexão restabelecida');
-    if (est === 'reconectando' || est === 'offline') el.dataset.antes = 'reconectando'; else el.dataset.antes = '';
+    // "Conexão restabelecida" só quando caiu depois de já ter conectado (não na primeira conexão)
+    if (est === 'online' && el.dataset.antes === 'caiu') sistema('Conexão restabelecida');
+    if (est === 'online') el.dataset.jaOnline = '1';
+    if ((est === 'reconectando' || est === 'offline') && el.dataset.jaOnline) el.dataset.antes = 'caiu';
+    else if (est === 'online') el.dataset.antes = '';
   }
 
   function sairSala() {
@@ -1047,12 +1059,16 @@
   // no navegador usa o próprio endereço. Quem abre o link entra direto na sala (ou abre o app, se tiver).
   const SITE = 'https://golesecocopocheio-eng.github.io/Caderno-m-sical-/tradutor.html';
   const linkSala = () => (NATIVO || !/^https?:$/.test(location.protocol) ? SITE : location.origin + location.pathname) + '?sala=' + $('#salaCod').textContent;
-  const textoConvite = () => 'Vem conversar comigo no Clã Speak (tradução de voz ao vivo)! Toque no link para entrar na sala (eu aprovo a sua entrada):\n' + linkSala() + '\nCódigo da sala: ' + $('#salaCod').textContent;
+  const textoConvite = () => 'Vem conversar comigo no Clã Speak (tradução de voz ao vivo)! Toque no link para entrar na sala' + (conexao && conexao.aprovacao === false ? '' : ' (eu aprovo a sua entrada)') + ':\n' + linkSala() + '\nCódigo da sala: ' + $('#salaCod').textContent;
   $('#btConvidar').onclick = () => {
     const box = $('#convite'); box.hidden = !box.hidden;
     if (box.hidden) return;
     const L = linkSala();
     $('#qrCodigo').textContent = $('#salaCod').textContent;
+    const ap = $('#convAprov');
+    if (ap) ap.textContent = conexao && conexao.aprovacao === false
+      ? '⚠️ Aprovação de entrada desligada: falta publicar o firestore.rules completo no Firebase. Por enquanto, quem tiver o link ou o código entra direto.'
+      : '🔒 Ninguém entra sem a sua aprovação: cada pedido aparece aqui na sala para você aprovar ou recusar.';
     $('#qrLink').textContent = L;
     try { const qr = qrcode(0, 'M'); qr.addData(L); qr.make(); $('#qrImg').innerHTML = qr.createImgTag(5, 8); } catch (e) { $('#qrImg').textContent = ''; }
   };

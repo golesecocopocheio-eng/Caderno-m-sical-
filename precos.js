@@ -430,14 +430,14 @@
   }
   function desenharTabela() {
     const busca = chaveNome($('#pcBusca', painel).value);
-    const ps = Object.values(tabela().produtos || {}).filter((p) => !busca || chaveNome(p.nome).includes(busca)).sort((a, b) => a.nome.localeCompare(b.nome));
+    const ps = Object.entries(tabela().produtos || {}).map(([k, p]) => Object.assign({}, p, { _k: k })).filter((p) => !busca || chaveNome(p.nome).includes(busca)).sort((a, b) => a.nome.localeCompare(b.nome));
     let valorTotal = 0;
     const linhas = ps.map((p) => {
       const q = p.estoque ? qtdEstoque(p.estoque) : null;
       const valor = q !== null ? q * p.preco : null;
       if (valor) valorTotal += valor;
       const porMedida = p.conteudo ? (p.tipo === 'g' ? brl(p.preco / p.conteudo * 1000) + '/kg' : p.tipo === 'ml' ? brl(p.preco / p.conteudo * 1000) + '/litro · <b>dose ' + doseMl() + ' ml ' + brl(p.preco * doseMl() / p.conteudo) + '</b>' : brl(p.preco / p.conteudo) + '/un') : '';
-      return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div></div>`;
+      return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div><button data-pe="${esc(p._k)}">✏️ Editar</button></div>${editando === p._k ? formEditar(p) : ''}`;
     }).join('');
     $('#pcTabela', painel).innerHTML = linhas || '<p>Nenhum produto ainda. Tire foto de uma nota de compra.</p>';
     {const gs = Object.values(tabela().produtos || {}).filter((p) => doses(p) && p.un !== 'KG' && (!busca || chaveNome(p.nome).includes(busca))).sort((a, b) => a.nome.localeCompare(b.nome));
@@ -446,9 +446,63 @@
        <div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px"><span style="flex:2">Garrafa</span><span style="flex:1;text-align:right">Preço</span><span style="flex:1;text-align:right">Doses</span><span style="flex:1;text-align:right">Custo/dose</span></div>
        ${gs.map((p) => { const d = doses(p); return `<div class="ft-r" style="font-size:14px"><span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${campo(p.conteudo, 0)} ml</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><span style="flex:1;text-align:right">${String(d.n).replace('.', ',')}</span><b style="flex:1;text-align:right">${brl(d.custo)}</b></div>`; }).join('')}`;
      const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); desenharTabela(); } };}
+    ligarEditar();
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
   }
   $('#pcBusca', painel).oninput = desenharTabela;
+
+  /* ---------- ✏️ editar um produto da tabela (nome, preço, unidade, ml) ---------- */
+  let editando = null;
+  const notaDoProduto = (k) => { const p = (tabela().produtos || {})[k] || {}; return (meta().notas || []).find((n) => (n.itens || []).some((x) => chaveNome(x.produto) === k || (p.estoque && x.estoque === p.estoque) || (p.ficha && x.ficha === p.ficha && chaveNome(x.produto).split(' ')[0] === k.split(' ')[0]))); };
+  function formEditar(p) {
+    const n = notaDoProduto(p._k);
+    const opF = Object.keys(ingredientes).sort().map((k) => [k, k + (ingredientes[k] === 'ml' ? ' (ml)' : '')]);
+    const opE = Object.entries(estoque.items || {}).sort((a, b) => a[1].n.localeCompare(b[1].n)).map(([id, v]) => [id, v.n]);
+    return `<div class="ft-card" id="pcEd" style="border:2px solid #7c3aed;margin-top:-4px">
+      <b>✏️ Editar ${esc(p.nome)}</b>
+      <label>Nome<input id="peNome" value="${esc(p.nome)}"></label>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1">Preço (R$)<input id="pePreco" inputmode="decimal" value="${campo(p.preco)}"></label>
+        <label style="flex:1">por<select id="peUn">${['UN', 'GF', 'CX', 'FD', 'PCT', 'KG', 'DZ', 'LT', 'LATA'].concat(p.un && !['UN', 'GF', 'CX', 'FD', 'PCT', 'KG', 'DZ', 'LT', 'LATA'].includes(p.un) ? [p.un] : []).map((u) => `<option${u === p.un ? ' selected' : ''}>${u}</option>`).join('')}</select></label>
+      </div>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1">Conteúdo<input id="peCont" inputmode="numeric" value="${p.conteudo ? campo(p.conteudo, 0) : ''}" placeholder="ex.: 750"></label>
+        <label style="flex:1">medida<select id="peTipo">${[['ml', 'ml'], ['g', 'gramas'], ['un', 'unidades']].map(([v, t]) => `<option value="${v}"${v === (p.tipo || 'ml') ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+      </div>
+      <label>🍸 Ficha técnica<select id="peFicha">${opcoes(opF, p.ficha || '')}</select></label>
+      <label>📦 Estoque<select id="peEst">${opcoes(opE, p.estoque || '')}</select></label>
+      <p style="margin:6px 0;font-size:13px;color:#667085">O novo preço vale para o custo das receitas, a dose e o valor do estoque.</p>
+      <div class="ft-chips"><button id="peSalvar" style="background:#15803d!important;color:#fff!important">💾 Salvar</button><button id="peCancelar" style="background:#e5e7eb!important;color:#111!important;box-shadow:none!important">Cancelar</button><button id="peApagar" style="background:#fee2e2!important;color:#991b1b!important;box-shadow:none!important">🗑️ Excluir</button></div>
+      ${n ? `<button class="sec" id="peNota" style="margin-top:8px">🧾 Corrigir a quantidade na nota${n.nf ? ' (' + esc(n.nf) + ')' : ''}</button>` : ''}
+    </div>`;
+  }
+  function ligarEditar() {
+    painel.querySelectorAll('[data-pe]').forEach((b) => (b.onclick = async () => { await carregarFontes(); editando = editando === b.dataset.pe ? null : b.dataset.pe; desenharTabela(); const f = $('#pcEd', painel); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
+    const f = $('#pcEd', painel); if (!f) return;
+    $('#peCancelar', f).onclick = () => { editando = null; desenharTabela(); };
+    const nb = $('#peNota', f); if (nb) nb.onclick = () => { const n = notaDoProduto(editando); editando = null; if (n) { desfazerNota(true, n); $('#pcResultado', painel).scrollIntoView({ behavior: 'smooth' }); } };
+    $('#peApagar', f).onclick = (e) => {
+      const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; }
+      const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[editando]; delete (m.tabPrecos.alias || {})[editando]; }
+      localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); editando = null; desenharTabela();
+    };
+    $('#peSalvar', f).onclick = async () => {
+      const k = editando, m = meta(); m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} }; m.tabPrecos.alias = m.tabPrecos.alias || {};
+      const p = m.tabPrecos.produtos[k]; if (!p) return;
+      const preco = num($('#pePreco', f).value); if (!(preco > 0)) { alert('Coloque o preço.'); return; }
+      const nome = $('#peNome', f).value.trim() || p.nome;
+      Object.assign(p, { nome, preco, un: $('#peUn', f).value, conteudo: num($('#peCont', f).value), tipo: $('#peTipo', f).value, ficha: $('#peFicha', f).value, estoque: $('#peEst', f).value, data: hoje() });
+      const nk = chaveNome(nome);
+      if (nk && nk !== k) { delete m.tabPrecos.produtos[k]; m.tabPrecos.produtos[nk] = p; m.tabPrecos.alias[nk] = m.tabPrecos.alias[k]; }
+      const a = m.tabPrecos.alias[nk || k] = Object.assign({}, m.tabPrecos.alias[nk || k] || {}, { ficha: p.ficha, estoque: p.estoque, conteudo: p.conteudo, tipo: p.tipo, rende: p.rende || 1 });
+      if (p.ficha) { m.custo = m.custo || {}; const c = custoFicha({ ...p, mlkg: a.mlkg || mlkgPadrao(p.ficha) }); m.custo[p.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }; }
+      localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
+      if (p.estoque && window.__barImportar) { const pr = {}; pr[p.estoque] = Object.assign({}, (estoque.price || {})[p.estoque] || {}, { pu: campo(preco).replace(/,00$/, '') }); try { await window.__barImportar({ apps: { estoque: { price: pr } } }); } catch (e) {} }
+      ['f-caixa', 'f-estoque'].forEach((id) => { const fr = document.getElementById(id); if (fr && fr.src) fr.contentWindow.location.reload(); });
+      editando = null; await carregarFontes(); desenharTabela();
+      $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d"><b>✅ ${esc(nome)} atualizado:</b> ${brl(preco)} por ${esc(p.un)}${doses(p) ? '<br>' + doseTxt(p) : ''}</div>`;
+    };
+  }
 
   // Aberto pela Ficha técnica (botão 📷 Foto da nota) ou ao abrir a aba
   window.__barPrecosAtualizar = async () => { await carregarFontes(); desenharLeitura(); desenharTabela(); desenharNotas(); };

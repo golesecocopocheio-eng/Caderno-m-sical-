@@ -1116,6 +1116,24 @@ header{padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
 .salaMembros{margin-top:12px;text-align:left;display:grid;gap:6px}
 .salaMembros .membro{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:10px;background:rgba(124,58,237,.06)}
 .salaMembros .membro button{height:32px;padding:0 10px;font-size:12.5px}
+
+/* ===== Etapa 3: frente a frente com inverter, repetir e histórico ===== */
+#f2fFone{display:none}
+.pista .meio{gap:4px;padding:14px 4px}
+.meio button{min-width:46px;height:52px;padding:5px 3px;font-size:9.5px}
+.meio button .ic{width:19px;height:19px}
+#f2f .escrita.ao-vivo{font-style:italic;opacity:.82}
+#f2f .escrita.ao-vivo::after{content:" …";opacity:.7}
+.f2fHistorico{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,8,48,.5);backdrop-filter:blur(4px);padding:12px}
+.f2fHistorico .card{width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;gap:10px;margin-bottom:calc(env(safe-area-inset-bottom) + 6px)}
+.histTopo{display:flex;align-items:center;justify-content:space-between}
+.histLista{overflow:auto;display:grid;gap:8px;padding-right:2px}
+.turno{padding:10px 12px;border-radius:12px;background:rgba(124,58,237,.07);border-left:3px solid #7C3AED}
+.turno.b{border-left-color:#DB2777;background:rgba(219,39,119,.06)}
+.turno .hora{font-size:11.5px;color:var(--mu);margin-bottom:4px}
+.turno .orig{font-size:13px;color:var(--mu)}
+.turno .trad{font-size:16px;font-weight:600;margin:2px 0 6px}
+.turno button{height:32px;padding:0 10px;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -1365,6 +1383,12 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
       <b>🔊 Voz e sons</b>
       <label for="ajVel">Velocidade da voz: <span id="ajVelTx">1.0×</span></label>
       <input type="range" id="ajVel" min="0.6" max="1.4" step="0.1" value="1">
+      <label for="ajGenero">Voz</label>
+      <select id="ajGenero"><option value="auto">Automática (a mais natural do aparelho)</option><option value="feminina">Feminina</option><option value="masculina">Masculina</option></select>
+      <label for="ajSotaque">Sotaque do inglês</label>
+      <select id="ajSotaque"><option value="us">Americano (EUA)</option><option value="gb">Britânico (Reino Unido)</option></select>
+      <label for="ajVolume">Volume da voz: <span id="ajVolumeTx">100%</span></label>
+      <input type="range" id="ajVolume" min="0.2" max="1" step="0.1" value="1">
       <div class="chave"><span>Ler as traduções em voz alta</span><input type="checkbox" id="ajVoz"></div>
       <div class="chave"><span>Sons de interface</span><input type="checkbox" id="ajSons"></div>
       <button class="sec" id="ajTestar" style="margin-top:10px">▶ Testar a voz</button>
@@ -1469,7 +1493,7 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
   <div class="pista" id="pista">
     <div class="vez" id="f2fVez"></div>
     <div class="ator" id="ator"><div class="vira" id="vira"><div class="corpo" id="corpo"><img src="icons/gato-corpo.png" alt="Gatinho" id="f2fGato"></div></div></div>
-    <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><button id="f2fAuto" title="Automático: passa a vez sozinho">🔄<span> Auto</span></button><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
+    <div class="meio"><button id="f2fVoz" title="Voz">🔊<span> Voz</span></button><button id="f2fFone" title="Fone de ouvido">🎧<span> Fone</span></button><button id="f2fAuto" title="Automático: passa a vez sozinho">🔄<span> Auto</span></button><button id="f2fInverter" title="Inverter os idiomas">🔀<span> Inverter</span></button><button id="f2fRepetir" title="Repetir a última tradução">🔁<span> Repetir</span></button><button id="f2fHist" title="Histórico da conversa">📋<span> Histórico</span></button><button id="f2fLimpar" title="Limpar">🧹<span> Limpar</span></button><button id="f2fSair" title="Sair">✖<span> Sair</span></button></div>
   </div>
   <div class="lado" data-lado="a">
     <div class="texto"></div>
@@ -1479,6 +1503,14 @@ a.addEventListener('click',sair);setTimeout(sair,3600);})();
 
 <div id="barraApp" class="barraApp" hidden><span>Tem o app Clã Speak?</span><a id="abrirNoApp" href="#">Abrir no app</a><button id="fecharBarraApp" aria-label="Fechar">✖</button></div>
 <div id="vozEstado" class="vozEstado" hidden role="status" aria-live="polite"><i></i><span></span></div>
+<div id="f2fHistorico" class="f2fHistorico" hidden>
+  <div class="card">
+    <div class="histTopo"><b>Histórico da conversa</b><button class="sec" id="f2fHistFechar">Fechar</button></div>
+    <div id="f2fHistLista" class="histLista"></div>
+    <div class="row"><button class="sec" id="f2fHistCopiar">Copiar conversa</button><button class="sec" id="f2fHistApagar">Apagar histórico</button></div>
+    <p class="mu" style="font-size:12px;margin-top:6px">Fica só neste aparelho e some quando o app é fechado.</p>
+  </div>
+</div>
 <nav class="abas" id="abas">
   <button class="on" data-aba="inicio"><b>🌐</b>Traduzir</button>
   <button data-aba="saber"><b>🎓</b>Saber</button>

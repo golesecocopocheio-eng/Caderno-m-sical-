@@ -142,6 +142,14 @@
   }
   $('#ajSegurar').onchange = (e) => { C.segurar = e.target.checked; gAj.dizer(e.target.checked ? 'Agora é segurar o 🎤 para falar e soltar para enviar!' : 'Agora é tocar no 🎤 para ligar e desligar.'); };
   $('#ajFone').onchange = (e) => { C.definirFone(e.target.checked); gAj.dizer(e.target.checked ? '🎧 Modo fone ligado!' : 'Modo fone desligado.'); };
+  // Voz: gênero, sotaque e volume
+  const ajG = $('#ajGenero'), ajS = $('#ajSotaque'), ajV = $('#ajVolume');
+  if (ajG) { ajG.value = localStorage.getItem('trad-voz-genero') || 'auto'; ajG.onchange = () => localStorage.setItem('trad-voz-genero', ajG.value); }
+  if (ajS) { ajS.value = localStorage.getItem('trad-sotaque') || 'us'; ajS.onchange = () => localStorage.setItem('trad-sotaque', ajS.value); }
+  if (ajV) {
+    const v0 = Number(localStorage.getItem('trad-volume') || 1); ajV.value = v0; $('#ajVolumeTx').textContent = Math.round(v0 * 100) + '%';
+    ajV.oninput = () => { localStorage.setItem('trad-volume', ajV.value); $('#ajVolumeTx').textContent = Math.round(ajV.value * 100) + '%'; };
+  }
   $('#ajVel').oninput = (e) => { C.velVoz = Number(e.target.value); $('#ajVelTx').textContent = Number(e.target.value).toFixed(1) + '×'; };
   $('#ajVoz').onchange = (e) => { C.vozLigada = e.target.checked; $('#btVoz').textContent = e.target.checked ? '🔊' : '🔇'; };
   $('#ajSons').onchange = (e) => { C.sons = e.target.checked; if (e.target.checked) { C.miau(); gAj.dancar(1500, true); } gAj.dizer(e.target.checked ? 'Miau! Sons ligados 🔊' : 'Shhh… sons desligados 🤫'); };

@@ -114,6 +114,11 @@ como app próprio ("Clã Speak"). Arquivos: `app/tradutor.html`, `app/tradutor.j
   `bar-conect`. Precisa, uma vez, do segredo `FIREBASE_SERVICE_ACCOUNT` (Firebase → Configurações do projeto → Contas de
   serviço → Gerar nova chave privada; GitHub → Settings → Secrets and variables → Actions). Sem o segredo, o workflow
   só avisa e não publica.
+- **Voz e frente a frente (Tradutor 2.0 · Etapa 3):** em Ajustes → Voz e sons: voz **Feminina / Masculina / Automática**
+  (escolhe a voz do aparelho pelo nome; se o aparelho não tiver uma do gênero pedido, ajusta o tom), sotaque do inglês
+  **Americano / Britânico** e **volume**. No frente a frente: **Inverter** os idiomas, **Repetir** a última tradução (vira
+  **Parar** enquanto a voz fala), **Histórico** da conversa (original + tradução, ouvir de novo, copiar, apagar; fica só no
+  aparelho e some ao fechar) e texto **provisório em itálico** até a frase ser confirmada. Teste automático: 12 verificações.
 - 24 idiomas (português, inglês, espanhol, francês, italiano, alemão, japonês, chinês, árabe…).
 - **APK Android próprio ("Clã Speak", logo redondo da lua amarela em roxo-escuro):** o workflow `.github/workflows/apk-tradutor.yml` gera o
   `ClaSpeak.apk` (pasta `android-tradutor/`) e publica na página **Releases** do GitHub, com a etiqueta

@@ -286,11 +286,25 @@
     };
   })();
 
+  // ----- Preferências de voz (Ajustes → Voz e sons) -----
+  const prefVoz = () => ({
+    genero: localStorage.getItem('trad-voz-genero') || 'auto', // auto | feminina | masculina
+    sotaque: localStorage.getItem('trad-sotaque') || 'us',      // us | gb (inglês)
+    volume: Math.min(1, Math.max(0.1, Number(localStorage.getItem('trad-volume') || 1)))
+  });
+  // Inglês sai com o sotaque escolhido (americano ou britânico)
+  const linguaDaVoz = (l) => (/^en/i.test(l) ? (prefVoz().sotaque === 'gb' ? 'en-GB' : 'en-US') : l);
+  // Gênero da voz pelo nome: palavras e códigos das vozes do Google (Android) e nomes comuns de vozes
+  const VOZ_F = /female|woman|mulher|feminina|\b(zira|samantha|victoria|karen|serena|moira|tessa|fiona|luciana|francisca|maria|helena|paulina|monica|amelie|anna|alice|joana)\b|-x-(iob|iog|sfg|tpc|tpf|gba|gbc|gbg|afs|eea|eec|esc|frc|fra|iah|ita)-/i;
+  const VOZ_M = /\bmale\b|\bman\b|homem|masculina|\b(david|daniel|alex|fred|ricardo|jorge|diego|thomas|oliver|arthur|aaron|rishi|felipe|luca)\b|-x-(iol|iom|tpd|gbb|gbd|rjs|eed|eef|esd|frd|fre|itc|itd|ptd)-/i;
+  const generoVoz = (nome) => (VOZ_M.test(nome) && !/female/i.test(nome) ? 'masculina' : VOZ_F.test(nome) ? 'feminina' : '');
   // Escolhe a voz mais natural do aparelho para o idioma (as "Natural"/"Google"/"Enhanced" soam melhor)
   function melhorVoz(lingua) {
     if (!window.speechSynthesis) return null;
     const vs = speechSynthesis.getVoices(), norm = (l) => l.replace('_', '-').toLowerCase(), alvo = lingua.toLowerCase(), base = alvo.split('-')[0];
+    const g = prefVoz().genero;
     const nota = (v) => (norm(v.lang) === alvo ? 10 : norm(v.lang).startsWith(base) ? 5 : -99) +
+      (g !== 'auto' ? (generoVoz(v.name) === g ? 6 : generoVoz(v.name) ? -4 : 0) : 0) +
       (/natural|neural/i.test(v.name) ? 4 : 0) + (/google/i.test(v.name) ? 3 : 0) + (/enhanced|premium|plus/i.test(v.name) ? 2 : 0) + (v.localService ? 0 : 1);
     let melhor = null, mn = -50;
     vs.forEach((v) => { const n = nota(v); if (n > mn) { mn = n; melhor = v; } });
@@ -301,6 +315,24 @@
     const t = NATIVO ? { rapida: 1100, equilibrada: 1600, paciente: 2400 } : { rapida: 600, equilibrada: 900, paciente: 1400 };
     return t[localStorage.getItem('trad-resposta') || 'equilibrada'] || t.equilibrada;
   };
+  // APK: lista de vozes do Android (para escolher feminina/masculina)
+  let vozesNativas = null;
+  async function vozNativa(lingua) {
+    const TTS = plugin('TextToSpeech'); if (!TTS) return null;
+    const g = prefVoz().genero; if (g === 'auto') return null;
+    try { if (!vozesNativas) vozesNativas = ((await TTS.getSupportedVoices()) || {}).voices || []; } catch (e) { vozesNativas = []; }
+    const alvo = lingua.toLowerCase(), nl = (l) => String(l || '').replace('_', '-').toLowerCase();
+    let melhor = -1, nota = -99;
+    vozesNativas.forEach((v, i) => {
+      const lg = nl(v.lang); if (!lg.startsWith(alvo.split('-')[0])) return;
+      const nome = (v.voiceURI || '') + ' ' + (v.name || '');
+      const n = (lg === alvo ? 5 : 0) + (generoVoz(nome) === g ? 10 : generoVoz(nome) ? -10 : 0) + (/network/i.test(nome) ? 1 : 0);
+      if (n > nota) { nota = n; melhor = i; }
+    });
+    return melhor >= 0 && nota >= 10 ? melhor : null; // só troca se achou uma voz do gênero pedido
+  }
+  // Sem voz do gênero pedido no aparelho, ajusta o tom (mais grave ou mais agudo)
+  const tomDoGenero = (achou) => { const g = prefVoz().genero; return achou || g === 'auto' ? 1 : g === 'masculina' ? 0.82 : 1.12; };
   function falar(texto, lingua, opc = {}) {
     if ((!vozLigada && !opc.sempre) || !texto || texto.startsWith('⚠️')) { opc.aoTerminar && opc.aoTerminar(); return; } // aviso de falha não é lido
     const vel = (opc.vel || 1) * velVoz;
@@ -329,16 +361,22 @@
     // Se o aparelho não avisar o fim da fala, destrava sozinho pelo tamanho do texto
     const segura = setTimeout(() => { vozCtl.anotar('voz sem aviso de fim'); terminar(); }, 2500 + texto.length * 90 / vel);
     const TTS = plugin('TextToSpeech');
+    const pv = prefVoz(); lingua = linguaDaVoz(lingua);
     if (TTS) {
       if (opc.medir) vozCtl.marcar('voz');
       opc.aoComecar && opc.aoComecar();
-      TTS.speak({ text: texto, lang: lingua, rate: vel, pitch: opc.tom || 1, queueStrategy: 1 }).then(terminar, terminar);
+      vozNativa(lingua).then((idx) => {
+        const o = { text: texto, lang: lingua, rate: vel, pitch: (opc.tom || 1) * tomDoGenero(idx != null), volume: pv.volume, queueStrategy: 1 };
+        if (idx != null) o.voice = idx;
+        return TTS.speak(o);
+      }).then(terminar, terminar);
       return;
     }
     if (!window.speechSynthesis) { terminar(); return; }
     const u = new SpeechSynthesisUtterance(texto);
-    u.lang = lingua; u.rate = vel; u.pitch = opc.tom || 1;
     const v = melhorVoz(lingua);
+    u.lang = lingua; u.rate = vel; u.volume = pv.volume;
+    u.pitch = (opc.tom || 1) * tomDoGenero(!!v && generoVoz(v.name) === pv.genero);
     try { if (v) u.voice = v; } catch (e) { /* voz recusada: usa a padrão do idioma */ }
     u.onstart = () => { if (opc.medir) vozCtl.marcar('voz'); opc.aoComecar && opc.aoComecar(); };
     u.onend = terminar; u.onerror = terminar;
@@ -1227,6 +1265,7 @@
           previa = null;
           vozCtl.marcar('traduzido');
           entregar(k, r);
+          guardarTurno(k, t, r, l.sel.value, outro.sel.value);
           outro.digitar(r);
           pulaF2f();
           const para = k === 'a' ? 'b' : 'a';
@@ -1280,6 +1319,50 @@
   $('#abrirF2f').onclick = () => { mostrarTela('f2f'); ator.parar(); definirAuto(false); setTimeout(passear, 700); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fVoz').onclick = () => { vozLigada = !vozLigada; localStorage.setItem('trad-voz', vozLigada ? '1' : '0'); $('#f2fVoz').innerHTML = (vozLigada ? '🔊' : '🔇') + '<span> Voz</span>'; };
   $('#f2fLimpar').onclick = () => { lados.a.vazio(); lados.b.vazio(); };
+
+  // ----- Histórico da conversa, repetir a última tradução e inverter os idiomas -----
+  const historico = (() => { try { return JSON.parse(sessionStorage.getItem('trad-f2f-hist') || '[]'); } catch (e) { return []; } })();
+  function guardarTurno(lado, orig, trad, de, para) {
+    historico.push({ t: Date.now(), lado, orig, trad, de, para });
+    while (historico.length > 100) historico.shift();
+    try { sessionStorage.setItem('trad-f2f-hist', JSON.stringify(historico)); } catch (e) {}
+  }
+  const repBt = $('#f2fRepetir');
+  vozCtl.aoMudar((e) => { if (repBt) repBt.innerHTML = e === 'REPRODUZINDO' ? '⏹<span> Parar</span>' : '🔁<span> Repetir</span>'; });
+  if (repBt) repBt.onclick = () => {
+    if (falando.n) { pararVoz(); return; }
+    const u = historico[historico.length - 1];
+    if (!u) { lados.a.mostrar('Ainda não há tradução para repetir.'); return; }
+    if (ouvinte.ativo) ouvinte.segurar();
+    falar(u.trad, u.para, { sempre: true, aoTerminar: () => { if (ouvinte.ativo) ouvinte.soltar(); } });
+  };
+  const invBt = $('#f2fInverter');
+  if (invBt) invBt.onclick = () => {
+    if (ouvinte.ativo) { if (autoF2f) definirAuto(false); ouvinte.parar(); }
+    const a = lados.a.sel.value, b = lados.b.sel.value;
+    lados.a.sel.value = b; lados.b.sel.value = a;
+    localStorage.setItem('trad-f2f-a', b); localStorage.setItem('trad-f2f-b', a);
+    lados.a.vazio(); lados.b.vazio();
+  };
+  const histBt = $('#f2fHist'), histBox = $('#f2fHistorico');
+  function mostrarHistorico() {
+    const lista = $('#f2fHistLista');
+    lista.innerHTML = historico.length ? historico.slice().reverse().map((h, i) => {
+      const n = historico.length - 1 - i;
+      return '<div class="turno ' + (h.lado === 'b' ? 'b' : 'a') + '"><div class="hora">' + new Date(h.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' · ' + bandeira(h.de) + ' → ' + bandeira(h.para) + '</div>' +
+        '<div class="orig">' + esc(h.orig) + '</div><div class="trad">' + esc(h.trad) + '</div><button class="sec" data-ouvir="' + n + '">🔊 Ouvir</button></div>';
+    }).join('') : '<p class="mu">A conversa aparece aqui conforme vocês falam.</p>';
+    lista.querySelectorAll('[data-ouvir]').forEach((b) => { b.onclick = () => { const h = historico[Number(b.dataset.ouvir)]; if (h) falar(h.trad, h.para, { sempre: true }); }; });
+  }
+  if (histBt) histBt.onclick = () => { if (ouvinte.ativo) { if (autoF2f) definirAuto(false); ouvinte.parar(); } mostrarHistorico(); histBox.hidden = false; };
+  if (histBox) {
+    $('#f2fHistFechar').onclick = () => { histBox.hidden = true; };
+    $('#f2fHistCopiar').onclick = () => {
+      const txt = historico.map((h) => '[' + new Date(h.t).toLocaleTimeString('pt-BR') + '] ' + h.orig + '\n→ ' + h.trad).join('\n\n');
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { $('#f2fHistCopiar').textContent = 'Copiado ✓'; setTimeout(() => { $('#f2fHistCopiar').textContent = 'Copiar conversa'; }, 1500); }).catch(() => prompt('Copie a conversa:', txt));
+    };
+    $('#f2fHistApagar').onclick = () => { if (!confirm('Apagar o histórico desta conversa?')) return; historico.length = 0; sessionStorage.removeItem('trad-f2f-hist'); mostrarHistorico(); };
+  }
   $('#f2fFone').onclick = () => definirFone(!fone);
   // ----- Gatinho de corpo inteiro no palco do frente a frente -----
   const pista = $('#pista'), atorEl = $('#ator'), vira = $('#vira'), corpo = $('#corpo'), palco = $('#palco');

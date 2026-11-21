@@ -153,7 +153,10 @@
   /* ---------- estado ---------- */
   let rascunho = [];
   let nf = '';
+  let corrigindo = null; // nota que está sendo corrigida: só muda de verdade quando tocar em Aplicar
   const meta = () => lerJSON('caixa-bar-meta');
+  // grava e recarrega o Caixa, que manda a mudança para a nuvem
+  const salvarMeta = (m) => { localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); };
   const tabela = () => meta().tabPrecos || { produtos: {}, alias: {} };
   function sugerir(it) {
     const tp = tabela(), alias = tp.alias[chaveNome(it.produto)];
@@ -184,6 +187,7 @@
     <div id="pcAcoes" hidden>
       <label>Fornecedor / número da nota<input id="pcNF" placeholder="ex.: Zumbi Atacado NF 1234"></label>
       <button id="pcAplicar" style="background:#15803d">✅ Aplicar na ficha técnica e no estoque</button>
+      <button class="sec" id="pcCancelar" hidden>✖ Cancelar correção (a nota fica como estava)</button>
       <p id="pcMsg"></p>
     </div>
     <div id="pcNotas" hidden></div>
@@ -221,6 +225,17 @@
       </div>`;
     }).join('');
     $('#pcAcoes', painel).hidden = !rascunho.some((x) => !x.lendo);
+    $('#pcCancelar', painel).hidden = !corrigindo;
+    guardarRascunho();
+  }
+  // a nota aberta (lida ou em correção) fica guardada no celular: se o app fechar ou recarregar, volta igual
+  const RK = 'bar-precos-rascunho';
+  function guardarRascunho() {
+    try {
+      const its = rascunho.filter((x) => !x.lendo);
+      if (its.length) localStorage.setItem(RK, JSON.stringify({ itens: its.map((x) => { const y = { ...x }; delete y.mini; return y; }), corrigindo: corrigindo ? corrigindo.id : '', nf }));
+      else localStorage.removeItem(RK);
+    } catch (e) {}
   }
   // Como o ingrediente entra no custo das receitas (meta.custo do Caixa):
   // p = preço por unidade usada na receita; v = ml dessa unidade (só para ingredientes em ml).
@@ -246,11 +261,11 @@
     if (k === 'totalPago') {
       const t = num(e.target.value); if (it.qtd > 0) it.preco = Math.round(t / it.qtd * 100) / 100;
       const pr = box.querySelector('[data-k="preco"]'); if (pr) pr.value = campo(it.preco);
-      atualizarRodape(box, it); return;
+      atualizarRodape(box, it); guardarRascunho(); return;
     }
     it[k] = e.target.type === 'checkbox' ? e.target.checked : ['qtd', 'preco', 'conteudo', 'rende', 'mlkg'].includes(k) ? num(e.target.value) : e.target.value;
     if (k === 'preco' || k === 'qtd') { const tp = box.querySelector('[data-k="totalPago"]'); if (tp && document.activeElement !== tp) tp.value = campo(it.qtd * it.preco); }
-    if (['ficha', 'estoque', 'un', 'somar'].includes(k)) setTimeout(desenharLeitura, 0); else atualizarRodape(box, it);
+    if (['ficha', 'estoque', 'un', 'somar'].includes(k)) setTimeout(desenharLeitura, 0); else { atualizarRodape(box, it); guardarRascunho(); }
   });
   painel.addEventListener('change', (e) => { if (e.target.closest('.pc-it') && e.target.dataset.k === 'qtd') setTimeout(desenharLeitura, 0); });
   painel.addEventListener('click', (e) => {
@@ -303,7 +318,7 @@
   }
   $('#pcCam', painel).onchange = lerFotos;
   $('#pcArq', painel).onchange = lerFotos;
-  $('#pcNF', painel).oninput = (e) => (nf = e.target.value);
+  $('#pcNF', painel).oninput = (e) => { nf = e.target.value; guardarRascunho(); };
 
   /* ---------- aplicar (distribuir) ---------- */
   // Guarda os preços na tabela, atualiza o custo da Ficha técnica e soma no Estoque.
@@ -311,7 +326,7 @@
   let ultimaNota = null;
   // Cada nota lançada fica guardada (meta.notas do Caixa, vai para a nuvem) com o que ela mudou,
   // para poder corrigir ou desfazer depois sem mexer nas outras notas.
-  async function aplicarItens(itens, criarNoEstoque) {
+  async function aplicarItens(itens, criarNoEstoque, itensDaNota) {
     const m = meta(), t = Date.now(), d = hoje();
     m.custo = m.custo || {}; m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} };
     const antes = { custo: {}, prod: {}, alias: {}, price: {} };
@@ -338,7 +353,7 @@
     });
     const total = Math.round(itens.reduce((s, x) => s + x.qtd * x.preco, 0) * 100) / 100;
     const reg = { id: 'n' + t.toString(36), t, nf: nf || '', total, itens: itens.map((x) => ({ ...x })),
-      est: { mov: Object.keys(est.mov), pg: Object.keys(est.pg), items: Object.keys(est.items) }, antes };
+      est: { mov: Object.keys(est.mov), pg: Object.keys(est.pg), items: Object.keys(est.items).concat((itensDaNota || []).filter((id) => itens.some((x) => x.estoque === id))) }, antes };
     m.notas = [reg, ...(m.notas || [])].slice(0, 20);
     localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
     const temEst = ['mov', 'price', 'pg', 'items'].some((k) => Object.keys(est[k]).length);
@@ -347,9 +362,8 @@
     ultimaNota = reg;
     return { n: itens.length, nFicha: itens.filter((x) => x.ficha).length, nEst: Object.keys(est.mov).length, novos, total };
   }
-  let corrigindo = null; // nota que está sendo corrigida (volta a lançar com os valores novos)
-  async function desfazerNota(editar, reg) {
-    const u = reg || ultimaNota; if (!u) return;
+  // tira do estoque, da ficha técnica e da tabela o que a nota lançou, e tira a nota da lista
+  async function reverterNota(u, manterItens) {
     const m = meta(); m.custo = m.custo || {}; m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} };
     const volta = (obj, k, v) => { if (v === null || v === undefined) delete obj[k]; else obj[k] = v; };
     Object.entries(u.antes.custo || {}).forEach(([k, v]) => volta(m.custo, k, v));
@@ -360,31 +374,42 @@
     try {
       await window.__barApagar('estoque', 'mov', u.est.mov || []);
       await window.__barApagar('estoque', 'pg', u.est.pg || []);
-      await window.__barApagar('estoque', 'items', u.est.items || []);
+      if (!manterItens) await window.__barApagar('estoque', 'items', u.est.items || []);
       const precoVolta = {}, precoApaga = [];
-      Object.entries(u.antes.price || {}).forEach(([id, v]) => { if (v) precoVolta[id] = v; else if (!(u.est.items || []).includes(id)) precoApaga.push(id); });
+      Object.entries(u.antes.price || {}).forEach(([id, v]) => { if (v) precoVolta[id] = v; else if (!(u.est.items || []).includes(id)) precoApaga.push(id); else if (!manterItens) precoApaga.push(id); });
       if (Object.keys(precoVolta).length) await window.__barImportar({ apps: { estoque: { price: precoVolta } } });
       if (precoApaga.length) await window.__barApagar('estoque', 'price', precoApaga);
     } catch (e) {}
-    ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
     if (ultimaNota && ultimaNota.id === u.id) ultimaNota = null;
+  }
+  const nomeNota = (n) => n.nf || 'Nota de ' + new Date(n.t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  // ✏️ Corrigir: abre os produtos da nota no topo para mudar. Nada muda até tocar em ✅ Aplicar.
+  async function abrirCorrecao(u) {
     await carregarFontes();
-    if (editar) {
-      rascunho = u.itens.map((x) => { const y = { ...x }; if ((u.est.items || []).includes(y.estoque)) { y.estoque = ''; y.somar = false; } return y; });
-      corrigindo = u; nf = u.nf || ''; $('#pcNF', painel).value = nf; desenharLeitura();
-      $('#pcAcoes', painel).hidden = false; $('#pcLeitura', painel).scrollIntoView({ behavior: 'smooth' });
-    }
-    $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #b45309"><b>${editar ? '✏️ Corrigindo a nota' : '↩️ Nota desfeita'}${u.nf ? ' (' + esc(u.nf) + ')' : ''}.</b>${editar ? ' Mude a quantidade, o preço ou o total pago de cada produto abaixo e toque em <b>✅ Aplicar</b>.' : ' O que ela tinha lançado foi tirado do estoque, da ficha técnica e da tabela.'}</div>`;
+    rascunho = u.itens.map((x) => ({ ...x }));
+    corrigindo = u; nf = u.nf || ''; $('#pcNF', painel).value = nf; $('#pcMsg', painel).textContent = '';
+    desenharLeitura();
+    $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #7c3aed"><b>✏️ Corrigindo: ${esc(nomeNota(u))}</b><br>Mude a quantidade, o preço ou o total pago de cada produto abaixo e toque em <b>✅ Aplicar</b>. Até lá, a nota continua lançada como estava.</div>`;
+    painel.scrollIntoView({ block: 'start' }); $('#pcResultado', painel).scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  async function desfazerNota(editar, reg) {
+    const u = reg || ultimaNota; if (!u) return;
+    if (editar) return abrirCorrecao(u);
+    await reverterNota(u);
+    ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
+    await carregarFontes();
+    $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #b45309"><b>↩️ Nota desfeita: ${esc(nomeNota(u))}.</b> O que ela tinha lançado foi tirado do estoque, da ficha técnica e da tabela.</div>`;
     desenharTabela(); desenharNotas();
   }
   // 🧾 notas lançadas: corrigir ou desfazer qualquer uma das últimas 20
   function desenharNotas() {
     const ns = meta().notas || [], box = $('#pcNotas', painel); if (!box) return;
     box.hidden = !ns.length;
-    box.innerHTML = `<h1 style="margin-top:26px">🧾 Notas lançadas</h1><p>Toque em <b>✏️ Corrigir</b> para mudar quantidade, preço ou total de uma nota já lançada.</p>` + ns.map((n) => `<div class="ft-card"><div class="ft-r"><span><b>${esc(n.nf || 'Nota')}</b><small style="display:block;color:#667085">${new Date(n.t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${n.itens.length} produto(s)</small></span><b>${brl(n.total)}</b></div>
+    box.innerHTML = `<h1 style="margin-top:26px">🧾 Notas lançadas</h1><p>Toque em <b>✏️ Corrigir</b> para mudar quantidade, preço ou total de uma nota já lançada.</p>` + ns.map((n) => `<div class="ft-card"><div class="ft-r"><span><b>${esc(nomeNota(n))}</b><small style="display:block;color:#667085">${new Date(n.t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${n.itens.length} produto(s)</small></span><b>${brl(n.total)}</b></div>
       <details><summary style="font-size:13px">Ver produtos</summary>${n.itens.map((x) => `<div class="ft-r" style="font-size:13px"><span>${esc(x.produto)}<small style="display:block;color:#667085">${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)} × ${brl(x.preco)}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}</details>
-      <div class="ft-chips" style="margin-top:8px"><button data-nc="${n.id}" style="background:#ede9fe;color:#4c1d95">✏️ Corrigir</button><button data-nd="${n.id}" style="background:#fee2e2;color:#991b1b">↩️ Desfazer</button></div></div>`).join('');
+      <div class="ft-chips" style="margin-top:8px"><button data-nc="${n.id}" style="background:#ede9fe!important;color:#4c1d95!important;box-shadow:none!important">✏️ Corrigir</button><button data-nd="${n.id}" style="background:#fee2e2!important;color:#991b1b!important;box-shadow:none!important">↩️ Desfazer</button><button data-nx="${n.id}" style="background:#f3f4f6!important;color:#374151!important;box-shadow:none!important">🗑️ Excluir</button></div></div>`).join('') + `<p style="font-size:12.5px;color:#667085">↩️ Desfazer tira a nota do estoque e da tabela. 🗑️ Excluir só tira a nota desta lista (o que ela lançou continua).</p>`;
     box.querySelectorAll('[data-nc]').forEach((b) => (b.onclick = () => { const n = (meta().notas || []).find((x) => x.id === b.dataset.nc); if (n) desfazerNota(true, n); }));
+    box.querySelectorAll('[data-nx]').forEach((b) => (b.onclick = () => { if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; } const m = meta(); m.notas = (m.notas || []).filter((x) => x.id !== b.dataset.nx); salvarMeta(m); if (corrigindo && corrigindo.id === b.dataset.nx) corrigindo = null; desenharNotas(); }));
     box.querySelectorAll('[data-nd]').forEach((b) => (b.onclick = () => { if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '↩️ Desfazer'; }, 3000); return; } const n = (meta().notas || []).find((x) => x.id === b.dataset.nd); if (n) desfazerNota(false, n); }));
   }
   async function distribuir(itens) {
@@ -413,13 +438,17 @@
     if (!armado) { armado = true; setTimeout(() => (armado = false), 8000); msg.textContent = `Vou guardar ${itens.length} preço(s) e lançar na ficha técnica e no estoque. Toque em Aplicar de novo para confirmar.`; return; }
     armado = false; msg.textContent = 'Aplicando…';
     try {
-      const r = await aplicarItens(itens, !!corrigindo); corrigindo = null;
-      rascunho = []; nf = ''; $('#pcNF', painel).value = '';
+      const corr = corrigindo && (meta().notas || []).find((x) => x.id === corrigindo.id);
+      if (corr) await reverterNota(corr, true);
+      const r = await aplicarItens(itens, !!corrigindo, corr ? corr.est.items || [] : []); corrigindo = null;
+      rascunho = []; nf = ''; $('#pcNF', painel).value = ''; $('#pcResultado', painel).innerHTML = '';
       await carregarFontes(); desenharLeitura(); desenharTabela(); desenharNotas();
       msg.textContent = `✅ Pronto: ${r.n} preço(s) guardado(s), ${r.nFicha} ingrediente(s) da ficha técnica e ${r.nEst} compra(s) no estoque.`;
       $('#pcAcoes', painel).hidden = false;
     } catch (err) { msg.textContent = 'Não consegui aplicar: ' + (err.message || err); }
   };
+
+  $('#pcCancelar', painel).onclick = () => { corrigindo = null; rascunho = []; nf = ''; $('#pcNF', painel).value = ''; $('#pcMsg', painel).textContent = ''; $('#pcResultado', painel).innerHTML = ''; desenharLeitura(); };
 
   /* ---------- tabela de produtos ---------- */
   function qtdEstoque(id) {
@@ -437,7 +466,7 @@
       const valor = q !== null ? q * p.preco : null;
       if (valor) valorTotal += valor;
       const porMedida = p.conteudo ? (p.tipo === 'g' ? brl(p.preco / p.conteudo * 1000) + '/kg' : p.tipo === 'ml' ? brl(p.preco / p.conteudo * 1000) + '/litro · <b>dose ' + doseMl() + ' ml ' + brl(p.preco * doseMl() / p.conteudo) + '</b>' : brl(p.preco / p.conteudo) + '/un') : '';
-      return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div><button data-pe="${esc(p._k)}">✏️ Editar</button></div>${editando === p._k ? formEditar(p) : ''}`;
+      return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div><div style="display:flex;flex-direction:column;gap:6px"><button data-pe="${esc(p._k)}">✏️ Editar</button><button data-px="${esc(p._k)}" style="background:#fee2e2!important;color:#991b1b!important">🗑️ Excluir</button></div></div>${editando === p._k ? formEditar(p) : ''}`;
     }).join('');
     $('#pcTabela', painel).innerHTML = linhas || '<p>Nenhum produto ainda. Tire foto de uma nota de compra.</p>';
     {const gs = Object.values(tabela().produtos || {}).filter((p) => doses(p) && p.un !== 'KG' && (!busca || chaveNome(p.nome).includes(busca))).sort((a, b) => a.nome.localeCompare(b.nome));
@@ -478,13 +507,18 @@
   }
   function ligarEditar() {
     painel.querySelectorAll('[data-pe]').forEach((b) => (b.onclick = async () => { await carregarFontes(); editando = editando === b.dataset.pe ? null : b.dataset.pe; desenharTabela(); const f = $('#pcEd', painel); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
+    painel.querySelectorAll('[data-px]').forEach((b) => (b.onclick = () => {
+      if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; }
+      const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[b.dataset.px]; delete (m.tabPrecos.alias || {})[b.dataset.px]; }
+      salvarMeta(m); if (editando === b.dataset.px) editando = null; desenharTabela();
+    }));
     const f = $('#pcEd', painel); if (!f) return;
     $('#peCancelar', f).onclick = () => { editando = null; desenharTabela(); };
     const nb = $('#peNota', f); if (nb) nb.onclick = () => { const n = notaDoProduto(editando); editando = null; if (n) { desfazerNota(true, n); $('#pcResultado', painel).scrollIntoView({ behavior: 'smooth' }); } };
     $('#peApagar', f).onclick = (e) => {
       const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; }
       const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[editando]; delete (m.tabPrecos.alias || {})[editando]; }
-      localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); editando = null; desenharTabela();
+      salvarMeta(m); editando = null; desenharTabela();
     };
     $('#peSalvar', f).onclick = async () => {
       const k = editando, m = meta(); m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} }; m.tabPrecos.alias = m.tabPrecos.alias || {};
@@ -511,5 +545,13 @@
     $('#pcScan', painel).click();
   };
   window.__barNotaLer = lerNota; // usado nos testes
+  try {
+    const g = JSON.parse(localStorage.getItem(RK) || 'null');
+    if (g && g.itens && g.itens.length) {
+      rascunho = g.itens; nf = g.nf || ''; $('#pcNF', painel).value = nf;
+      corrigindo = g.corrigindo ? (meta().notas || []).find((x) => x.id === g.corrigindo) || null : null;
+      carregarFontes().then(() => { desenharLeitura(); $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #7c3aed"><b>${corrigindo ? '✏️ Corrigindo: ' + esc(nomeNota(corrigindo)) : '🧾 Nota em aberto'}</b><br>Continue de onde parou e toque em <b>✅ Aplicar</b>.</div>`; }).catch(() => {});
+    }
+  } catch (e) {}
   desenharTabela(); desenharNotas();
 })();

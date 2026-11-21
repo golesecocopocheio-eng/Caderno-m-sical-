@@ -78,9 +78,21 @@
   function lerNota(texto) {
     const itens = [];
     texto.split(/\r?\n/).forEach((linha) => {
-      const L = semAcento(linha).toUpperCase().trim();
+      // tira os rótulos das colunas quando vêm na mesma linha ("QTD 5 VL UNIT 10,00 VL TOTAL 50,00")
+      let L = semAcento(linha).toUpperCase().replace(/\b(QTDE?\.?|QUANT\.?|QUANTIDADE|V(?:A)?L(?:OR)?\.?\s*UNIT(?:ARIO)?\.?|V(?:A)?L(?:OR)?\.?\s*TOTAL|PRECO\s*UNIT(?:ARIO)?\.?|R\$)\s*:?/g, ' ').replace(/\s=\s/g, ' ').trim();
       if (L.length < 6 || PULAR.test(L)) return;
-      const vs = (L.match(VALOR) || []).map(num);
+      let vs = (L.match(VALOR) || []).map(num);
+      // leitor trocou a vírgula por ponto ou o preço veio sem centavos ("5 GF 10.00 50.00", "5 UN 10 50"):
+      // só aceita se achar quantidade × preço = total
+      if (vs.length < 2) {
+        const ns = (L.replace(/\b\d+(?:[.,]\d+)?\s*(ML|L|LT|LTS|LITRO|LITROS|G|GR|KG|CL|MM|CM)\b/g, ' ').match(/(?:^|\s)\d{1,6}(?:\.\d{2})?(?=\s|$|[A-Z])/g) || []).map((x) => Number(x.trim()));
+        for (let k = ns.length - 1; k >= 2 && vs.length < 2; k--) for (let j = k - 1; j >= 1 && vs.length < 2; j--) for (let i = j - 1; i >= 0 && vs.length < 2; i--) {
+          const q = ns[i], u = ns[j], t = ns[k];
+          if (q > 0 && q < 1000 && u > 0 && Math.abs(q * u - t) <= Math.max(0.05, t * 0.012) && t > u) vs = [q, u, t];
+        }
+        if (vs.length === 3) { const [q, u, t] = vs; vs = [u, t]; L = L.replace(new RegExp('(^|\\s)' + String(q).replace('.', '\\.') + '(\\s*(UN|UND|UNID|CX|KG|PCT|PC|PT|FD|FDO|DZ|GF|GFA|GAR|LT|SC|BD|BJ|LATA)\\b)?(?=\\s|$)'), '$1' + q + ' ' + ((L.match(UNID) || [])[1] || 'UN') + ' '); }
+        else if (!vs.length) return;
+      }
       if (!vs.length) return;
       // descrição: começa no primeiro texto com letras, até o primeiro número longo (NCM) ou valor
       // tira o número do item e o código de barras (EAN) do começo
@@ -88,7 +100,7 @@
       const descInteira = desc;
       const corte = desc.search(/\s\d{6,}\s|\s\d+,\d{2,4}\b|\s\d+(?:[.,]\d+)?\s+(UN|UND|UNID|CX|KG|PCT|PC|PT|FD|FDO|DZ|GF|GFA|GAR|LT|SC|BD|BJ|LATA)\b|\s(UN|UND|UNID|CX|KG|PCT|PC|PT|FD|FDO|DZ|GF|GFA|GAR|LT|SC|BD|BJ|LATA)\s+\d|\s(UN|UND|UNID|CX|KG|PCT|PC|PT|FD|FDO|DZ|GF|GFA|GAR|LT|SC|BD|BJ|LATA)\s*$/);
       if (corte > 2) desc = desc.slice(0, corte);
-      desc = desc.replace(/\s+/g, ' ').trim();
+      desc = desc.replace(/\s+/g, ' ').trim().replace(/\s+\d{1,4}\s*(UN|UND|X)?\b.*$/, (m) => /\d\s*(ML|L|G|KG)\b/.test(m) ? m : '').replace(/\s+(X|R\$?)$/, '').trim();
       if (!/[A-Z]{3,}/.test(desc)) return;
       let qtd = 0, unit = 0, total = 0;
       const ok = (q, u, t) => q > 0 && u > 0 && Math.abs(q * u - t) <= Math.max(0.05, t * 0.012);
@@ -382,6 +394,8 @@
     } catch (e) {}
     if (ultimaNota && ultimaNota.id === u.id) ultimaNota = null;
   }
+  // quantidade, valor de cada um e total (ex.: 5 GF × R$ 10,00 = R$ 50,00)
+  const linhaQVT = (x) => `Qtd <b>${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)}</b> · Valor un. <b>${brl(x.preco)}</b> · Total <b>${brl(x.qtd * x.preco)}</b>${x.total && Math.abs(x.total - x.qtd * x.preco) > 0.05 ? ' ⚠️ na nota ' + brl(x.total) : ''}`;
   const nomeNota = (n) => n.nf || 'Nota de ' + new Date(n.t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   // ✏️ Corrigir: abre os produtos da nota no topo para mudar. Nada muda até tocar em ✅ Aplicar.
   async function abrirCorrecao(u) {
@@ -406,7 +420,7 @@
     const ns = meta().notas || [], box = $('#pcNotas', painel); if (!box) return;
     box.hidden = !ns.length;
     box.innerHTML = `<h1 style="margin-top:26px">🧾 Notas lançadas</h1><p>Toque em <b>✏️ Corrigir</b> para mudar quantidade, preço ou total de uma nota já lançada.</p>` + ns.map((n) => `<div class="ft-card"><div class="ft-r"><span><b>${esc(nomeNota(n))}</b><small style="display:block;color:#667085">${new Date(n.t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${n.itens.length} produto(s)</small></span><b>${brl(n.total)}</b></div>
-      <details><summary style="font-size:13px">Ver produtos</summary>${n.itens.map((x) => `<div class="ft-r" style="font-size:13px"><span>${esc(x.produto)}<small style="display:block;color:#667085">${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)} × ${brl(x.preco)}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}</details>
+      <details><summary style="font-size:13px">Ver produtos</summary>${n.itens.map((x) => `<div class="ft-r" style="font-size:13px"><span>${esc(x.produto)}<small style="display:block;color:#667085">${linhaQVT(x)}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}</details>
       <div class="ft-chips" style="margin-top:8px"><button data-nc="${n.id}" style="background:#ede9fe!important;color:#4c1d95!important;box-shadow:none!important">✏️ Corrigir</button><button data-nd="${n.id}" style="background:#fee2e2!important;color:#991b1b!important;box-shadow:none!important">↩️ Desfazer</button><button data-nx="${n.id}" style="background:#f3f4f6!important;color:#374151!important;box-shadow:none!important">🗑️ Excluir</button></div></div>`).join('') + `<p style="font-size:12.5px;color:#667085">↩️ Desfazer tira a nota do estoque e da tabela. 🗑️ Excluir só tira a nota desta lista (o que ela lançou continua).</p>`;
     box.querySelectorAll('[data-nc]').forEach((b) => (b.onclick = () => { const n = (meta().notas || []).find((x) => x.id === b.dataset.nc); if (n) desfazerNota(true, n); }));
     box.querySelectorAll('[data-nx]').forEach((b) => (b.onclick = () => { if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; } const m = meta(); m.notas = (m.notas || []).filter((x) => x.id !== b.dataset.nx); salvarMeta(m); if (corrigindo && corrigindo.id === b.dataset.nx) corrigindo = null; desenharNotas(); }));
@@ -420,8 +434,8 @@
       $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d">
         <b>✅ Nota lançada: ${r.n} produto(s) · ${brl(r.total)}</b>
         <p style="margin:6px 0 8px;font-size:13px">${r.nEst} compra(s) somada(s) no Estoque${r.novos ? ' (' + r.novos + ' item(ns) novo(s) no grupo “Compras (notas)”)' : ''} · ${r.nFicha} custo(s) da Ficha técnica atualizado(s) · preços guardados na tabela abaixo.</p>
-        ${ultimaNota.itens.map((x) => `<div class="ft-r"><span>${esc(x.produto)}<small style="display:block;color:#667085">${campo(x.qtd, x.qtd % 1 ? 3 : 0)} ${esc(x.un)} × ${brl(x.preco)}${x.ficha ? ' · 🍸 ' + esc(x.ficha) : ''}${x.estoque ? ' · 📦 ' + esc(((estoque.items || {})[x.estoque] || {}).n || 'estoque') : ''}${doses(x) && x.un !== 'KG' ? '<br>' + doseTxt(x) : ''}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}
-        <div class="ft-chips" style="margin-top:10px"><button id="pcCorrigir" style="background:#e5e7eb;color:#111">✏️ Corrigir</button><button id="pcDesfazer" style="background:#fee2e2;color:#991b1b">↩️ Desfazer nota</button></div>
+        ${ultimaNota.itens.map((x) => `<div class="ft-r"><span>${esc(x.produto)}<small style="display:block;color:#667085">${linhaQVT(x)}<br>${x.ficha ? '🍸 ' + esc(x.ficha) : ''}${x.estoque ? (x.ficha ? ' · ' : '') + '📦 ' + esc(((estoque.items || {})[x.estoque] || {}).n || 'estoque') : ''}${doses(x) && x.un !== 'KG' ? '<br>' + doseTxt(x) : ''}</small></span><b>${brl(x.qtd * x.preco)}</b></div>`).join('')}
+        <div class="ft-chips" style="margin-top:10px"><button id="pcCorrigir" style="background:#ede9fe!important;color:#4c1d95!important;box-shadow:none!important">✏️ Corrigir</button><button id="pcDesfazer" style="background:#fee2e2!important;color:#991b1b!important;box-shadow:none!important">↩️ Desfazer nota</button></div>
         <details style="margin-top:8px"><summary style="font-size:13px">Ver o texto que o app leu</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(window.__barNotaTexto || '')}</pre></details></div>`;
       $('#pcDesfazer', painel).onclick = () => desfazerNota(false);
       $('#pcCorrigir', painel).onclick = () => desfazerNota(true);

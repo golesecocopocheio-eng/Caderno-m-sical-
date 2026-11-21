@@ -256,6 +256,7 @@
     <div id="pcNotas" hidden></div>
     <h1 style="margin-top:26px">📋 Produtos</h1>
     <input id="pcBusca" placeholder="Buscar produto…" style="margin-top:4px">
+    <div class="ft-chips" id="pcAtalhos" style="margin:8px 0 4px;position:sticky;top:0;z-index:5">${[['pcDoses', '🥃 Doses'], ['pcUnid', '🍺 Unidades'], ['pcIns', '🍋 Insumos'], ['pcTabela', '📋 Todos']].map(([id, t]) => `<button type="button" data-ir="${id}" style="background:#f5f3ff!important;color:#5b21b6!important;box-shadow:none!important;padding:8px 12px!important;font-size:13px!important;margin:0!important">${t}</button>`).join('')}</div>
     <div class="ft-card" id="pcDoses"></div>
     <div class="ft-card" id="pcUnid"></div>
     <div class="ft-card" id="pcIns"></div>
@@ -585,6 +586,7 @@
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
   }
   $('#pcBusca', painel).oninput = desenharTabela;
+  painel.querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => { const e = $('#' + b.dataset.ir, painel); if (e && !e.hidden) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
 
   /* ---------- 🍺 custo por unidade (cerveja, vinho, água, refri, packs) e 🍋 insumos (limão, açúcar...) ---------- */
   const ehInsumo = (p) => p.un === 'KG' || p.un === 'DZ' || p.tipo === 'g' || (p.tipo !== 'ml' && !(p.pack > 1));
@@ -599,20 +601,63 @@
     const r = p.rende > 1 ? p.rende : p.conteudo > 1 && p.tipo === 'un' ? p.conteudo : 1;
     return { txt: r > 1 ? inteiro(r) + ' un' : '1 un', v: p.preco / r, por: 'cada' };
   }
+  // 🍋 Insumos da ficha técnica (frutas, açúcares, ervas, especiarias...), organizados por grupo.
+  // Chá, xarope, calda, redução e suco feitos no bar ficam só na ficha técnica (não entram aqui).
+  const PREPARO = /^(cha\b|xarope|syrup|calda|redu|tintura|espuma|infus|cordial|shrub|oleo|suco|completar|finalizar|mix\b|pure\b|polpa caseira)|\(dose\)/;
+  const BEBIDA = /\b(gin|vodka|rum|whisk\w*|cachaca|licor|vinho|cerveja|tonica|soda|espumante|aperol|campari|vermute|jagermeister|amaretto|cointreau|tequila|conhaque|agua|refri\w*)\b/;
+  const GRUPOS_INS = [
+    ['🍋 Frutas', /limao|laranja|maracuja|abacaxi|morango|caju|maca\b|uva|kiwi|manga|melancia|coco|framboesa|amora|mirtilo|cereja|pessego|tangerina|mexerica|grapefruit|toranja|siciliano|desidratad|fruta|carambola|goiaba|acerola|pitaya|lichia|kumquat|jabuticaba/],
+    ['🌿 Ervas e flores', /manjeric|capim|hortel|\bmenta|alecrim|tomilho|salvia|lavanda|flor|hibisco|erva|folha|louro|coentro|basil|camomila|rosa\b/],
+    ['🌶️ Especiarias', /canela|cravo|anis|pimenta|cardamomo|noz.moscada|gengibre|sal\b|curcuma|acafrao|baunilha|tabasco|zimbro|cumaru|pimentao|paprica|semente|fava|especiar|tonka/],
+    ['🍬 Açúcares e doces', /acucar|mascavo|rapadura|mel\b|melado|leite condensado|halls|chocolate|cacau|doce|bala|caramelo|glucose|demerara/],
+    ['🥚 Outros insumos', /ovo|clara|gelo|bitter|angostura|cafe|leite|creme|nata|chantilly|manteiga|azeitona|cebola|pepino|tomate|sal grosso|aquafaba|gomo|casca/]];
+  const grupoIns = (k) => { const n = semAcento(k).toLowerCase(); if (PREPARO.test(n) || BEBIDA.test(n)) return null; const g = GRUPOS_INS.find(([, re]) => re.test(n)); return g ? g[0] : null; };
+  const maiuscula = (t) => String(t).charAt(0).toUpperCase() + String(t).slice(1);
+  // como se compra cada insumo novo (para já abrir o editor certo)
+  const unPadrao = (k) => { const n = semAcento(k).toLowerCase(); return /ovo|clara/.test(n) ? 'DZ' : /limao|laranja|maracuja|abacaxi|morango|acucar|mascavo|gengibre|caju|tangerina|manga|uva|kiwi/.test(n) && !/desidratad/.test(n) ? 'KG' : 'UN'; };
+  const cab = (t) => `<div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px">${t}</div>`;
+  function desenharInsumos(todos, busca) {
+    const bi = $('#pcIns', painel), grupos = {};
+    const usados = new Set();
+    const custo = meta().custo || {};
+    Object.keys(ingredientes).forEach((k) => {
+      const g = grupoIns(k); if (!g) return;
+      if (busca && !chaveNome(k).includes(busca)) return;
+      const ps = todos.filter((p) => p.ficha === k);
+      ps.forEach((p) => usados.add(p._k));
+      (grupos[g] = grupos[g] || []).push({ k, ps });
+    });
+    // produtos de insumo da tabela que não estão em nenhuma receita (ex.: gelo)
+    todos.filter((p) => ehInsumo(p) && !usados.has(p._k)).forEach((p) => { const g = grupoIns(p.nome) || '🥚 Outros insumos'; (grupos[g] = grupos[g] || []).push({ k: '', ps: [p] }); });
+    const ordem = GRUPOS_INS.map((x) => x[0]).filter((g) => grupos[g] && grupos[g].length);
+    bi.hidden = !ordem.length;
+    const usoTxt = (k) => (ingredientes[k] === 'ml' ? 'usa em ml' : ingredientes[k] === 'un' ? 'usa por unidade' : '');
+    const linhaIns = ({ k, ps }) => {
+      if (ps.length) return ps.map((p) => { const c = custoUso(p); return `<div class="ft-r pc-lin" data-pe="${esc(p._k)}" style="font-size:14px;cursor:pointer"><span style="flex:2">${esc(k ? maiuscula(k) : p.nome)}<small style="display:block;color:#667085">${esc(k && chaveNome(p.nome) !== chaveNome(k) ? p.nome + ' · ' : '')}${nomeEmb(p.un)} · ${c.txt}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brlFino(c.v)}<small style="display:block;font-weight:400;color:#667085">${c.por}</small></b></div>`; }).join('');
+      const f = custo[k], pf = f ? num(f.p) : 0;
+      const ja = pf ? `<span style="flex:1;text-align:right">${brl(pf)}</span><b style="flex:1;text-align:right">${ingredientes[k] === 'ml' && num(f.v) ? brlFino(pf / num(f.v)) + '<small style="display:block;font-weight:400;color:#667085">por ml</small>' : brlFino(pf) + '<small style="display:block;font-weight:400;color:#667085">cada</small>'}</b>`
+        : `<span style="flex:2;text-align:right"><span class="pc-add">➕ Colocar preço</span></span>`;
+      return `<div class="ft-r pc-lin" data-pi="${esc(k)}" style="font-size:14px;cursor:pointer"><span style="flex:2">${esc(maiuscula(k))}<small style="display:block;color:#667085">${pf ? 'preço da ficha técnica · ' : 'sem preço · '}${usoTxt(k)}</small></span>${ja}</div>`;
+    };
+    bi.innerHTML = `<style>.pc-add{display:inline-block;padding:5px 10px;border-radius:999px;background:#f5f3ff;color:#5b21b6;font-weight:700;font-size:12.5px}.pc-gt{margin:12px 0 2px;font-weight:800;font-size:14px;color:#5b21b6}</style>
+      <div class="ft-r"><b>🍋 Insumos da ficha técnica</b><small style="color:#667085">toque para editar</small></div>
+      <p style="margin:2px 0 6px;font-size:12.5px;color:#667085">Tudo o que as receitas usam, menos o que é feito no bar (chá, xarope, calda…), que fica só na ficha técnica.</p>` +
+      ordem.map((g) => `<div class="pc-gt">${g}</div>` + cab('<span style="flex:2">Insumo</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Custo do uso</span>') + grupos[g].sort((a, b) => (a.k || a.ps[0].nome).localeCompare(b.k || b.ps[0].nome)).map(linhaIns).join('')).join('');
+    bi.querySelectorAll('[data-pi]').forEach((r) => (r.onclick = () => {
+      if (document.getElementById('pcModal')) return;
+      const k = r.dataset.pi, nome = maiuscula(k), un = unPadrao(k), f = custo[k];
+      abrirEditor(chaveNome(nome), { nome, un, preco: f ? num(f.p) : 0, conteudo: un === 'KG' ? 1000 : ingredientes[k] === 'ml' && f && num(f.v) ? num(f.v) : 0, tipo: un === 'KG' ? 'g' : ingredientes[k] === 'ml' ? 'ml' : 'un', ficha: k, estoque: '', rende: 1, data: hoje(), nf: '' });
+    }));
+  }
   function desenharCustos(busca) {
     const todos = Object.entries(tabela().produtos || {}).map(([k, p]) => Object.assign({}, p, { _k: k })).filter((p) => !busca || chaveNome(p.nome).includes(busca)).sort((a, b) => a.nome.localeCompare(b.nome));
-    const cab = (t) => `<div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px">${t}</div>`;
     const linha = (p, cols) => `<div class="ft-r pc-lin" data-pe="${esc(p._k)}" style="font-size:14px;cursor:pointer">${cols}</div>`;
     // 🍺 unidade: tudo em ml que não é dose (cerveja, vinho, água, refri, lata, long neck, pack)
     const us = todos.filter((p) => p.tipo === 'ml' && p.un !== 'KG' && !doses(p));
     const bu = $('#pcUnid', painel); bu.hidden = !us.length;
     bu.innerHTML = `<div class="ft-r"><b>🍺 Custo por unidade</b><small style="color:#667085">toque para editar</small></div>` + cab('<span style="flex:2">Produto</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Por unidade</span>') +
       us.map((p) => { const n = p.pack > 1 ? p.pack : 1, ml = n > 1 ? p.mlUn || p.conteudo / n : p.conteudo; return linha(p, `<span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${n > 1 ? nomeEmb(p.un) + ' ' + n + ' × ' + inteiro(ml) + ' ml' : nomeEmb(p.un) + (ml ? ' ' + inteiro(ml) + ' ml' : '')}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brl(p.preco / n)}</b>`); }).join('');
-    // 🍋 insumos: kg, dúzia, unidade (limão, açúcar, gelo, ovo...)
-    const is = todos.filter((p) => ehInsumo(p));
-    const bi = $('#pcIns', painel); bi.hidden = !is.length;
-    bi.innerHTML = `<div class="ft-r"><b>🍋 Insumos</b><small style="color:#667085">toque para editar</small></div>` + cab('<span style="flex:2">Insumo</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Custo do uso</span>') +
-      is.map((p) => { const c = custoUso(p); return linha(p, `<span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${nomeEmb(p.un)} · ${c.txt}${p.ficha ? ' · 🍸 ' + esc(p.ficha) : ''}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brl(c.v)}<small style="display:block;font-weight:400;color:#667085">${c.por}</small></b>`); }).join('');
+    desenharInsumos(todos, busca);
   }
 
   /* ---------- ✏️ editar um produto da tabela: janela própria (não fecha quando a tabela redesenha) ---------- */
@@ -641,8 +686,9 @@
     else if (ml > 0 && d.tipo === 'g') partes.push(`${brl(d.preco / ml * 1000)} por kg`);
     return partes.join('<br>');
   }
-  function abrirEditor(k) {
-    const p = (tabela().produtos || {})[k]; if (!p) return;
+  function abrirEditor(k, novoP) {
+    const ehNovo = !(tabela().produtos || {})[k] && !!novoP;
+    const p = (tabela().produtos || {})[k] || novoP; if (!p) return;
     editando = k;
     const n = notaDoProduto(k);
     const pack = EMB_PACK.includes(p.un) && p.pack > 1;
@@ -679,7 +725,7 @@
         .pc-del{color:#b42318}
         @media (prefers-color-scheme:dark){.pc-modal{background:#1a1b27;color:#eef0f6}.pc-modal input,.pc-modal select,.pc-emb button,.pc-ml button{background:#11121b;color:#eef0f6;border-color:#2c2e40}.pc-modal label{color:#aab0c4}.pc-res{background:#241c3d;border-color:#3b2f63}.pc-bt .pc-cc{background:#2c2e40;color:#eef0f6}}
       </style>
-      <h2>✏️ Editar produto</h2><p class="sub">${n ? 'Veio da nota ' + esc(nomeNota(n)) + '. ' : ''}O novo preço vale para o custo das receitas, a dose e o estoque.</p>
+      <h2>${ehNovo ? '➕ Preço de ' + esc(p.nome) : '✏️ Editar produto'}</h2><p class="sub">${n ? 'Veio da nota ' + esc(nomeNota(n)) + '. ' : ''}O novo preço vale para o custo das receitas, a dose e o estoque.</p>
       <label>Nome</label><input id="peNome" value="${esc(p.nome)}">
       <label>Como você compra</label>
       <div class="pc-emb">${EMB.map(([v, t]) => `<button type="button" data-emb="${v}"${v === d.un ? ' class="on"' : ''}>${t}</button>`).join('')}</div>
@@ -702,7 +748,7 @@
       <p class="sub" style="margin-top:8px">Ao salvar, o preço vai direto para o 📦 Estoque e para o custo da 🍸 Ficha técnica.</p>
       <div class="pc-bt"><button type="button" class="pc-cc" id="peCancelar">Cancelar</button><button type="button" class="pc-sv" id="peSalvar">💾 Salvar</button></div>
       ${n ? '<button type="button" class="pc-lk" id="peNota">🧾 Corrigir a quantidade na nota</button>' : ''}
-      <button type="button" class="pc-lk pc-del" id="peApagar">🗑️ Excluir este produto</button>
+      ${ehNovo ? '' : '<button type="button" class="pc-lk pc-del" id="peApagar">🗑️ Excluir este produto</button>'}
     </div>`;
     const $m = (s) => fundo.querySelector(s);
     $m('#peTipo').value = d.tipo;
@@ -742,7 +788,7 @@
     fundo.onclick = (e) => { if (e.target === fundo) fechar(); };
     $m('#peCancelar').onclick = fechar;
     const nb = $m('#peNota'); if (nb) nb.onclick = () => { fechar(); if (n) desfazerNota(true, n); };
-    $m('#peApagar').onclick = (e) => {
+    if ($m('#peApagar')) $m('#peApagar').onclick = (e) => {
       const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Toque de novo para excluir'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir este produto'; }, 3000); return; }
       const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[k]; delete (m.tabPrecos.alias || {})[k]; }
       salvarMeta(m); fechar(); desenharTabela();
@@ -752,7 +798,7 @@
       if (!(d.preco > 0)) { $m('#pePreco').focus(); $m('#peRes').innerHTML = '⚠️ Coloque o preço.'; return; }
       const pk = EMB_PACK.includes(d.un) && d.pack > 1;
       const m = meta(); m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} }; m.tabPrecos.alias = m.tabPrecos.alias || {};
-      const p0 = m.tabPrecos.produtos[k]; if (!p0) { fechar(); return; }
+      const p0 = m.tabPrecos.produtos[k] || (novoP ? Object.assign({}, novoP) : null); if (!p0) { fechar(); return; }
       const nome = $m('#peNome').value.trim() || p0.nome;
       const conteudo = d.un === 'KG' ? 1000 : pk ? d.pack * d.mlUn : d.ml;
       const novo = Object.assign({}, p0, { nome, preco: Math.round(d.preco * 100) / 100, un: d.un, conteudo: conteudo || 0, tipo: d.un === 'KG' ? 'g' : conteudo ? d.tipo : 'un', pack: pk ? d.pack : 0, mlUn: pk ? d.mlUn : 0, ficha: $m('#peFicha').value, estoque: $m('#peEst').value, data: hoje(), editado: Date.now() });

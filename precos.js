@@ -309,13 +309,19 @@
   }
   // Como o ingrediente entra no custo das receitas (meta.custo do Caixa):
   // p = preço por unidade usada na receita; v = ml dessa unidade (só para ingredientes em ml).
+  // ingrediente da receita contado em gotas/dash (bitter, tabasco) comprado em garrafa com ml
+  const porGotas = (it) => ingredientes[it.ficha] === 'un' && it.tipo === 'ml' && it.conteudo > 0 && !['KG', 'DZ'].includes(it.un) && !(it.pack > 1);
+  const GOTA_ML = () => num(lerJSON('caixa-bar-meta').gotaMl) || 0.05, DASH_ML = () => num(lerJSON('caixa-bar-meta').dashMl) || 0.8;
   function custoFicha(it) {
+    if (porGotas(it)) return { p: it.preco, v: it.conteudo, g: 1, m: it.usoMed || 'gota', q: it.usoQtd || 3 };
     const u = ingredientes[it.ficha], r = it.rende || 1;
     if (it.un === 'KG' || it.un === 'DZ') return u === 'ml' ? { p: it.preco / r, v: (it.un === 'KG' ? it.mlkg || 1000 : it.conteudo || 0) / r } : { p: it.preco / r };
     if (u === 'ml') return { p: it.preco, v: it.conteudo || 0 };
     return { p: it.preco / r };
   }
+  const custoGravar = (c) => Object.assign({ p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }, c.g ? { g: '1', m: c.m, q: String(c.q) } : {});
   function custoReceita(it) {
+    if (porGotas(it)) { const pm = it.preco / it.conteudo; return brlFino(pm * GOTA_ML()) + ' por gota · ' + brlFino(pm * DASH_ML()) + ' por dash'; }
     const c = custoFicha(it);
     if (ingredientes[it.ficha] === 'ml') return c.v ? brl(c.p / c.v) + ' por ml' : 'informe o conteúdo';
     return brl(c.p) + ' por unidade';
@@ -428,7 +434,7 @@
       const chave = base ? it.tab : chaveNome(it.produto);
       const prod = base ? Object.assign({}, base, { preco: it.precoTab || it.preco, estoque: base.estoque || it.estoque || '', data: d, nf: nf || '' })
         : { nome: it.produto, un: it.un === 'UN' && it.tipo === 'ml' && it.conteudo >= 375 ? 'GF' : it.un, preco: it.preco, conteudo: it.conteudo, tipo: it.tipo, ficha: it.ficha || '', estoque: it.estoque || '', rende: it.rende || 1, data: d, nf: nf || '' };
-      if (it.ficha) { guarda(antes.custo, it.ficha, m.custo[it.ficha]); const c = custoFicha(base ? Object.assign({}, prod, { mlkg: prod.mlkg || it.mlkg }) : it); m.custo[it.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }; }
+      if (it.ficha) { guarda(antes.custo, it.ficha, m.custo[it.ficha]); const c = custoFicha(base ? Object.assign({}, prod, { mlkg: prod.mlkg || it.mlkg }) : it); m.custo[it.ficha] = custoGravar(c); }
       if (it.estoque && it.somar) {
         const id = 'nfp' + t.toString(36) + i;
         est.mov['m' + id] = { d: it.qtd, i: it.estoque, k: 'p', t: t + i };
@@ -726,6 +732,7 @@
   /* ---------- 🍺 custo por unidade (cerveja, vinho, água, refri, packs) e 🍋 insumos (limão, açúcar...) ---------- */
   const ehInsumo = (p) => p.un === 'KG' || p.un === 'DZ' || p.tipo === 'g' || (p.tipo !== 'ml' && !(p.pack > 1));
   function custoUso(p) { // custo de cada uso na receita
+    if (p.ficha && porGotas(p)) { const me = p.usoMed || 'gota', q = p.usoQtd || 3, pm = p.preco / p.conteudo; return { txt: inteiro(p.conteudo) + ' ml · usa ' + (me === 'dash' ? 'dash' : 'gotas'), v: q * (me === 'dash' ? DASH_ML() : GOTA_ML()) * pm, por: q + ' ' + (me === 'dash' ? 'dash' : 'gotas') }; }
     if (p.un === 'KG') {
       if (p.usoKg === 'un' || (!p.usoKg && p.ficha && ingredientes[p.ficha] === 'un')) { const r = p.rende || rendePadrao(p.ficha || p.nome); return { txt: 'rende ' + inteiro(r) + ' un', v: p.preco / r, por: 'cada' }; }
       if (p.usoKg === 'ml' || (p.ficha && ingredientes[p.ficha] === 'ml') || (!p.usoKg && /limao|laranja|maracuja|abacaxi/.test(chaveNome(p.nome)))) { const ml = p.mlkg || mlkgPadrao(p.ficha || p.nome); return { txt: 'rende ' + inteiro(ml) + ' ml', v: p.preco / ml * 30, por: '30 ml' }; }
@@ -757,8 +764,12 @@
   }
   function novoInsumo(k) {
     if (document.getElementById('pcModal')) return;
-    const nome = maiuscula(k), un = unPadrao(k), f = (meta().custo || {})[k];
-    abrirEditor(chaveNome(nome), { nome, un, preco: f ? num(f.p) : 0, conteudo: un === 'KG' ? 1000 : ingredientes[k] === 'ml' && f && num(f.v) ? num(f.v) : 0, tipo: un === 'KG' ? 'g' : ingredientes[k] === 'ml' ? 'ml' : 'un', ficha: k, estoque: '', rende: 1, data: hoje(), nf: '' });
+    const nome = maiuscula(k), f = (meta().custo || {})[k];
+    // bitter, tabasco: garrafinha em ml, usada em gotas/dash
+    const gotinha = /bitter|angostura|peychaud|tabasco|molho ingles|worcester/.test(semAcento(k).toLowerCase());
+    const un = gotinha ? 'GF' : unPadrao(k);
+    const ml = gotinha ? (f && f.g && num(f.v)) || (/tabasco/.test(semAcento(k).toLowerCase()) ? 60 : 200) : un === 'KG' ? 1000 : ingredientes[k] === 'ml' && f && num(f.v) ? num(f.v) : 0;
+    abrirEditor(chaveNome(nome), { nome, un, preco: f ? num(f.p) : 0, conteudo: ml, tipo: un === 'KG' ? 'g' : gotinha || ingredientes[k] === 'ml' ? 'ml' : 'un', ficha: k, estoque: '', rende: 1, usoMed: f && f.m || 'gota', usoQtd: f && num(f.q) || 3, data: hoje(), nf: '' });
   }
   function ligarInsumos(box) {
     box.querySelectorAll('[data-pi]').forEach((r) => (r.onclick = () => novoInsumo(r.dataset.pi)));
@@ -791,7 +802,8 @@
     const linhaIns = ({ k, ps }) => {
       if (ps.length) return ps.map((p) => { const c = custoUso(p); return `<div class="ft-r pc-lin" data-pe="${esc(p._k)}" style="font-size:14px;cursor:pointer"><span style="flex:2">${esc(k ? maiuscula(k) : p.nome)}<small style="display:block;color:#667085">${esc(k && chaveNome(p.nome) !== chaveNome(k) ? p.nome + ' · ' : '')}${nomeEmb(p.un)} · ${c.txt}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brlFino(c.v)}<small style="display:block;font-weight:400;color:#667085">${c.por}</small></b></div>`; }).join('');
       const f = custo[k], pf = f ? num(f.p) : 0;
-      const ja = pf ? `<span style="flex:1;text-align:right">${brl(pf)}</span><b style="flex:1;text-align:right">${ingredientes[k] === 'ml' && num(f.v) ? brlFino(pf / num(f.v)) + '<small style="display:block;font-weight:400;color:#667085">por ml</small>' : brlFino(pf) + '<small style="display:block;font-weight:400;color:#667085">cada</small>'}</b>`
+      const ja = pf && f.g && num(f.v) ? `<span style="flex:1;text-align:right">${brl(pf)}</span><b style="flex:1;text-align:right">${brlFino((num(f.q) || 3) * (f.m === 'dash' ? DASH_ML() : GOTA_ML()) * pf / num(f.v))}<small style="display:block;font-weight:400;color:#667085">${num(f.q) || 3} ${f.m === 'dash' ? 'dash' : 'gotas'}</small></b>`
+        : pf ? `<span style="flex:1;text-align:right">${brl(pf)}</span><b style="flex:1;text-align:right">${ingredientes[k] === 'ml' && num(f.v) ? brlFino(pf / num(f.v)) + '<small style="display:block;font-weight:400;color:#667085">por ml</small>' : brlFino(pf) + '<small style="display:block;font-weight:400;color:#667085">cada</small>'}</b>`
         : `<span style="flex:2;text-align:right"><span class="pc-add">➕ Colocar preço</span></span>`;
       return `<div class="ft-r pc-lin" data-pi="${esc(k)}" style="font-size:14px;cursor:pointer"><span style="flex:2">${esc(maiuscula(k))}<small style="display:block;color:#667085">${pf ? 'preço da ficha técnica · ' : 'sem preço · '}${usoTxt(k)}</small></span>${ja}</div>`;
     };
@@ -804,7 +816,7 @@
     const todos = Object.entries(tabela().produtos || {}).map(([k, p]) => Object.assign({}, p, { _k: k })).filter((p) => !busca || chaveNome(p.nome).includes(busca)).sort((a, b) => a.nome.localeCompare(b.nome));
     const linha = (p, cols) => `<div class="ft-r pc-lin" data-pe="${esc(p._k)}" style="font-size:14px;cursor:pointer">${cols}</div>`;
     // 🍺 unidade: tudo em ml que não é dose (cerveja, vinho, água, refri, lata, long neck, pack)
-    const us = todos.filter((p) => p.tipo === 'ml' && p.un !== 'KG' && !doses(p));
+    const us = todos.filter((p) => p.tipo === 'ml' && p.un !== 'KG' && !doses(p) && !(p.ficha && porGotas(p)));
     const bu = $('#pcUnid', painel); bu.hidden = !us.length;
     bu.innerHTML = `<div class="ft-r"><b>🍺 Custo por unidade</b><small style="color:#667085">toque para editar</small></div>` + cab('<span style="flex:2">Produto</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Por unidade</span>') +
       us.map((p) => { const n = p.pack > 1 ? p.pack : 1, ml = n > 1 ? p.mlUn || p.conteudo / n : p.conteudo; return linha(p, `<span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${n > 1 ? nomeEmb(p.un) + ' ' + n + ' × ' + inteiro(ml) + ' ml' : nomeEmb(p.un) + (ml ? ' ' + inteiro(ml) + ' ml' : '')}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brl(p.preco / n)}</b>`); }).join('');
@@ -829,6 +841,11 @@
       partes.push(`${brl(d.preco / ml * 1000)} por litro`);
       if (!pack && ml >= 375 && !NAO_DOSE.test(d.nome)) partes.push(`🥃 ${String(Math.floor(ml / doseMl() * 10) / 10).replace('.', ',')} doses de ${doseMl()} ml · <b>${brl(d.preco * doseMl() / ml)} por dose</b>`);
     }
+    if (ml > 0 && d.tipo === 'ml' && !pack && d.ficha && ingredientes[d.ficha] === 'un' && !['KG', 'DZ'].includes(d.un)) {
+      const pm = d.preco / ml, gotas = Math.round(ml / GOTA_ML()), dashes = Math.round(ml / DASH_ML());
+      const q = d.usoQtd || 3, me = d.usoMed || 'gota', um = me === 'dash' ? DASH_ML() : GOTA_ML();
+      return partes.slice(0, 1).concat([`💧 ${inteiro(ml)} ml ≈ ${gotas.toLocaleString('pt-BR')} gotas ou ${dashes} dash`, `1 gota = <b>${brlFino(pm * GOTA_ML())}</b> · 1 dash = <b>${brlFino(pm * DASH_ML())}</b>`, `🍸 ${q} ${me === 'dash' ? 'dash' : 'gotas'} no coquetel = <b>${brlFino(q * um * pm)}</b>`]).join('<br>');
+    }
     if (d.un === 'KG') {
       if (d.uso === 'ml' && d.mlkg > 0) partes.push(`rende ${inteiro(d.mlkg)} ml de suco · <b>${brlFino(d.preco / d.mlkg)} por ml</b> · 30 ml = ${brl(d.preco / d.mlkg * 30)}`);
       else if (d.uso === 'un' && d.rendeUn > 0) partes.push(`rende ${inteiro(d.rendeUn)} unidades · <b>${brl(d.preco / d.rendeUn)} cada</b>`);
@@ -849,13 +866,14 @@
     // sem vínculo: sugere o ingrediente da ficha e o item do estoque pelo nome
     const sugF = p.ficha ? '' : fichaPara(p.nome) || '';
     const sugE = p.estoque ? '' : melhor(p.nome, Object.entries(estoque.items || {}).map(([id, v]) => [id, v.n]), false) || '';
+    d.usoMed = p.usoMed || 'gota'; d.usoQtd = p.usoQtd || 3; d.ficha = p.ficha || sugF;
     d.uso = p.usoKg || ((p.ficha || sugF) && ingredientes[p.ficha || sugF] === 'un' ? 'un' : (p.ficha || sugF) && ingredientes[p.ficha || sugF] === 'ml' ? 'ml' : /limao|laranja|maracuja|abacaxi/.test(chaveNome(p.nome)) ? 'ml' : 'g');
     d.mlkg = p.mlkg || (d.uso === 'ml' ? mlkgPadrao(p.ficha || sugF || p.nome) : 0);
     d.rendeUn = d.uso === 'un' ? p.rende > 1 ? p.rende : rendePadrao(p.ficha || sugF || p.nome) : 0;
     let fundo = document.getElementById('pcModal');
     if (!fundo) { fundo = document.createElement('div'); fundo.id = 'pcModal'; document.body.appendChild(fundo); }
     fundo.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,10,30,.55);display:flex;align-items:flex-end;justify-content:center';
-    const chips = [350, 473, 600, 700, 750, 900, 1000];
+    const chips = [60, 100, 200, 350, 473, 600, 700, 750, 900, 1000];
     fundo.innerHTML = `<div class="pc-modal" role="dialog" aria-modal="true">
       <style>
         .pc-modal{background:#fff;color:#161826;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:15px}
@@ -893,6 +911,11 @@
         <label id="peRendeL">Quanto rende</label>
         <div class="pc-2"><input id="peRende" inputmode="decimal" placeholder="ex.: 400"><select id="peUso"><option value="ml">ml de suco por kg</option><option value="un">unidades por kg</option><option value="g">uso em gramas</option></select></div>
       </div>
+      <div id="peGotaBox" style="display:none">
+        <label>💧 Na receita usa</label>
+        <div class="pc-2"><select id="peMed"><option value="gota">💧 gotas</option><option value="dash">🥄 dash</option></select><input id="peUsoQ" inputmode="numeric" placeholder="3"></div>
+        <small style="display:block;color:#667085;margin-top:4px">1 gota ≈ ${String(GOTA_ML()).replace('.', ',')} ml · 1 dash ≈ ${String(DASH_ML()).replace('.', ',')} ml. O número é quantas vão no coquetel quando a receita só diz "finalizar com…". Se a receita diz "2 dash" ou "3 gotas", usa o que está escrito.</small>
+      </div>
       <div class="pc-res" id="peRes"></div>
       <label>🍸 Ingrediente da ficha técnica${!p.ficha && sugF ? ' <small style="color:#7c3aed">(sugerido)</small>' : ''}</label><select id="peFicha">${opcoes(opF, p.ficha || sugF)}</select>
       <label>📦 Item do estoque${!p.estoque && sugE ? ' <small style="color:#7c3aed">(sugerido)</small>' : ''}</label><select id="peEst">${opcoes(opE, p.estoque || sugE)}</select>
@@ -908,6 +931,9 @@
       $m('#pePackBox').style.display = pk ? '' : 'none';
       $m('#peMlBox').style.display = d.un === 'KG' || d.un === 'DZ' ? 'none' : '';
       $m('#peRendeBox').style.display = d.un === 'KG' ? '' : 'none';
+      d.ficha = $m('#peFicha') ? $m('#peFicha').value : d.ficha;
+      $m('#peGotaBox').style.display = ingredientes[d.ficha] === 'un' && d.tipo === 'ml' && !['KG', 'DZ'].includes(d.un) && !EMB_PACK.includes(d.un) ? '' : 'none';
+      $m('#peMed').value = d.usoMed; $m('#peUsoQ').value = d.usoQtd;
       $m('#peUso').value = d.uso; $m('#peRende').style.display = d.uso === 'g' ? 'none' : '';
       $m('#peRende').value = d.uso === 'ml' ? inteiro(d.mlkg) : d.uso === 'un' ? inteiro(d.rendeUn) : '';
       $m('#peRendeL').textContent = d.uso === 'ml' ? 'Quanto rende de suco (ml por kg)' : d.uso === 'un' ? 'Quantas unidades vêm em 1 kg' : 'Usado em gramas na receita';
@@ -929,6 +955,9 @@
     $m('#peMl').oninput = () => { lerMl(); fundo.querySelectorAll('[data-ml]').forEach((b) => b.classList.toggle('on', +b.dataset.ml === num($m('#peMl').value))); d.nome = $m('#peNome').value; $m('#peRes').innerHTML = resumoEditor(d); };
     $m('#pePreco').oninput = () => { d.preco = num($m('#pePreco').value); $m('#peRes').innerHTML = resumoEditor(d); };
     $m('#pePack').oninput = () => { d.pack = Math.round(num($m('#pePack').value)); $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#peMed').onchange = () => { d.usoMed = $m('#peMed').value; $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#peUsoQ').oninput = () => { d.usoQtd = num($m('#peUsoQ').value) || 3; $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#peFicha').onchange = () => atualizar();
     $m('#peUso').onchange = () => { d.uso = $m('#peUso').value; if (d.uso === 'ml' && !d.mlkg) d.mlkg = mlkgPadrao(d.nome); if (d.uso === 'un' && !d.rendeUn) d.rendeUn = rendePadrao(d.nome); atualizar(); };
     $m('#peRende').oninput = () => { const v = num($m('#peRende').value); if (d.uso === 'ml') d.mlkg = v; else d.rendeUn = v; $m('#peRes').innerHTML = resumoEditor(d); };
     $m('#peTipo').onchange = () => { d.tipo = $m('#peTipo').value; $m('#peRes').innerHTML = resumoEditor(d); };
@@ -956,12 +985,13 @@
       if (pk && novo.ficha && ingredientes[novo.ficha] === 'un') novo.rende = d.pack;
       if (d.un === 'KG') { novo.usoKg = d.uso; novo.mlkg = d.uso === 'ml' ? d.mlkg : 0; novo.rende = d.uso === 'un' ? d.rendeUn || 1 : 1; }
       if (d.un === 'DZ') novo.rende = 12;
+      if (porGotas(novo)) { novo.usoMed = d.usoMed || 'gota'; novo.usoQtd = d.usoQtd || 3; } else { delete novo.usoMed; delete novo.usoQtd; }
       const nk = chaveNome(nome) || k;
       if (nk !== k) { delete m.tabPrecos.produtos[k]; if (!m.tabPrecos.alias[nk]) m.tabPrecos.alias[nk] = m.tabPrecos.alias[k]; }
       m.tabPrecos.produtos[nk] = novo;
       // a próxima nota com este produto já vem com a embalagem e os ml certos
       [k, nk].forEach((x) => { m.tabPrecos.alias[x] = Object.assign({}, m.tabPrecos.alias[x] || {}, { ficha: novo.ficha, estoque: novo.estoque, conteudo: novo.conteudo, tipo: novo.tipo, rende: novo.rende || 1, mlkg: novo.mlkg || (m.tabPrecos.alias[x] || {}).mlkg || 0 }); });
-      if (novo.ficha) { m.custo = m.custo || {}; const c = custoFicha({ ...novo, mlkg: novo.mlkg || (m.tabPrecos.alias[nk] || {}).mlkg || mlkgPadrao(novo.ficha) }); m.custo[novo.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }; }
+      if (novo.ficha) { m.custo = m.custo || {}; const c = custoFicha({ ...novo, mlkg: novo.mlkg || (m.tabPrecos.alias[nk] || {}).mlkg || mlkgPadrao(novo.ficha) }); m.custo[novo.ficha] = custoGravar(c); }
       salvarMeta(m);
       fechar(); desenharTabela();
       $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d"><b>✅ ${esc(nome)} salvo</b><br>${resumoEditor({ ...d, nome })}</div>`;

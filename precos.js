@@ -170,7 +170,9 @@
   let corrigindo = null; // nota que está sendo corrigida: só muda de verdade quando tocar em Aplicar
   const meta = () => lerJSON('caixa-bar-meta');
   // grava e recarrega o Caixa, que manda a mudança para a nuvem
-  const salvarMeta = (m) => { localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); };
+  // o Caixa (ficha técnica) relê os preços e recalcula as receitas na hora, sem sair da tela; manda para a nuvem
+  const avisarCaixa = () => { const f = document.getElementById('f-caixa'); if (!f || !f.src) return; try { if (f.contentWindow.__cxMetaAtualizada) { f.contentWindow.__cxMetaAtualizada(); return; } } catch (e) {} f.contentWindow.location.reload(); };
+  const salvarMeta = (m) => { localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); avisarCaixa(); };
   const tabela = () => meta().tabPrecos || { produtos: {}, alias: {} };
   // palavras que não identificam o produto (o tipo da bebida); o que sobra é a marca/nome
   const GENERICO = /^(whisky|whiskey|uisque|vodka|gin|rum|licor|cachaca|aguardente|tequila|conhaque|cerveja|chopp|vinho|tinto|branco|rose|seco|suave|demi|sec|brut|refrigerante|refri|agua|mineral|tonica|lata|long|neck|garrafa|pet|vidro|espumante|aperitivo|bebida|dose|com|sem|gas|original|tradicional|zero|pack|caixa|fardo|unid|und)$/;
@@ -445,7 +447,7 @@
     localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
     const temEst = ['mov', 'price', 'pg', 'items'].some((k) => Object.keys(est[k]).length);
     if (temEst) await window.__barImportar({ apps: { estoque: est } });
-    ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
+    avisarCaixa(); { const f = document.getElementById('f-estoque'); if (f && f.src) f.contentWindow.location.reload(); }
     ultimaNota = reg;
     return { n: itens.length, nFicha: itens.filter((x) => x.ficha).length, nEst: Object.keys(est.mov).length, novos, total };
   }
@@ -485,7 +487,7 @@
     const u = reg || ultimaNota; if (!u) return;
     if (editar) return abrirCorrecao(u);
     await reverterNota(u);
-    ['f-caixa', 'f-estoque'].forEach((id) => { const f = document.getElementById(id); if (f && f.src) f.contentWindow.location.reload(); });
+    avisarCaixa(); { const f = document.getElementById('f-estoque'); if (f && f.src) f.contentWindow.location.reload(); }
     await carregarFontes();
     $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #b45309"><b>↩️ Nota desfeita: ${esc(nomeNota(u))}.</b> O que ela tinha lançado foi tirado do estoque, da ficha técnica e da tabela.</div>`;
     desenharTabela(); desenharNotas();
@@ -580,7 +582,7 @@
      $('#pcDoses', painel).innerHTML = `<div class="ft-r" style="align-items:center"><b>🥃 Custo das doses</b><label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px">dose de<input id="pcDoseMl" inputmode="numeric" value="${doseMl()}" style="width:56px;text-align:center;padding:6px">ml</label></div>
        <div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px"><span style="flex:2">Garrafa</span><span style="flex:1;text-align:right">Preço</span><span style="flex:1;text-align:right">Doses</span><span style="flex:1;text-align:right">Custo/dose</span></div>
        ${gs.map((p) => { const d = doses(p); return `<div class="ft-r" style="font-size:14px"><span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${campo(p.conteudo, 0)} ml</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><span style="flex:1;text-align:right">${String(d.n).replace('.', ',')}</span><b style="flex:1;text-align:right">${brl(d.custo)}</b></div>`; }).join('')}`;
-     const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); desenharTabela(); } };}
+     const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); avisarCaixa(); desenharTabela(); } };}
     desenharCustos(busca);
     ligarEditar();
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
@@ -617,7 +619,29 @@
   const unPadrao = (k) => { const n = semAcento(k).toLowerCase(); return /ovo|clara/.test(n) ? 'DZ' : /limao|laranja|maracuja|abacaxi|morango|acucar|mascavo|gengibre|caju|tangerina|manga|uva|kiwi/.test(n) && !/desidratad/.test(n) ? 'KG' : 'UN'; };
   const cab = (t) => `<div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px">${t}</div>`;
   function desenharInsumos(todos, busca) {
-    const bi = $('#pcIns', painel), grupos = {};
+    const bi = $('#pcIns', painel), r = htmlInsumos(todos, busca);
+    bi.hidden = !r.n; bi.innerHTML = r.html; ligarInsumos(bi);
+  }
+  function novoInsumo(k) {
+    if (document.getElementById('pcModal')) return;
+    const nome = maiuscula(k), un = unPadrao(k), f = (meta().custo || {})[k];
+    abrirEditor(chaveNome(nome), { nome, un, preco: f ? num(f.p) : 0, conteudo: un === 'KG' ? 1000 : ingredientes[k] === 'ml' && f && num(f.v) ? num(f.v) : 0, tipo: un === 'KG' ? 'g' : ingredientes[k] === 'ml' ? 'ml' : 'un', ficha: k, estoque: '', rende: 1, data: hoje(), nf: '' });
+  }
+  function ligarInsumos(box) {
+    box.querySelectorAll('[data-pi]').forEach((r) => (r.onclick = () => novoInsumo(r.dataset.pi)));
+    box.querySelectorAll('[data-pe]').forEach((r) => (r.onclick = (e) => { e.preventDefault(); if (!document.getElementById('pcModal')) abrirEditor(r.dataset.pe); }));
+  }
+  // a mesma lista para a tela 🍋 Insumos da Ficha técnica (aba Caixa)
+  window.__barInsumos = () => {
+    try { const w = document.getElementById('f-caixa').contentWindow; ingredientes = (w.__cxIngredientes && w.__cxIngredientes()) || ingredientes; } catch (e) {}
+    const todos = Object.entries(tabela().produtos || {}).map(([k, p]) => Object.assign({}, p, { _k: k }));
+    const r = htmlInsumos(todos, '');
+    const corpo = r.html.replace(/<div class="ft-r"><b>🍋 Insumos<\/b>[\s\S]*?<\/p>/, ''); // a tela da ficha já tem o título
+    return { n: r.n, html: `<style>.ft-r{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 0}.ft-r small{font-size:12.5px}.pc-gt:first-of-type{margin-top:0}</style>` + corpo };
+  };
+  window.__barLigarInsumos = ligarInsumos;
+  function htmlInsumos(todos, busca) {
+    const grupos = {};
     const usados = new Set();
     const custo = meta().custo || {};
     Object.keys(ingredientes).forEach((k) => {
@@ -630,7 +654,6 @@
     // produtos de insumo da tabela que não estão em nenhuma receita (ex.: gelo)
     todos.filter((p) => ehInsumo(p) && !usados.has(p._k)).forEach((p) => { const g = grupoIns(p.nome) || '🥚 Outros insumos'; (grupos[g] = grupos[g] || []).push({ k: '', ps: [p] }); });
     const ordem = GRUPOS_INS.map((x) => x[0]).filter((g) => grupos[g] && grupos[g].length);
-    bi.hidden = !ordem.length;
     const usoTxt = (k) => (ingredientes[k] === 'ml' ? 'usa em ml' : ingredientes[k] === 'un' ? 'usa por unidade' : '');
     const linhaIns = ({ k, ps }) => {
       if (ps.length) return ps.map((p) => { const c = custoUso(p); return `<div class="ft-r pc-lin" data-pe="${esc(p._k)}" style="font-size:14px;cursor:pointer"><span style="flex:2">${esc(k ? maiuscula(k) : p.nome)}<small style="display:block;color:#667085">${esc(k && chaveNome(p.nome) !== chaveNome(k) ? p.nome + ' · ' : '')}${nomeEmb(p.un)} · ${c.txt}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brlFino(c.v)}<small style="display:block;font-weight:400;color:#667085">${c.por}</small></b></div>`; }).join('');
@@ -639,15 +662,10 @@
         : `<span style="flex:2;text-align:right"><span class="pc-add">➕ Colocar preço</span></span>`;
       return `<div class="ft-r pc-lin" data-pi="${esc(k)}" style="font-size:14px;cursor:pointer"><span style="flex:2">${esc(maiuscula(k))}<small style="display:block;color:#667085">${pf ? 'preço da ficha técnica · ' : 'sem preço · '}${usoTxt(k)}</small></span>${ja}</div>`;
     };
-    bi.innerHTML = `<style>.pc-add{display:inline-block;padding:5px 10px;border-radius:999px;background:#f5f3ff;color:#5b21b6;font-weight:700;font-size:12.5px}.pc-gt{margin:12px 0 2px;font-weight:800;font-size:14px;color:#5b21b6}</style>
-      <div class="ft-r"><b>🍋 Insumos da ficha técnica</b><small style="color:#667085">toque para editar</small></div>
-      <p style="margin:2px 0 6px;font-size:12.5px;color:#667085">Tudo o que as receitas usam, menos o que é feito no bar (chá, xarope, calda…), que fica só na ficha técnica.</p>` +
-      ordem.map((g) => `<div class="pc-gt">${g}</div>` + cab('<span style="flex:2">Insumo</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Custo do uso</span>') + grupos[g].sort((a, b) => (a.k || a.ps[0].nome).localeCompare(b.k || b.ps[0].nome)).map(linhaIns).join('')).join('');
-    bi.querySelectorAll('[data-pi]').forEach((r) => (r.onclick = () => {
-      if (document.getElementById('pcModal')) return;
-      const k = r.dataset.pi, nome = maiuscula(k), un = unPadrao(k), f = custo[k];
-      abrirEditor(chaveNome(nome), { nome, un, preco: f ? num(f.p) : 0, conteudo: un === 'KG' ? 1000 : ingredientes[k] === 'ml' && f && num(f.v) ? num(f.v) : 0, tipo: un === 'KG' ? 'g' : ingredientes[k] === 'ml' ? 'ml' : 'un', ficha: k, estoque: '', rende: 1, data: hoje(), nf: '' });
-    }));
+    return { n: ordem.length, html: `<style>.pc-add{display:inline-block;padding:5px 10px;border-radius:999px;background:#f5f3ff;color:#5b21b6;font-weight:700;font-size:12.5px}.pc-gt{margin:12px 0 2px;font-weight:800;font-size:14px;color:#5b21b6}</style>
+      <div class="ft-r"><b>🍋 Insumos</b><small style="color:#667085">toque para editar</small></div>
+      <p style="margin:2px 0 6px;font-size:12.5px;color:#667085">Tudo o que as receitas usam. Chá, xarope e calda feitos no bar ficam só na ficha técnica. O preço colocado aqui já atualiza as receitas.</p>` +
+      ordem.map((g) => `<div class="pc-gt">${g}</div>` + cab('<span style="flex:2">Insumo</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Custo do uso</span>') + grupos[g].sort((a, b) => (a.k || a.ps[0].nome).localeCompare(b.k || b.ps[0].nome)).map(linhaIns).join('')).join('') };
   }
   function desenharCustos(busca) {
     const todos = Object.entries(tabela().produtos || {}).map(([k, p]) => Object.assign({}, p, { _k: k })).filter((p) => !busca || chaveNome(p.nome).includes(busca)).sort((a, b) => a.nome.localeCompare(b.nome));

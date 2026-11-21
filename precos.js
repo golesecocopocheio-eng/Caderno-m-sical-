@@ -258,7 +258,7 @@
     <div id="pcNotas" hidden></div>
     <h1 style="margin-top:26px">📋 Produtos</h1>
     <input id="pcBusca" placeholder="Buscar produto…" style="margin-top:4px">
-    <div class="ft-chips" id="pcAtalhos" style="margin:8px 0 4px;position:sticky;top:0;z-index:5">${[['pcDoses', '🥃 Doses'], ['pcUnid', '🍺 Unidades'], ['pcIns', '🍋 Insumos'], ['pcTabela', '📋 Todos']].map(([id, t]) => `<button type="button" data-ir="${id}" style="background:#f5f3ff!important;color:#5b21b6!important;box-shadow:none!important;padding:8px 12px!important;font-size:13px!important;margin:0!important">${t}</button>`).join('')}</div>
+    <div class="ft-chips" id="pcAtalhos" style="margin:8px 0 4px">${[['pcDoses', '🥃 Doses'], ['pcUnid', '🍺 Unidades'], ['pcIns', '🍋 Insumos'], ['pcTabela', '📋 Todos']].map(([id, t]) => `<button type="button" data-ir="${id}" style="background:#f5f3ff!important;color:#5b21b6!important;box-shadow:none!important;padding:8px 12px!important;font-size:13px!important;margin:0!important">${t}</button>`).join('')}</div>
     <div class="ft-card" id="pcRep" hidden style="border:2px solid #f59e0b"></div>
     <div class="ft-card" id="pcDoses"></div>
     <div class="ft-card" id="pcUnid"></div>
@@ -663,17 +663,53 @@
     }));
     const semLig = Object.values(tp).filter((p) => !p.estoque).length, semFicha = Object.values(tp).filter((p) => !p.ficha && !ehInsumo(p)).length;
     const nomeMes = (m) => new Date(m + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    const linhas = [];
-    linhas.push(`<div class="ft-r"><b style="font-size:17px">📊 Relatório</b><small style="color:#667085">${esc(new Date().toLocaleDateString('pt-BR'))}</small></div>`);
-    linhas.push(`<div class="ft-r"><span>Compras em ${nomeMes(mes)}</span><b>${brl(soma(doMes))}</b></div><small style="display:block;color:#667085;margin:-4px 0 6px">${doMes.length} nota(s)${doAnt.length ? ' · ' + nomeMes(mesAnt) + ': ' + brl(soma(doAnt)) : ''}</small>`);
-    linhas.push(`<div class="ft-r"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`);
-    linhas.push(`<div class="ft-r"><span>Produtos na tabela</span><b>${Object.keys(tp).length}</b></div>`);
+    const mesCurto = (m) => new Date(m + '-15').toLocaleDateString('pt-BR', { month: 'long' });
     const gs = Object.entries(porGrupo).sort((a, b) => b[1] - a[1]);
-    if (gs.length) linhas.push(`<div style="margin-top:10px;font-weight:800;color:#5b21b6">🧾 Gastos do mês por grupo</div>` + gs.map(([g, v]) => `<div class="ft-r" style="font-size:14px"><span>${esc(g)}</span><b>${brl(v)}</b></div>`).join(''));
-    if (mud.length) linhas.push(`<div style="margin-top:10px;font-weight:800;color:#5b21b6">💲 Preços que mudaram</div>` + mud.slice(0, 15).map((y) => `<div class="ft-r" style="font-size:14px"><span>${esc(y.nome)}<small style="display:block;color:#667085">${new Date(y.t).toLocaleDateString('pt-BR')}</small></span><b style="color:${y.para > y.de ? '#b42318' : '#15803d'}">${brl(y.de)} → ${brl(y.para)} ${y.para > y.de ? '▲' : '▼'}</b></div>`).join(''));
-    if (semLig || semFicha) linhas.push(`<div style="margin-top:10px;font-size:13px;color:#b45309">⚠️ ${semLig ? semLig + ' produto(s) sem item no estoque' : ''}${semLig && semFicha ? ' · ' : ''}${semFicha ? semFicha + ' bebida(s) sem ingrediente da ficha técnica' : ''}. Abra ✏️ Editar para ligar.</div>`);
-    linhas.push(`<div class="ft-chips" style="margin-top:12px"><button type="button" id="pcRelCopiar" style="background:#7c3aed!important;color:#fff!important;box-shadow:none!important">📋 Copiar relatório</button></div>`);
-    box.innerHTML = linhas.join('');
+    const totG = gs.reduce((s, x) => s + x[1], 0) || 1;
+    const sM = soma(doMes), sA = soma(doAnt), dif = sA ? (sM - sA) / sA * 100 : null;
+    const pct = (n) => (n > 0 ? '+' : '') + n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+    const CORES = ['#7c3aed', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#14b8a6', '#8b5cf6'];
+    const icone = (g) => /licor/i.test(g) ? '🍸' : /destil/i.test(g) ? '🥃' : /vinho/i.test(g) ? '🍷' : /cerveja/i.test(g) ? '🍺' : /refri|mixer/i.test(g) ? '🥤' : /fruta|erva/i.test(g) ? '🍋' : '📦';
+    box.innerHTML = `<style>
+      #pcRel{padding:16px}
+      .rl-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+      .rl-cab b{font-size:18px}.rl-cab span{font-size:12.5px;color:#667085;background:#f2f4f7;padding:4px 10px;border-radius:999px}
+      .rl-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .rl-k{border-radius:16px;padding:12px;background:#f8f7ff;border:1px solid #ece9fe}
+      .rl-k small{display:block;font-size:12px;color:#667085;margin-bottom:4px}
+      .rl-k b{display:block;font-size:19px;letter-spacing:-.3px}
+      .rl-k i{font-style:normal;font-size:12px;font-weight:700}
+      .rl-k.dest{grid-column:1/-1;background:linear-gradient(135deg,#7c3aed,#a855f7);border:0;color:#fff}
+      .rl-k.dest small{color:#ede9fe}.rl-k.dest b{font-size:26px}
+      .rl-sec{margin:18px 0 8px;font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#5b21b6}
+      .rl-bar{margin:9px 0}
+      .rl-bar .t{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px}
+      .rl-bar .t b{font-weight:700}.rl-bar .t small{color:#667085;font-weight:400;margin-left:6px}
+      .rl-bar .f{height:9px;border-radius:99px;background:#f2f4f7;overflow:hidden}
+      .rl-bar .f span{display:block;height:100%;border-radius:99px}
+      .rl-pr{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f2f4f7}
+      .rl-pr:first-of-type{border-top:0}
+      .rl-pr .n{flex:1;min-width:0;font-size:14px}.rl-pr .n small{display:block;color:#667085;font-size:12px}
+      .rl-pr .v{text-align:right;font-size:13px;color:#667085;white-space:nowrap}.rl-pr .v b{display:block;font-size:15px;color:#161826}
+      .rl-tag{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px;white-space:nowrap}
+      .rl-up{background:#fee4e2;color:#b42318}.rl-down{background:#dcfae6;color:#067647}
+      .rl-av{display:flex;gap:8px;align-items:flex-start;margin-top:14px;padding:10px 12px;border-radius:12px;background:#fffaeb;color:#93370d;font-size:13px}
+      .rl-vazio{color:#667085;font-size:13.5px;padding:6px 0}
+      #pcRel .rl-bt{display:block;width:100%;margin-top:16px!important;padding:14px!important;border-radius:14px!important;background:#161826!important;color:#fff!important;box-shadow:none!important;font-size:15px!important}
+      @media (prefers-color-scheme:dark){.rl-k{background:#221d38;border-color:#2f2850}.rl-cab span,.rl-bar .f{background:#2c2e40}.rl-pr{border-color:#2c2e40}.rl-pr .v b{color:#eef0f6}.rl-av{background:#3a2a10;color:#fcd9a6}#pcRel .rl-bt{background:#7c3aed!important}}
+    </style>
+    <div class="rl-cab"><b>📊 Relatório</b><span>${esc(new Date().toLocaleDateString('pt-BR'))}</span></div>
+    <div class="rl-kpis">
+      <div class="rl-k dest"><small>Compras em ${esc(nomeMes(mes))}</small><b>${brl(sM)}</b><small style="margin:4px 0 0">${doMes.length} nota(s) lançada(s)</small></div>
+      <div class="rl-k"><small>${esc(mesCurto(mesAnt))} (mês passado)</small><b>${brl(sA)}</b>${dif !== null ? `<i style="color:${dif > 0 ? '#b42318' : '#067647'}">${dif > 0 ? '▲' : '▼'} ${pct(dif)} este mês</i>` : '<i style="color:#667085">sem notas</i>'}</div>
+      <div class="rl-k"><small>Valor em estoque</small><b>${brl(valorTotal)}</b><i style="color:#667085">${Object.keys(tp).length} produto(s)</i></div>
+    </div>
+    <div class="rl-sec">Gastos do mês por grupo</div>
+    ${gs.length ? gs.map(([g, v], i) => `<div class="rl-bar"><div class="t"><span>${icone(g)} ${esc(g)}</span><b>${brl(v)}<small>${Math.round(v / totG * 100)}%</small></b></div><div class="f"><span style="width:${Math.max(3, v / totG * 100)}%;background:${CORES[i % CORES.length]}"></span></div></div>`).join('') : '<div class="rl-vazio">Nenhuma nota lançada este mês.</div>'}
+    <div class="rl-sec">Preços que mudaram</div>
+    ${mud.length ? mud.slice(0, 15).map((y) => { const p = (y.para - y.de) / y.de * 100; return `<div class="rl-pr"><div class="n">${esc(y.nome)}<small>${new Date(y.t).toLocaleDateString('pt-BR')}</small></div><div class="v">${brl(y.de)}<b>${brl(y.para)}</b></div><span class="rl-tag ${p > 0 ? 'rl-up' : 'rl-down'}">${p > 0 ? '▲' : '▼'} ${pct(p)}</span></div>`; }).join('') : '<div class="rl-vazio">Nenhum preço mudou nas últimas notas.</div>'}
+    ${semLig || semFicha ? `<div class="rl-av"><span>⚠️</span><span>${semLig ? '<b>' + semLig + '</b> produto(s) sem item no estoque' : ''}${semLig && semFicha ? '<br>' : ''}${semFicha ? '<b>' + semFicha + '</b> bebida(s) sem ingrediente da ficha técnica' : ''}<br><small>Abra ✏️ Editar no produto para ligar.</small></span></div>` : ''}
+    <button type="button" class="rl-bt" id="pcRelCopiar">📤 Enviar / copiar relatório</button>`;
     $('#pcRelCopiar', box).onclick = async () => {
       const txt = ['📊 RELATÓRIO DE COMPRAS E PREÇOS — ' + new Date().toLocaleDateString('pt-BR'), '',
         'Compras em ' + nomeMes(mes) + ': ' + brl(soma(doMes)) + ' (' + doMes.length + ' nota(s))', doAnt.length ? 'Mês anterior: ' + brl(soma(doAnt)) : '',
@@ -682,7 +718,7 @@
         mud.length ? '\nPREÇOS QUE MUDARAM\n' + mud.slice(0, 15).map((y) => '• ' + y.nome + ': ' + brl(y.de) + ' → ' + brl(y.para)).join('\n') : '',
         '\nPRODUTOS\n' + Object.values(tp).sort((a, b) => a.nome.localeCompare(b.nome)).map((p) => '• ' + p.nome + ': ' + brl(p.preco) + ' (' + nomeEmb(p.un) + (p.pack > 1 ? ' ' + p.pack + 'x' + inteiro(p.mlUn) + ' ml' : p.conteudo && p.un !== 'KG' ? ' ' + inteiro(p.conteudo) + ' ' + p.tipo : '') + ')' + (doses(p) ? ' · dose ' + brl(doses(p).custo) : '')).join('\n')].filter(Boolean).join('\n');
       try { if (navigator.share) { await navigator.share({ text: txt }); return; } } catch (e) {}
-      try { await navigator.clipboard.writeText(txt); $('#pcRelCopiar', box).textContent = '✅ Copiado'; } catch (e) { prompt('Copie o relatório:', txt); }
+      try { await navigator.clipboard.writeText(txt); $('#pcRelCopiar', box).textContent = '✅ Relatório copiado'; } catch (e) { prompt('Copie o relatório:', txt); }
     };
   }
   painel.querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => { const e = $('#' + b.dataset.ir, painel); if (e && !e.hidden) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));

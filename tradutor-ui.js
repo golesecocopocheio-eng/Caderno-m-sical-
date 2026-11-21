@@ -43,12 +43,15 @@
     usuario: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     ok: '<path d="m5 12 5 5L20 7"/>',
     aviso: '<path d="M12 3 2 21h20zM12 10v5M12 18h.01"/>',
+    trocar: '<path d="M4 8h14l-4-4M20 16H6l4 4"/>',
+    repetir: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/>',
     nuvem: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/>'
   };
   // emoji → ícone (os que não estão aqui são só removidos da interface)
   const MAPA = {
+    '🔀': 'trocar', '⏹': 'parar',
     '☁️': 'nuvem', '☁': 'nuvem',
-    '🎤': 'mic', '🎙️': 'mic', '🔊': 'som', '🔉': 'som', '🔇': 'mudo', '🎧': 'fone', '🔄': 'auto', '🔁': 'auto',
+    '🎤': 'mic', '🎙️': 'mic', '🔊': 'som', '🔉': 'som', '🔇': 'mudo', '🎧': 'fone', '🔄': 'auto', '🔁': 'repetir',
     '🧹': 'limpar', '✖': 'fechar', '✖️': 'fechar', '❌': 'fechar', '📋': 'copiar', '⭐': 'estrela', '★': 'estrela', '☆': 'estrela',
     '🔎': 'buscar', '🔍': 'buscar', '🎲': 'sortear', '⏪': 'voltar', '▶': 'tocar', '▶️': 'tocar', '⏯': 'tocarPausar', '⏯️': 'tocarPausar',
     '◀': 'esq', '◀️': 'esq', '⏹': 'parar', '⏹️': 'parar', '■': 'parar', '⏺': 'gravar', '⏺️': 'gravar', '📁': 'pasta', '💾': 'salvar',

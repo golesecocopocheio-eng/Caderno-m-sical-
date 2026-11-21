@@ -259,11 +259,13 @@
     <h1 style="margin-top:26px">📋 Produtos</h1>
     <input id="pcBusca" placeholder="Buscar produto…" style="margin-top:4px">
     <div class="ft-chips" id="pcAtalhos" style="margin:8px 0 4px;position:sticky;top:0;z-index:5">${[['pcDoses', '🥃 Doses'], ['pcUnid', '🍺 Unidades'], ['pcIns', '🍋 Insumos'], ['pcTabela', '📋 Todos']].map(([id, t]) => `<button type="button" data-ir="${id}" style="background:#f5f3ff!important;color:#5b21b6!important;box-shadow:none!important;padding:8px 12px!important;font-size:13px!important;margin:0!important">${t}</button>`).join('')}</div>
+    <div class="ft-card" id="pcRep" hidden style="border:2px solid #f59e0b"></div>
     <div class="ft-card" id="pcDoses"></div>
     <div class="ft-card" id="pcUnid"></div>
     <div class="ft-card" id="pcIns"></div>
     <div class="ft-card ft-tot" id="pcResumo"></div>
-    <div id="pcTabela"></div>`;
+    <div id="pcTabela"></div>
+    <div class="ft-card" id="pcRel" style="margin-top:22px"></div>`;
 
   function opcoes(lista, sel) { return '<option value="">—</option>' + lista.map(([v, n]) => `<option value="${esc(v)}"${v === sel ? ' selected' : ''}>${esc(n)}</option>`).join(''); }
   function desenharLeitura() {
@@ -584,10 +586,105 @@
        ${gs.map((p) => { const d = doses(p); return `<div class="ft-r" style="font-size:14px"><span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${campo(p.conteudo, 0)} ml</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><span style="flex:1;text-align:right">${String(d.n).replace('.', ',')}</span><b style="flex:1;text-align:right">${brl(d.custo)}</b></div>`; }).join('')}`;
      const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); avisarCaixa(); desenharTabela(); } };}
     desenharCustos(busca);
+    desenharRepetidos(); desenharRelatorio(valorTotal);
     ligarEditar();
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
   }
   $('#pcBusca', painel).oninput = desenharTabela;
+
+  /* ---------- 🧹 produtos repetidos: o mesmo produto cadastrado duas vezes (ex.: "Campari 998ml" e "CAMPARI 998 ML") ---------- */
+  const nomeLimpo = (n) => chaveNome(n).replace(/(\d)\s+(ml|l|lt|g|kg)\b/g, '$1$2');
+  function mesmoProduto(a, b) {
+    if (nomeLimpo(a.nome) === nomeLimpo(b.nome)) return true;
+    const ma = marca(a.nome), mb = marca(b.nome);
+    if (!ma.length || !mb.length) return false;
+    const cobre = (x, y) => x.every((t) => y.some((d) => parecido(d, t)));
+    if (!(cobre(ma, mb) || cobre(mb, ma))) return false;
+    const ta = tokens(a.nome).filter((t) => GENERICO.test(t)), tb = tokens(b.nome).filter((t) => GENERICO.test(t));
+    if (ta.length && tb.length && !ta.some((t) => tb.includes(t))) return false; // "vodka x" e "gin x" são diferentes
+    const mla = a.pack > 1 ? a.mlUn : a.conteudo, mlb = b.pack > 1 ? b.mlUn : b.conteudo;
+    if (mla && mlb && a.un !== 'KG' && b.un !== 'KG' && Math.abs(mla - mlb) > Math.max(mla, mlb) * 0.06) return false;
+    return true;
+  }
+  function gruposRepetidos() {
+    const ps = Object.entries(tabela().produtos || {}), feitos = new Set(), grupos = [];
+    ps.forEach(([k, p]) => {
+      if (feitos.has(k)) return;
+      const g = ps.filter(([k2, p2]) => k2 !== k && !feitos.has(k2) && mesmoProduto(p, p2)).map(([k2]) => k2);
+      if (g.length) { g.unshift(k); g.forEach((x) => feitos.add(x)); grupos.push(g); }
+    });
+    return grupos;
+  }
+  const quando = (p) => p.editado || Date.parse(p.data || '') || 0;
+  function juntarRepetidos() {
+    const m = meta(), tp = m.tabPrecos, gs = gruposRepetidos(); let tirados = 0;
+    gs.forEach((g) => {
+      const ps = g.map((k) => [k, tp.produtos[k]]);
+      // fica o mais completo (ligado à ficha/estoque, com ml); o preço é o mais recente
+      ps.sort((a, b) => ((b[1].ficha ? 2 : 0) + (b[1].estoque ? 2 : 0) + (b[1].conteudo ? 1 : 0)) - ((a[1].ficha ? 2 : 0) + (a[1].estoque ? 2 : 0) + (a[1].conteudo ? 1 : 0)) || quando(b[1]) - quando(a[1]));
+      const [kf, pf] = ps[0], recente = ps.slice().sort((a, b) => quando(b[1]) - quando(a[1]))[0][1];
+      const fica = Object.assign({}, pf, { preco: recente.preco, data: recente.data, nf: recente.nf || pf.nf, ficha: pf.ficha || (ps.find((x) => x[1].ficha) || [, {}])[1].ficha || '', estoque: pf.estoque || (ps.find((x) => x[1].estoque) || [, {}])[1].estoque || '' });
+      tp.produtos[kf] = fica;
+      ps.slice(1).forEach(([k]) => { delete tp.produtos[k]; tp.alias = tp.alias || {}; tp.alias[k] = Object.assign({}, tp.alias[k] || {}, { prod: kf }); tirados++; });
+    });
+    salvarMeta(m);
+    return tirados;
+  }
+  function desenharRepetidos() {
+    const box = $('#pcRep', painel), gs = gruposRepetidos(), tp = tabela().produtos || {};
+    box.hidden = !gs.length; if (!gs.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<b>🧹 ${gs.length} produto(s) repetido(s)</b><p style="margin:4px 0 8px;font-size:13px;color:#667085">O mesmo produto está cadastrado mais de uma vez. Juntar deixa um só, com o preço mais recente e as ligações com a ficha técnica e o estoque.</p>` +
+      gs.map((g) => `<div style="font-size:13.5px;padding:6px 0;border-top:1px solid #f1e3c4">${g.map((k) => `<div>• ${esc(tp[k].nome)} <span style="color:#667085">${brl(tp[k].preco)} · ${esc((tp[k].data || '').split('-').reverse().join('/'))}</span></div>`).join('')}</div>`).join('') +
+      `<button type="button" id="pcJuntar" style="margin-top:10px;background:#b45309!important;color:#fff!important;box-shadow:none!important">🧹 Juntar repetidos</button>`;
+    $('#pcJuntar', box).onclick = (e) => {
+      const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Toque de novo para juntar'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🧹 Juntar repetidos'; }, 3000); return; }
+      const n = juntarRepetidos(); desenharTabela();
+      $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d"><b>✅ ${n} cadastro(s) repetido(s) tirado(s).</b> Ficou um de cada; as próximas notas já atualizam o que ficou.</div>`;
+    };
+  }
+
+  /* ---------- 📊 relatório da aba (compras, gastos por grupo, preços que mudaram) ---------- */
+  function desenharRelatorio(valorTotal) {
+    const box = $('#pcRel', painel), ns = meta().notas || [], tp = tabela().produtos || {};
+    const mes = hoje().slice(0, 7), d0 = new Date(); d0.setDate(1); d0.setMonth(d0.getMonth() - 1);
+    const mesAnt = d0.getFullYear() + '-' + String(d0.getMonth() + 1).padStart(2, '0');
+    const mesDe = (n) => { const d = new Date(n.t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+    const doMes = ns.filter((n) => mesDe(n) === mes), doAnt = ns.filter((n) => mesDe(n) === mesAnt);
+    const soma = (l) => l.reduce((s, n) => s + (n.total || 0), 0);
+    // gastos por grupo (licores, destilados, cervejas, frutas...)
+    const porGrupo = {};
+    doMes.forEach((n) => (n.itens || []).forEach((x) => { const nome = x.tab && tp[x.tab] ? tp[x.tab].nome : x.produto, g = grupoPara(nome); porGrupo[g] = (porGrupo[g] || 0) + x.qtd * x.preco; }));
+    // preços que mudaram nas notas
+    const mud = [];
+    ns.forEach((n) => (n.itens || []).forEach((x) => {
+      const k = x.tab || chaveNome(x.produto), a = ((n.antes || {}).prod || {})[k];
+      const novo = x.precoTab || x.preco;
+      if (a && a.preco && Math.abs(a.preco - novo) > 0.004 && !mud.some((y) => y.k === k)) mud.push({ k, nome: (tp[k] || a).nome || x.produto, de: a.preco, para: novo, t: n.t });
+    }));
+    const semLig = Object.values(tp).filter((p) => !p.estoque).length, semFicha = Object.values(tp).filter((p) => !p.ficha && !ehInsumo(p)).length;
+    const nomeMes = (m) => new Date(m + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const linhas = [];
+    linhas.push(`<div class="ft-r"><b style="font-size:17px">📊 Relatório</b><small style="color:#667085">${esc(new Date().toLocaleDateString('pt-BR'))}</small></div>`);
+    linhas.push(`<div class="ft-r"><span>Compras em ${nomeMes(mes)}</span><b>${brl(soma(doMes))}</b></div><small style="display:block;color:#667085;margin:-4px 0 6px">${doMes.length} nota(s)${doAnt.length ? ' · ' + nomeMes(mesAnt) + ': ' + brl(soma(doAnt)) : ''}</small>`);
+    linhas.push(`<div class="ft-r"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`);
+    linhas.push(`<div class="ft-r"><span>Produtos na tabela</span><b>${Object.keys(tp).length}</b></div>`);
+    const gs = Object.entries(porGrupo).sort((a, b) => b[1] - a[1]);
+    if (gs.length) linhas.push(`<div style="margin-top:10px;font-weight:800;color:#5b21b6">🧾 Gastos do mês por grupo</div>` + gs.map(([g, v]) => `<div class="ft-r" style="font-size:14px"><span>${esc(g)}</span><b>${brl(v)}</b></div>`).join(''));
+    if (mud.length) linhas.push(`<div style="margin-top:10px;font-weight:800;color:#5b21b6">💲 Preços que mudaram</div>` + mud.slice(0, 15).map((y) => `<div class="ft-r" style="font-size:14px"><span>${esc(y.nome)}<small style="display:block;color:#667085">${new Date(y.t).toLocaleDateString('pt-BR')}</small></span><b style="color:${y.para > y.de ? '#b42318' : '#15803d'}">${brl(y.de)} → ${brl(y.para)} ${y.para > y.de ? '▲' : '▼'}</b></div>`).join(''));
+    if (semLig || semFicha) linhas.push(`<div style="margin-top:10px;font-size:13px;color:#b45309">⚠️ ${semLig ? semLig + ' produto(s) sem item no estoque' : ''}${semLig && semFicha ? ' · ' : ''}${semFicha ? semFicha + ' bebida(s) sem ingrediente da ficha técnica' : ''}. Abra ✏️ Editar para ligar.</div>`);
+    linhas.push(`<div class="ft-chips" style="margin-top:12px"><button type="button" id="pcRelCopiar" style="background:#7c3aed!important;color:#fff!important;box-shadow:none!important">📋 Copiar relatório</button></div>`);
+    box.innerHTML = linhas.join('');
+    $('#pcRelCopiar', box).onclick = async () => {
+      const txt = ['📊 RELATÓRIO DE COMPRAS E PREÇOS — ' + new Date().toLocaleDateString('pt-BR'), '',
+        'Compras em ' + nomeMes(mes) + ': ' + brl(soma(doMes)) + ' (' + doMes.length + ' nota(s))', doAnt.length ? 'Mês anterior: ' + brl(soma(doAnt)) : '',
+        'Valor em estoque: ' + brl(valorTotal), 'Produtos na tabela: ' + Object.keys(tp).length,
+        gs.length ? '\nGASTOS DO MÊS POR GRUPO\n' + gs.map(([g, v]) => '• ' + g + ': ' + brl(v)).join('\n') : '',
+        mud.length ? '\nPREÇOS QUE MUDARAM\n' + mud.slice(0, 15).map((y) => '• ' + y.nome + ': ' + brl(y.de) + ' → ' + brl(y.para)).join('\n') : '',
+        '\nPRODUTOS\n' + Object.values(tp).sort((a, b) => a.nome.localeCompare(b.nome)).map((p) => '• ' + p.nome + ': ' + brl(p.preco) + ' (' + nomeEmb(p.un) + (p.pack > 1 ? ' ' + p.pack + 'x' + inteiro(p.mlUn) + ' ml' : p.conteudo && p.un !== 'KG' ? ' ' + inteiro(p.conteudo) + ' ' + p.tipo : '') + ')' + (doses(p) ? ' · dose ' + brl(doses(p).custo) : '')).join('\n')].filter(Boolean).join('\n');
+      try { if (navigator.share) { await navigator.share({ text: txt }); return; } } catch (e) {}
+      try { await navigator.clipboard.writeText(txt); $('#pcRelCopiar', box).textContent = '✅ Copiado'; } catch (e) { prompt('Copie o relatório:', txt); }
+    };
+  }
   painel.querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => { const e = $('#' + b.dataset.ir, painel); if (e && !e.hidden) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
 
   /* ---------- 🍺 custo por unidade (cerveja, vinho, água, refri, packs) e 🍋 insumos (limão, açúcar...) ---------- */

@@ -19,10 +19,12 @@
     s = String(s ?? '').trim().replace(/[R$\s]/g, '');
     if (!s) return 0;
     if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.split('.').join(''); // "1.000" (ml) é mil, não 1
     const n = Number(s);
     return isNaN(n) ? 0 : n;
   };
   const brl = (n) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const brlFino = (n) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: Math.abs(n) < 0.1 && n ? 4 : 2, maximumFractionDigits: Math.abs(n) < 0.1 && n ? 4 : 2 });
   const campo = (n, d = 2) => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -35,8 +37,8 @@
 
   // 🥃 dose: garrafa de X ml rende X/dose doses; custo da dose = preço da garrafa × dose / X
   // só garrafas servidas em dose (destilados, licores, vinhos): 375 ml ou mais, sem cerveja/refri/água/suco
-  const NAO_DOSE = /cerveja|chopp|refri|refrigerante|agua|água|suco|energ|tonica|tônica|lata|long\s*neck|\bln\b|soda|xarope|leite/i;
-  const doses = (p) => p.tipo === 'ml' && p.conteudo >= 375 && !NAO_DOSE.test(p.nome || p.produto || '') ? { n: Math.floor(p.conteudo / doseMl() * 10) / 10, custo: p.preco * doseMl() / p.conteudo } : null;
+  const NAO_DOSE = /cerveja|chopp|refri|refrigerante|agua|água|suco|energ|tonica|tônica|lata|long\s*neck|\bln\b|soda|xarope|leite|vinho|espumante|prosecco|champagne|cidra/i;
+  const doses = (p) => p.tipo === 'ml' && p.conteudo >= 375 && !(p.pack > 1) && !['LATA', 'LN', 'PCT', 'CX', 'FD'].includes(p.un) && !NAO_DOSE.test(p.nome || p.produto || '') ? { n: Math.floor(p.conteudo / doseMl() * 10) / 10, custo: p.preco * doseMl() / p.conteudo } : null;
   const doseTxt = (p) => { const d = doses(p); return d ? `🥃 garrafa ${brl(p.preco)} · ${campo(p.conteudo, 0)} ml = ${String(d.n).replace('.', ',')} doses de ${doseMl()} ml · <b>${brl(d.custo)} por dose</b>` : ''; };
   /* ---------- leitor do Android (Google ML Kit): scanner de documentos + texto com posição ---------- */
   const leitorNativo = () => { try { const C = window.Capacitor; return C && C.isPluginAvailable && C.isPluginAvailable('LeitorTexto') ? C.Plugins.LeitorTexto : null; } catch (e) { return null; } };
@@ -206,6 +208,8 @@
     <h1 style="margin-top:26px">📋 Produtos</h1>
     <input id="pcBusca" placeholder="Buscar produto…" style="margin-top:4px">
     <div class="ft-card" id="pcDoses"></div>
+    <div class="ft-card" id="pcUnid"></div>
+    <div class="ft-card" id="pcIns"></div>
     <div class="ft-card ft-tot" id="pcResumo"></div>
     <div id="pcTabela"></div>`;
 
@@ -225,7 +229,7 @@
         </div>
         <label>Total pago (R$) <small>— o app divide pela quantidade</small><input inputmode="decimal" data-k="totalPago" value="${campo(it.qtd * it.preco)}"></label>
         <div class="ft-grid">
-          <label>Conteúdo por ${esc(it.un)}<input inputmode="decimal" data-k="conteudo" value="${it.conteudo ? campo(it.conteudo, 0) : ''}" placeholder="ex.: 750"></label>
+          <label>Conteúdo por ${esc(it.un)}<input inputmode="decimal" data-k="conteudo" value="${it.conteudo ? String(Math.round(it.conteudo)) : ''}" placeholder="ex.: 750"></label>
           <label>Medida<select data-k="tipo">${[['ml', 'ml'], ['g', 'g'], ['un', 'unidades']].map(([v, n]) => `<option value="${v}"${v === it.tipo ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
         </div>
         <label>🍸 Ingrediente da ficha técnica<select data-k="ficha">${opcoes(opF, it.ficha)}</select></label>
@@ -479,8 +483,8 @@
       const q = p.estoque ? qtdEstoque(p.estoque) : null;
       const valor = q !== null ? q * p.preco : null;
       if (valor) valorTotal += valor;
-      const porMedida = p.conteudo ? (p.tipo === 'g' ? brl(p.preco / p.conteudo * 1000) + '/kg' : p.tipo === 'ml' ? brl(p.preco / p.conteudo * 1000) + '/litro · <b>dose ' + doseMl() + ' ml ' + brl(p.preco * doseMl() / p.conteudo) + '</b>' : brl(p.preco / p.conteudo) + '/un') : '';
-      return `<div class="hs"><div><b>${esc(p.nome)}</b><small>${brl(p.preco)} por ${esc(p.un)}${p.conteudo ? ' (' + campo(p.conteudo, 0) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) + ')' : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div><div style="display:flex;flex-direction:column;gap:6px"><button data-pe="${esc(p._k)}">✏️ Editar</button><button data-px="${esc(p._k)}" style="background:#fee2e2!important;color:#991b1b!important">🗑️ Excluir</button></div></div>${editando === p._k ? formEditar(p) : ''}`;
+      const porMedida = [p.pack > 1 ? brl(p.preco / p.pack) + ' cada unidade' : '', p.conteudo ? (p.tipo === 'g' ? brl(p.preco / p.conteudo * 1000) + '/kg' : p.tipo === 'ml' ? brl(p.preco / p.conteudo * 1000) + '/litro' + (doses(p) ? ' · <span style="font-weight:700">dose ' + doseMl() + ' ml ' + brl(doses(p).custo) + '</span>' : '') : brl(p.preco / p.conteudo) + '/un') : ''].filter(Boolean).join(' · ');
+      return `<div class="hs"><div><b>${esc(p.nome)}</b><small><span style="color:#5b21b6;font-weight:700">${brl(p.preco)}</span> · ${nomeEmb(p.un)}${p.pack > 1 ? ' com ' + p.pack + ' × ' + inteiro(p.mlUn) + ' ml' : p.conteudo && p.un !== 'KG' ? ' de ' + inteiro(p.conteudo) + ' ' + (p.tipo === 'un' ? 'un' : p.tipo) : ''}${porMedida ? ' · ' + porMedida : ''} · ${esc(p.data.split('-').reverse().join('/'))}${p.nf ? ' · ' + esc(p.nf) : ''}${p.ficha ? '<br>🍸 ' + esc(p.ficha) : ''}${q !== null ? '<br>📦 Estoque: ' + campo(q, q % 1 ? 2 : 0) + ' · valor ' + brl(valor) : ''}</small></div><div style="display:flex;flex-direction:column;gap:6px"><button data-pe="${esc(p._k)}" style="background:#7c3aed!important;color:#fff!important;box-shadow:none!important;padding:9px 14px!important;font-size:14px!important">✏️ Editar</button><button data-px="${esc(p._k)}" style="background:#fff1f0!important;color:#b42318!important;box-shadow:none!important;padding:7px 14px!important;font-size:13px!important">🗑️ Excluir</button></div></div>`;
     }).join('');
     $('#pcTabela', painel).innerHTML = linhas || '<p>Nenhum produto ainda. Tire foto de uma nota de compra.</p>';
     {const gs = Object.values(tabela().produtos || {}).filter((p) => doses(p) && p.un !== 'KG' && (!busca || chaveNome(p.nome).includes(busca))).sort((a, b) => a.nome.localeCompare(b.nome));
@@ -489,67 +493,207 @@
        <div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px"><span style="flex:2">Garrafa</span><span style="flex:1;text-align:right">Preço</span><span style="flex:1;text-align:right">Doses</span><span style="flex:1;text-align:right">Custo/dose</span></div>
        ${gs.map((p) => { const d = doses(p); return `<div class="ft-r" style="font-size:14px"><span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${campo(p.conteudo, 0)} ml</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><span style="flex:1;text-align:right">${String(d.n).replace('.', ',')}</span><b style="flex:1;text-align:right">${brl(d.custo)}</b></div>`; }).join('')}`;
      const di = $('#pcDoseMl', painel); if (di) di.onchange = () => { const v = Math.round(num(di.value)); if (v > 0 && v <= 500) { const m = meta(); m.doseMl = v; localStorage.setItem('caixa-bar-meta', JSON.stringify(m)); const f = document.getElementById('f-caixa'); if (f && f.src) f.contentWindow.location.reload(); desenharTabela(); } };}
+    desenharCustos(busca);
     ligarEditar();
     $('#pcResumo', painel).innerHTML = `<div class="ft-r"><span>Produtos na tabela</span><b>${ps.length}</b></div><div class="ft-r ft-big"><span>Valor em estoque</span><b>${brl(valorTotal)}</b></div>`;
   }
   $('#pcBusca', painel).oninput = desenharTabela;
 
-  /* ---------- ✏️ editar um produto da tabela (nome, preço, unidade, ml) ---------- */
+  /* ---------- 🍺 custo por unidade (cerveja, vinho, água, refri, packs) e 🍋 insumos (limão, açúcar...) ---------- */
+  const ehInsumo = (p) => p.un === 'KG' || p.un === 'DZ' || p.tipo === 'g' || (p.tipo !== 'ml' && !(p.pack > 1));
+  function custoUso(p) { // custo de cada uso na receita
+    if (p.un === 'KG') {
+      if (p.usoKg === 'un' || (!p.usoKg && p.ficha && ingredientes[p.ficha] === 'un')) { const r = p.rende || rendePadrao(p.ficha || p.nome); return { txt: 'rende ' + inteiro(r) + ' un', v: p.preco / r, por: 'cada' }; }
+      if (p.usoKg === 'ml' || (p.ficha && ingredientes[p.ficha] === 'ml') || (!p.usoKg && /limao|laranja|maracuja|abacaxi/.test(chaveNome(p.nome)))) { const ml = p.mlkg || mlkgPadrao(p.ficha || p.nome); return { txt: 'rende ' + inteiro(ml) + ' ml', v: p.preco / ml * 30, por: '30 ml' }; }
+      return { txt: '1 kg', v: p.preco / 1000 * 100, por: '100 g' };
+    }
+    if (p.un === 'DZ') return { txt: '12 un', v: p.preco / 12, por: 'cada' };
+    if (p.tipo === 'g' && p.conteudo) return { txt: inteiro(p.conteudo) + ' g', v: p.preco / p.conteudo * 100, por: '100 g' };
+    const r = p.rende > 1 ? p.rende : p.conteudo > 1 && p.tipo === 'un' ? p.conteudo : 1;
+    return { txt: r > 1 ? inteiro(r) + ' un' : '1 un', v: p.preco / r, por: 'cada' };
+  }
+  function desenharCustos(busca) {
+    const todos = Object.entries(tabela().produtos || {}).map(([k, p]) => Object.assign({}, p, { _k: k })).filter((p) => !busca || chaveNome(p.nome).includes(busca)).sort((a, b) => a.nome.localeCompare(b.nome));
+    const cab = (t) => `<div class="ft-r" style="font-size:12px;color:#667085;border-bottom:1px solid #e5e7eb;padding-bottom:4px">${t}</div>`;
+    const linha = (p, cols) => `<div class="ft-r pc-lin" data-pe="${esc(p._k)}" style="font-size:14px;cursor:pointer">${cols}</div>`;
+    // 🍺 unidade: tudo em ml que não é dose (cerveja, vinho, água, refri, lata, long neck, pack)
+    const us = todos.filter((p) => p.tipo === 'ml' && p.un !== 'KG' && !doses(p));
+    const bu = $('#pcUnid', painel); bu.hidden = !us.length;
+    bu.innerHTML = `<div class="ft-r"><b>🍺 Custo por unidade</b><small style="color:#667085">toque para editar</small></div>` + cab('<span style="flex:2">Produto</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Por unidade</span>') +
+      us.map((p) => { const n = p.pack > 1 ? p.pack : 1, ml = n > 1 ? p.mlUn || p.conteudo / n : p.conteudo; return linha(p, `<span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${n > 1 ? nomeEmb(p.un) + ' ' + n + ' × ' + inteiro(ml) + ' ml' : nomeEmb(p.un) + (ml ? ' ' + inteiro(ml) + ' ml' : '')}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brl(p.preco / n)}</b>`); }).join('');
+    // 🍋 insumos: kg, dúzia, unidade (limão, açúcar, gelo, ovo...)
+    const is = todos.filter((p) => ehInsumo(p));
+    const bi = $('#pcIns', painel); bi.hidden = !is.length;
+    bi.innerHTML = `<div class="ft-r"><b>🍋 Insumos</b><small style="color:#667085">toque para editar</small></div>` + cab('<span style="flex:2">Insumo</span><span style="flex:1;text-align:right">Compra</span><span style="flex:1;text-align:right">Custo do uso</span>') +
+      is.map((p) => { const c = custoUso(p); return linha(p, `<span style="flex:2">${esc(p.nome)}<small style="display:block;color:#667085">${nomeEmb(p.un)} · ${c.txt}${p.ficha ? ' · 🍸 ' + esc(p.ficha) : ''}</small></span><span style="flex:1;text-align:right">${brl(p.preco)}</span><b style="flex:1;text-align:right">${brl(c.v)}<small style="display:block;font-weight:400;color:#667085">${c.por}</small></b>`); }).join('');
+  }
+
+  /* ---------- ✏️ editar um produto da tabela: janela própria (não fecha quando a tabela redesenha) ---------- */
   let editando = null;
   const notaDoProduto = (k) => { const p = (tabela().produtos || {})[k] || {}; return (meta().notas || []).find((n) => (n.itens || []).some((x) => chaveNome(x.produto) === k || (p.estoque && x.estoque === p.estoque) || (p.ficha && x.ficha === p.ficha && chaveNome(x.produto).split(' ')[0] === k.split(' ')[0]))); };
-  function formEditar(p) {
-    const n = notaDoProduto(p._k);
-    const opF = Object.keys(ingredientes).sort().map((k) => [k, k + (ingredientes[k] === 'ml' ? ' (ml)' : '')]);
+  // embalagens: código guardado (igual ao da nota) → nome
+  const EMB = [['GF', '🍾 Garrafa'], ['LATA', '🥫 Lata'], ['LN', '🍺 Long neck'], ['PCT', '📦 Pack'], ['CX', '📦 Caixa'], ['FD', '📦 Fardo'], ['UN', '🔹 Unidade'], ['KG', '⚖️ Kg'], ['DZ', '🥚 Dúzia']];
+  const EMB_PACK = ['PCT', 'CX', 'FD'];
+  const nomeEmb = (u) => ((EMB.find((e) => e[0] === u) || [])[1] || u || 'Unidade').replace(/^\S+\s/, '');
+  const inteiro = (n) => (n ? String(Math.round(n * 100) / 100).replace('.', ',') : '');
+  function resumoEditor(d) {
+    if (!(d.preco > 0)) return 'Coloque o preço.';
+    const pack = EMB_PACK.includes(d.un) && d.pack > 1;
+    const ml = pack ? d.pack * d.mlUn : d.ml;
+    const partes = [`<b>${d.un === 'KG' ? '1 kg' : d.un === 'DZ' ? '1 dúzia' : nomeEmb(d.un)}${d.un === 'KG' || d.un === 'DZ' ? '' : pack ? ' com ' + d.pack + ' × ' + inteiro(d.mlUn) + ' ' + d.tipo : d.ml ? ' de ' + inteiro(d.ml) + ' ' + d.tipo : ''}</b> por <b>${brl(d.preco)}</b>`];
+    if (pack) partes.push(`cada unidade sai <b>${brl(d.preco / d.pack)}</b>`);
+    if (ml > 0 && d.tipo === 'ml') {
+      partes.push(`${brl(d.preco / ml * 1000)} por litro`);
+      if (!pack && ml >= 375 && !NAO_DOSE.test(d.nome)) partes.push(`🥃 ${String(Math.floor(ml / doseMl() * 10) / 10).replace('.', ',')} doses de ${doseMl()} ml · <b>${brl(d.preco * doseMl() / ml)} por dose</b>`);
+    }
+    if (d.un === 'KG') {
+      if (d.uso === 'ml' && d.mlkg > 0) partes.push(`rende ${inteiro(d.mlkg)} ml de suco · <b>${brlFino(d.preco / d.mlkg)} por ml</b> · 30 ml = ${brl(d.preco / d.mlkg * 30)}`);
+      else if (d.uso === 'un' && d.rendeUn > 0) partes.push(`rende ${inteiro(d.rendeUn)} unidades · <b>${brl(d.preco / d.rendeUn)} cada</b>`);
+      else partes.push(`<b>${brl(d.preco / 10)} por 100 g</b>`);
+    } else if (d.un === 'DZ') partes.push(`<b>${brl(d.preco / 12)} cada unidade</b>`);
+    else if (ml > 0 && d.tipo === 'g') partes.push(`${brl(d.preco / ml * 1000)} por kg`);
+    return partes.join('<br>');
+  }
+  function abrirEditor(k) {
+    const p = (tabela().produtos || {})[k]; if (!p) return;
+    editando = k;
+    const n = notaDoProduto(k);
+    const pack = EMB_PACK.includes(p.un) && p.pack > 1;
+    const d = { nome: p.nome, un: p.un === 'UND' ? 'UN' : p.un || 'UN', preco: p.preco, tipo: p.tipo === 'g' ? 'g' : 'ml', pack: p.pack || 0, mlUn: p.mlUn || (pack ? p.conteudo / p.pack : 0), ml: pack ? 0 : p.conteudo || 0 };
+    const opF = Object.keys(ingredientes).sort().map((x) => [x, x + (ingredientes[x] === 'ml' ? ' (ml)' : '')]);
     const opE = Object.entries(estoque.items || {}).sort((a, b) => a[1].n.localeCompare(b[1].n)).map(([id, v]) => [id, v.n]);
-    return `<div class="ft-card" id="pcEd" style="border:2px solid #7c3aed;margin-top:-4px">
-      <b>✏️ Editar ${esc(p.nome)}</b>
-      <label>Nome<input id="peNome" value="${esc(p.nome)}"></label>
-      <div style="display:flex;gap:8px">
-        <label style="flex:1">Preço (R$)<input id="pePreco" inputmode="decimal" value="${campo(p.preco)}"></label>
-        <label style="flex:1">por<select id="peUn">${['UN', 'GF', 'CX', 'FD', 'PCT', 'KG', 'DZ', 'LT', 'LATA'].concat(p.un && !['UN', 'GF', 'CX', 'FD', 'PCT', 'KG', 'DZ', 'LT', 'LATA'].includes(p.un) ? [p.un] : []).map((u) => `<option${u === p.un ? ' selected' : ''}>${u}</option>`).join('')}</select></label>
+    // sem vínculo: sugere o ingrediente da ficha e o item do estoque pelo nome
+    const sugF = p.ficha ? '' : melhor(p.nome, Object.keys(ingredientes).map((x) => [x, x]), true) || '';
+    const sugE = p.estoque ? '' : melhor(p.nome, Object.entries(estoque.items || {}).map(([id, v]) => [id, v.n]), false) || '';
+    d.uso = p.usoKg || ((p.ficha || sugF) && ingredientes[p.ficha || sugF] === 'un' ? 'un' : (p.ficha || sugF) && ingredientes[p.ficha || sugF] === 'ml' ? 'ml' : /limao|laranja|maracuja|abacaxi/.test(chaveNome(p.nome)) ? 'ml' : 'g');
+    d.mlkg = p.mlkg || (d.uso === 'ml' ? mlkgPadrao(p.ficha || sugF || p.nome) : 0);
+    d.rendeUn = d.uso === 'un' ? p.rende > 1 ? p.rende : rendePadrao(p.ficha || sugF || p.nome) : 0;
+    let fundo = document.getElementById('pcModal');
+    if (!fundo) { fundo = document.createElement('div'); fundo.id = 'pcModal'; document.body.appendChild(fundo); }
+    fundo.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,10,30,.55);display:flex;align-items:flex-end;justify-content:center';
+    const chips = [350, 473, 600, 700, 750, 900, 1000];
+    fundo.innerHTML = `<div class="pc-modal" role="dialog" aria-modal="true">
+      <style>
+        .pc-modal{background:#fff;color:#161826;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:15px}
+        .pc-modal h2{margin:0 0 4px;font-size:18px}.pc-modal .sub{color:#667085;font-size:13px;margin:0 0 12px}
+        .pc-modal label{display:block;font-size:13px;font-weight:600;color:#475467;margin:12px 0 6px}
+        .pc-modal input,.pc-modal select{width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border:1.5px solid #d0d5dd;border-radius:12px;background:#fff;color:#161826}
+        .pc-modal input:focus,.pc-modal select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px #ede9fe}
+        .pc-emb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .pc-emb button,.pc-ml button{all:unset;box-sizing:border-box;text-align:center;padding:10px 4px;border:1.5px solid #d0d5dd;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:#344054}
+        .pc-emb button.on,.pc-ml button.on{border-color:#7c3aed;background:#f5f3ff;color:#5b21b6}
+        .pc-ml{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pc-ml button{padding:7px 10px;font-size:13px}
+        .pc-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .pc-res{margin-top:14px;padding:12px;border-radius:14px;background:#f5f3ff;border:1px solid #ddd6fe;font-size:14px;line-height:1.5}
+        .pc-bt{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+        .pc-bt button{all:unset;box-sizing:border-box;text-align:center;padding:14px;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer}
+        .pc-bt .pc-sv{background:#15803d;color:#fff}.pc-bt .pc-cc{background:#eef0f4;color:#161826}
+        .pc-lk{all:unset;display:block;text-align:center;margin-top:12px;padding:10px;font-size:14px;font-weight:600;color:#5b21b6;cursor:pointer}
+        .pc-del{color:#b42318}
+        @media (prefers-color-scheme:dark){.pc-modal{background:#1a1b27;color:#eef0f6}.pc-modal input,.pc-modal select,.pc-emb button,.pc-ml button{background:#11121b;color:#eef0f6;border-color:#2c2e40}.pc-modal label{color:#aab0c4}.pc-res{background:#241c3d;border-color:#3b2f63}.pc-bt .pc-cc{background:#2c2e40;color:#eef0f6}}
+      </style>
+      <h2>✏️ Editar produto</h2><p class="sub">${n ? 'Veio da nota ' + esc(nomeNota(n)) + '. ' : ''}O novo preço vale para o custo das receitas, a dose e o estoque.</p>
+      <label>Nome</label><input id="peNome" value="${esc(p.nome)}">
+      <label>Como você compra</label>
+      <div class="pc-emb">${EMB.map(([v, t]) => `<button type="button" data-emb="${v}"${v === d.un ? ' class="on"' : ''}>${t}</button>`).join('')}</div>
+      <div class="pc-2">
+        <div><label id="pePrecoL">Preço</label><input id="pePreco" inputmode="decimal" value="${p.preco ? campo(p.preco) : ''}" placeholder="0,00"></div>
+        <div id="pePackBox"><label>Unidades no pack</label><input id="pePack" inputmode="numeric" value="${d.pack || ''}" placeholder="ex.: 12"></div>
       </div>
-      <div style="display:flex;gap:8px">
-        <label style="flex:1">Conteúdo<input id="peCont" inputmode="numeric" value="${p.conteudo ? campo(p.conteudo, 0) : ''}" placeholder="ex.: 750"></label>
-        <label style="flex:1">medida<select id="peTipo">${[['ml', 'ml'], ['g', 'gramas'], ['un', 'unidades']].map(([v, t]) => `<option value="${v}"${v === (p.tipo || 'ml') ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+      <div id="peMlBox">
+        <label id="peMlL">Quantos ml</label>
+        <div class="pc-2"><input id="peMl" inputmode="numeric" placeholder="ex.: 750"><select id="peTipo"><option value="ml">ml</option><option value="g">gramas</option></select></div>
+        <div class="pc-ml">${chips.map((c) => `<button type="button" data-ml="${c}">${c === 1000 ? '1 litro' : c + ' ml'}</button>`).join('')}</div>
       </div>
-      <label>🍸 Ficha técnica<select id="peFicha">${opcoes(opF, p.ficha || '')}</select></label>
-      <label>📦 Estoque<select id="peEst">${opcoes(opE, p.estoque || '')}</select></label>
-      <p style="margin:6px 0;font-size:13px;color:#667085">O novo preço vale para o custo das receitas, a dose e o valor do estoque.</p>
-      <div class="ft-chips"><button id="peSalvar" style="background:#15803d!important;color:#fff!important">💾 Salvar</button><button id="peCancelar" style="background:#e5e7eb!important;color:#111!important;box-shadow:none!important">Cancelar</button><button id="peApagar" style="background:#fee2e2!important;color:#991b1b!important;box-shadow:none!important">🗑️ Excluir</button></div>
-      ${n ? `<button class="sec" id="peNota" style="margin-top:8px">🧾 Corrigir a quantidade na nota${n.nf ? ' (' + esc(n.nf) + ')' : ''}</button>` : ''}
+      <div id="peRendeBox">
+        <label id="peRendeL">Quanto rende</label>
+        <div class="pc-2"><input id="peRende" inputmode="decimal" placeholder="ex.: 400"><select id="peUso"><option value="ml">ml de suco por kg</option><option value="un">unidades por kg</option><option value="g">uso em gramas</option></select></div>
+      </div>
+      <div class="pc-res" id="peRes"></div>
+      <label>🍸 Ingrediente da ficha técnica${!p.ficha && sugF ? ' <small style="color:#7c3aed">(sugerido)</small>' : ''}</label><select id="peFicha">${opcoes(opF, p.ficha || sugF)}</select>
+      <label>📦 Item do estoque${!p.estoque && sugE ? ' <small style="color:#7c3aed">(sugerido)</small>' : ''}</label><select id="peEst">${opcoes(opE, p.estoque || sugE)}</select>
+      <p class="sub" style="margin-top:8px">Ao salvar, o preço vai direto para o 📦 Estoque e para o custo da 🍸 Ficha técnica.</p>
+      <div class="pc-bt"><button type="button" class="pc-cc" id="peCancelar">Cancelar</button><button type="button" class="pc-sv" id="peSalvar">💾 Salvar</button></div>
+      ${n ? '<button type="button" class="pc-lk" id="peNota">🧾 Corrigir a quantidade na nota</button>' : ''}
+      <button type="button" class="pc-lk pc-del" id="peApagar">🗑️ Excluir este produto</button>
     </div>`;
+    const $m = (s) => fundo.querySelector(s);
+    $m('#peTipo').value = d.tipo;
+    const atualizar = () => {
+      const pk = EMB_PACK.includes(d.un);
+      $m('#pePackBox').style.display = pk ? '' : 'none';
+      $m('#peMlBox').style.display = d.un === 'KG' || d.un === 'DZ' ? 'none' : '';
+      $m('#peRendeBox').style.display = d.un === 'KG' ? '' : 'none';
+      $m('#peUso').value = d.uso; $m('#peRende').style.display = d.uso === 'g' ? 'none' : '';
+      $m('#peRende').value = d.uso === 'ml' ? inteiro(d.mlkg) : d.uso === 'un' ? inteiro(d.rendeUn) : '';
+      $m('#peRendeL').textContent = d.uso === 'ml' ? 'Quanto rende de suco (ml por kg)' : d.uso === 'un' ? 'Quantas unidades vêm em 1 kg' : 'Usado em gramas na receita';
+      $m('#pePrecoL').textContent = 'Preço ' + (d.un === 'KG' ? 'do kg' : d.un === 'DZ' ? 'da dúzia' : 'de 1 ' + nomeEmb(d.un).toLowerCase());
+      $m('#peMlL').textContent = pk ? 'Quantos ml cada unidade do pack' : 'Quantos ml tem ' + (d.un === 'GF' ? 'a garrafa' : d.un === 'LATA' ? 'a lata' : d.un === 'LN' ? 'a long neck' : 'cada unidade');
+      const v = pk ? d.mlUn : d.ml; $m('#peMl').value = v ? inteiro(v) : '';
+      fundo.querySelectorAll('[data-emb]').forEach((b) => b.classList.toggle('on', b.dataset.emb === d.un));
+      fundo.querySelectorAll('[data-ml]').forEach((b) => b.classList.toggle('on', +b.dataset.ml === v));
+      d.nome = $m('#peNome').value;
+      $m('#peRes').innerHTML = resumoEditor(d);
+    };
+    const lerMl = () => { const v = num($m('#peMl').value); if (EMB_PACK.includes(d.un)) d.mlUn = v; else d.ml = v; };
+    fundo.querySelectorAll('[data-emb]').forEach((b) => (b.onclick = () => {
+      const era = EMB_PACK.includes(d.un), vai = EMB_PACK.includes(b.dataset.emb);
+      if (!era && vai && !d.mlUn) d.mlUn = d.ml; if (era && !vai && !d.ml) d.ml = d.mlUn;
+      d.un = b.dataset.emb; atualizar();
+    }));
+    fundo.querySelectorAll('[data-ml]').forEach((b) => (b.onclick = () => { $m('#peMl').value = b.dataset.ml; lerMl(); atualizar(); }));
+    $m('#peMl').oninput = () => { lerMl(); fundo.querySelectorAll('[data-ml]').forEach((b) => b.classList.toggle('on', +b.dataset.ml === num($m('#peMl').value))); d.nome = $m('#peNome').value; $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#pePreco').oninput = () => { d.preco = num($m('#pePreco').value); $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#pePack').oninput = () => { d.pack = Math.round(num($m('#pePack').value)); $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#peUso').onchange = () => { d.uso = $m('#peUso').value; if (d.uso === 'ml' && !d.mlkg) d.mlkg = mlkgPadrao(d.nome); if (d.uso === 'un' && !d.rendeUn) d.rendeUn = rendePadrao(d.nome); atualizar(); };
+    $m('#peRende').oninput = () => { const v = num($m('#peRende').value); if (d.uso === 'ml') d.mlkg = v; else d.rendeUn = v; $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#peTipo').onchange = () => { d.tipo = $m('#peTipo').value; $m('#peRes').innerHTML = resumoEditor(d); };
+    $m('#peNome').oninput = () => { d.nome = $m('#peNome').value; $m('#peRes').innerHTML = resumoEditor(d); };
+    const fechar = () => { editando = null; fundo.remove(); document.removeEventListener('keydown', esc_); };
+    const esc_ = (e) => { if (e.key === 'Escape') fechar(); };
+    document.addEventListener('keydown', esc_);
+    fundo.onclick = (e) => { if (e.target === fundo) fechar(); };
+    $m('#peCancelar').onclick = fechar;
+    const nb = $m('#peNota'); if (nb) nb.onclick = () => { fechar(); if (n) desfazerNota(true, n); };
+    $m('#peApagar').onclick = (e) => {
+      const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Toque de novo para excluir'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir este produto'; }, 3000); return; }
+      const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[k]; delete (m.tabPrecos.alias || {})[k]; }
+      salvarMeta(m); fechar(); desenharTabela();
+    };
+    $m('#peSalvar').onclick = async () => {
+      lerMl(); d.preco = num($m('#pePreco').value); d.pack = Math.round(num($m('#pePack').value)); d.tipo = $m('#peTipo').value;
+      if (!(d.preco > 0)) { $m('#pePreco').focus(); $m('#peRes').innerHTML = '⚠️ Coloque o preço.'; return; }
+      const pk = EMB_PACK.includes(d.un) && d.pack > 1;
+      const m = meta(); m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} }; m.tabPrecos.alias = m.tabPrecos.alias || {};
+      const p0 = m.tabPrecos.produtos[k]; if (!p0) { fechar(); return; }
+      const nome = $m('#peNome').value.trim() || p0.nome;
+      const conteudo = d.un === 'KG' ? 1000 : pk ? d.pack * d.mlUn : d.ml;
+      const novo = Object.assign({}, p0, { nome, preco: Math.round(d.preco * 100) / 100, un: d.un, conteudo: conteudo || 0, tipo: d.un === 'KG' ? 'g' : conteudo ? d.tipo : 'un', pack: pk ? d.pack : 0, mlUn: pk ? d.mlUn : 0, ficha: $m('#peFicha').value, estoque: $m('#peEst').value, data: hoje(), editado: Date.now() });
+      if (pk && novo.ficha && ingredientes[novo.ficha] === 'un') novo.rende = d.pack;
+      if (d.un === 'KG') { novo.usoKg = d.uso; novo.mlkg = d.uso === 'ml' ? d.mlkg : 0; novo.rende = d.uso === 'un' ? d.rendeUn || 1 : 1; }
+      if (d.un === 'DZ') novo.rende = 12;
+      const nk = chaveNome(nome) || k;
+      if (nk !== k) { delete m.tabPrecos.produtos[k]; if (!m.tabPrecos.alias[nk]) m.tabPrecos.alias[nk] = m.tabPrecos.alias[k]; }
+      m.tabPrecos.produtos[nk] = novo;
+      // a próxima nota com este produto já vem com a embalagem e os ml certos
+      [k, nk].forEach((x) => { m.tabPrecos.alias[x] = Object.assign({}, m.tabPrecos.alias[x] || {}, { ficha: novo.ficha, estoque: novo.estoque, conteudo: novo.conteudo, tipo: novo.tipo, rende: novo.rende || 1, mlkg: novo.mlkg || (m.tabPrecos.alias[x] || {}).mlkg || 0 }); });
+      if (novo.ficha) { m.custo = m.custo || {}; const c = custoFicha({ ...novo, mlkg: novo.mlkg || (m.tabPrecos.alias[nk] || {}).mlkg || mlkgPadrao(novo.ficha) }); m.custo[novo.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }; }
+      salvarMeta(m);
+      fechar(); desenharTabela();
+      $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d"><b>✅ ${esc(nome)} salvo</b><br>${resumoEditor({ ...d, nome })}</div>`;
+      $('#pcResultado', painel).scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (novo.estoque && window.__barImportar) { const pr = {}; pr[novo.estoque] = Object.assign({}, (estoque.price || {})[novo.estoque] || {}, { pu: campo(novo.preco).replace(/,00$/, '') }); try { await window.__barImportar({ apps: { estoque: { price: pr } } }); const fe = document.getElementById('f-estoque'); if (fe && fe.src) fe.contentWindow.location.reload(); } catch (e) {} }
+    };
+    atualizar();
+    setTimeout(() => $m('#pePreco').focus({ preventScroll: true }), 50);
   }
   function ligarEditar() {
-    painel.querySelectorAll('[data-pe]').forEach((b) => (b.onclick = async () => { await carregarFontes(); editando = editando === b.dataset.pe ? null : b.dataset.pe; desenharTabela(); const f = $('#pcEd', painel); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
+    painel.querySelectorAll('[data-pe]').forEach((b) => (b.onclick = (e) => { e.preventDefault(); if (!document.getElementById('pcModal')) abrirEditor(b.dataset.pe); }));
     painel.querySelectorAll('[data-px]').forEach((b) => (b.onclick = () => {
       if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; }
       const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[b.dataset.px]; delete (m.tabPrecos.alias || {})[b.dataset.px]; }
-      salvarMeta(m); if (editando === b.dataset.px) editando = null; desenharTabela();
+      salvarMeta(m); desenharTabela();
     }));
-    const f = $('#pcEd', painel); if (!f) return;
-    $('#peCancelar', f).onclick = () => { editando = null; desenharTabela(); };
-    const nb = $('#peNota', f); if (nb) nb.onclick = () => { const n = notaDoProduto(editando); editando = null; if (n) { desfazerNota(true, n); $('#pcResultado', painel).scrollIntoView({ behavior: 'smooth' }); } };
-    $('#peApagar', f).onclick = (e) => {
-      const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'Confirmar?'; setTimeout(() => { b.dataset.s = ''; b.textContent = '🗑️ Excluir'; }, 3000); return; }
-      const m = meta(); if (m.tabPrecos) { delete m.tabPrecos.produtos[editando]; delete (m.tabPrecos.alias || {})[editando]; }
-      salvarMeta(m); editando = null; desenharTabela();
-    };
-    $('#peSalvar', f).onclick = async () => {
-      const k = editando, m = meta(); m.tabPrecos = m.tabPrecos || { produtos: {}, alias: {} }; m.tabPrecos.alias = m.tabPrecos.alias || {};
-      const p = m.tabPrecos.produtos[k]; if (!p) return;
-      const preco = num($('#pePreco', f).value); if (!(preco > 0)) { alert('Coloque o preço.'); return; }
-      const nome = $('#peNome', f).value.trim() || p.nome;
-      Object.assign(p, { nome, preco, un: $('#peUn', f).value, conteudo: num($('#peCont', f).value), tipo: $('#peTipo', f).value, ficha: $('#peFicha', f).value, estoque: $('#peEst', f).value, data: hoje() });
-      const nk = chaveNome(nome);
-      if (nk && nk !== k) { delete m.tabPrecos.produtos[k]; m.tabPrecos.produtos[nk] = p; m.tabPrecos.alias[nk] = m.tabPrecos.alias[k]; }
-      const a = m.tabPrecos.alias[nk || k] = Object.assign({}, m.tabPrecos.alias[nk || k] || {}, { ficha: p.ficha, estoque: p.estoque, conteudo: p.conteudo, tipo: p.tipo, rende: p.rende || 1 });
-      if (p.ficha) { m.custo = m.custo || {}; const c = custoFicha({ ...p, mlkg: a.mlkg || mlkgPadrao(p.ficha) }); m.custo[p.ficha] = { p: campo(c.p, c.p < 1 ? 4 : 2), v: c.v ? String(Math.round(c.v)) : '' }; }
-      localStorage.setItem('caixa-bar-meta', JSON.stringify(m));
-      if (p.estoque && window.__barImportar) { const pr = {}; pr[p.estoque] = Object.assign({}, (estoque.price || {})[p.estoque] || {}, { pu: campo(preco).replace(/,00$/, '') }); try { await window.__barImportar({ apps: { estoque: { price: pr } } }); } catch (e) {} }
-      ['f-caixa', 'f-estoque'].forEach((id) => { const fr = document.getElementById(id); if (fr && fr.src) fr.contentWindow.location.reload(); });
-      editando = null; await carregarFontes(); desenharTabela();
-      $('#pcResultado', painel).innerHTML = `<div class="ft-card" style="border:2px solid #15803d"><b>✅ ${esc(nome)} atualizado:</b> ${brl(preco)} por ${esc(p.un)}${doses(p) ? '<br>' + doseTxt(p) : ''}</div>`;
-    };
   }
 
   // Aberto pela Ficha técnica (botão 📷 Foto da nota) ou ao abrir a aba

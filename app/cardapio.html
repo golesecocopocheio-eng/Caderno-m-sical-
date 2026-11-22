@@ -138,7 +138,11 @@ body.venda{background:var(--bg)}
 .emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
 .emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
 .emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
-.menu{background:radial-gradient(120% 80% at 50% 0%,#5b21b6 0%,#2e1065 45%,#12051f 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px}
+.menu{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(120% 70% at 50% 0%,#4c1d95 0%,#2a0f47 42%,#1c0d16 72%,#3a2306 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px;border:1px solid rgba(250,204,21,.35)}
+/* 🌵 fundo: Lampião e Maria Bonita (xilogravura) ou a foto escolhida, transparente por trás do cardápio */
+.menu:before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fundo,url(icons/cangaco.svg)) center 92%/min(118%,560px) auto no-repeat;opacity:var(--fop,.22);pointer-events:none}
+.menu.foto:before{background-size:cover;background-position:center;opacity:var(--fop,.32)}
+.menu:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,5,31,.15),rgba(18,5,31,.05) 40%,rgba(18,5,31,.35));pointer-events:none}
 .menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
 .menu .mt span{color:#facc15}
 .menu .ms{text-align:center;color:#fcd34d;font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px}
@@ -226,6 +230,7 @@ const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString('sv-SE');
 const toast=m=>{const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)};
 const PG={dinheiro:'💵 Dinheiro',pix:'⚡ Pix',credito:'💳 Crédito',debito:'💳 Débito'};
 const CFG0={maquinas:[{id:'mp',n:'Mercado Pago (Point)'},{id:'sant',n:'Santander (Getnet)'}],contas:[{id:'cmp',n:'Mercado Pago',tipo:'Conta digital',chave:'',nome:'',cidade:''},{id:'csant',n:'Santander',tipo:'Banco físico',chave:'',nome:'',cidade:''}]};
+let fundoMenu=''; // foto escolhida para o fundo do cardápio ('' = Lampião e Maria Bonita)
 let db=null,dono=true,me='',itens=[],vendas=[],cfg=JSON.parse(JSON.stringify(CFG0)),aba='vender',cat='',carrinho={},ver=noiteDe(Date.now()),leitura=null,folha=null,carAberto=false,fotos=[],editar=false,carregado=false,fotoVer=null;
 
 /* ---------- Pix: BR Code (copia e cola) com o valor, para a chave da conta ---------- */
@@ -294,7 +299,8 @@ const ativos=()=>itens.filter(i=>i.on!==false);
 // Drinks Autorais primeiro, Clássicos logo abaixo; depois os outros grupos na ordem do cardápio
 const rankCat=c=>/autora/i.test(c)?0:/cl[aá]ssic/i.test(c)?1:2;
 const categorias=()=>{const m=new Map();itens.forEach(i=>{const k=i.c||'Outros',o=i.o??1e9;if(!m.has(k)||o<m.get(k))m.set(k,o)});return [...m.entries()].sort((a,b)=>rankCat(a[0])-rankCat(b[0])||a[1]-b[1]||a[0].localeCompare(b[0],'pt')).map(x=>x[0])};
-const classeCat=c=>rankCat(c)===0?' dest':rankCat(c)===1?' clas':'';
+// Autorais e Clássicos com o mesmo destaque (mesma faixa e mesmos cartões)
+const classeCat=c=>rankCat(c)<=1?' dest':'';
 const PALETA=['#7c3aed','#d97706','#0891b2','#db2777','#16a34a','#dc2626','#2563eb','#9333ea','#0d9488','#ea580c'];
 const corCat=c=>{const m=(cfg.cores||{})[c];if(m)return m;const k=categorias().indexOf(c);if(/autora/i.test(c))return '#7c3aed';if(/cl[aá]ssic/i.test(c))return '#d97706';if(/cerveja|chopp/i.test(c))return '#ca8a04';if(/petisco|por[cç]|cozinha|lanche/i.test(c))return '#ea580c';if(/sem\s*[aá]lcool|suco|refri|[aá]gua|soft/i.test(c))return '#0891b2';if(/vinho|espumante/i.test(c))return '#9f1239';if(/dose|shot|destilad|whisk|gin/i.test(c))return '#0f766e';return PALETA[(k<0?0:k)%PALETA.length]};
 const iconeCat=c=>/autora/i.test(c)?'🍸':/cl[aá]ssic/i.test(c)?'🥃':/caipi/i.test(c)?'🍋':/cerveja|chopp/i.test(c)?'🍺':/petisco|por[cç]|cozinha|lanche/i.test(c)?'🍟':/sem\s*[aá]lcool|suco|refri|soft/i.test(c)?'🥤':/[aá]gua/i.test(c)?'💧':/vinho/i.test(c)?'🍷':/espumante/i.test(c)?'🥂':/dose|shot|destilad|whisk/i.test(c)?'🥃':/drink|coquet/i.test(c)?'🍹':/sobremesa/i.test(c)?'🍨':'✨';
@@ -311,6 +317,34 @@ const corDrink=i=>{let h=0;for(const ch of String(i.n||''))h=(h*31+ch.charCodeAt
 const iconeItem=i=>i.e||(ehDestaque(i)?iconeAuto(i):iconeCat(i.c||'Outros'));
 // 📸 foto real do item (tirada no bar) no lugar do ícone
 const fotoOuIcone=i=>i.f?`<img src="${i.f}" alt="" loading="lazy">`:iconeItem(i);
+/* 🔎 fotos da internet: Wikimedia Commons (fotos livres, com o autor guardado para o crédito) */
+const ehDrinkCat=c=>/autora|cl[aá]ssic|drink|coquet|caipi/i.test(c||'');
+function buscaPara(i){const c=i.c||'',n=i.n.replace(/\(.*?\)/g,'').trim();
+  if(ehDrinkCat(c))return n+' cocktail';if(/cerve|chopp|beer/i.test(c))return n+' beer';if(/refri|sem [aá]lcool|soft|suco|[aá]gua/i.test(c+' '+n))return n+' drink';if(/dose|destil|whisk|vodka|gin|rum|licor/i.test(c))return n+' bottle';return n}
+const semTags=h=>String(h||'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+async function buscarFotos(q,n=12){
+  const u='https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit='+n+'&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=480';
+  const r=await fetch(u);if(!r.ok)throw new Error('busca '+r.status);const j=await r.json();
+  return Object.values((j.query||{}).pages||{}).sort((a,b)=>(a.index||0)-(b.index||0)).map(p=>{const ii=(p.imageinfo||[])[0]||{},m=ii.extmetadata||{};return{t:ii.thumburl||ii.url,autor:semTags((m.Artist||{}).value).slice(0,60),lic:semTags((m.LicenseShortName||{}).value),pag:ii.descriptionurl||''}}).filter(x=>x.t&&/\.(jpe?g|png|webp)/i.test(x.t))}
+function fotoDaUrl(url,max=420){return new Promise((ok,er)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{const lado=Math.min(im.width,im.height),q=Math.round(Math.min(max,lado)),c=document.createElement('canvas');c.width=q;c.height=q;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(im,(im.width-lado)/2,(im.height-lado)/2,lado,lado,0,0,q,q);ok(c.toDataURL('image/jpeg',.8))}catch(e){er(e)}};im.onerror=()=>er(new Error('não abriu a foto'));im.src=url})}
+async function salvarFotoNet(i,x){const f=await fotoDaUrl(x.t);const o={...strip(i),f};o.fc=(x.autor||'autor desconhecido')+(x.lic?' · '+x.lic:'')+' · Wikimedia Commons';await db.collection('itens').doc(i.id).set(o)}
+function abrirBuscaFoto(i){let el=$('#buscaFoto');if(!el){el=document.createElement('div');el.id='buscaFoto';el.className='fundo';document.body.appendChild(el);el.addEventListener('click',e=>{if(e.target===el)el.remove()})}
+  const q0=buscaPara(i);
+  el.innerHTML=`<div class="folha" style="max-height:88vh;overflow:auto"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🔎 Foto para ${esc(i.n)}</h2><button class="x" id="bfX">✕</button></div>
+    <div class="row" style="margin:10px 0"><input id="bfQ" value="${esc(q0)}" style="flex:1"><button class="btn" id="bfIr" style="width:auto;margin:0;padding:10px 14px">Buscar</button></div>
+    <p class="sub" id="bfMsg" style="margin:0 0 8px">Buscando fotos livres…</p><div id="bfG" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+    <p class="sub" style="margin-top:10px;font-size:12px">Fotos livres do Wikimedia Commons; o nome do autor vai junto no rodapé do cardápio. Drink autoral é melhor fotografar o seu.</p></div>`;
+  const ir=async()=>{const g=$('#bfG'),m=$('#bfMsg');g.innerHTML='';m.textContent='Buscando fotos livres…';
+    try{const rs=await buscarFotos($('#bfQ').value.trim()||q0);if(!rs.length){m.textContent='Nenhuma foto achada. Tente outro nome (em inglês costuma achar mais, ex.: "negroni cocktail").';return}
+      m.textContent='Toque na foto que é o seu item:';g.innerHTML=rs.map((x,k)=>`<button data-bf="${k}" style="border:0;padding:0;border-radius:12px;overflow:hidden;aspect-ratio:1;background:var(--bg)"><img src="${x.t}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></button>`).join('');
+      g.querySelectorAll('[data-bf]').forEach(b=>b.onclick=async()=>{m.textContent='Salvando a foto…';try{await salvarFotoNet(i,rs[+b.dataset.bf]);toast('✅ Foto de '+i.n+' salva');el.remove()}catch(x){m.textContent='Não consegui usar esta foto ('+(x.message||x)+'). Tente outra.'}})}
+    catch(x){m.textContent='Sem internet ou a busca falhou agora. Tente de novo.'}};
+  $('#bfX').onclick=()=>el.remove();$('#bfIr').onclick=ir;$('#bfQ').onkeydown=e=>{if(e.key==='Enter')ir()};ir()}
+async function fotosParaTodos(btn){const sem=itens.filter(i=>!i.f&&i.on!==false&&!/autora/i.test(i.c||''));if(!sem.length){toast('Todos os itens (menos os autorais) já têm foto');return}
+  let ok=0,k=0;for(const i of sem){k++;btn.textContent='🔎 Buscando '+k+' de '+sem.length+'…';try{const rs=await buscarFotos(buscaPara(i),4);if(rs[0]){await salvarFotoNet(i,rs[0]);ok++}}catch(e){}}
+  btn.textContent='🔎 Buscar fotos na internet para os itens sem foto';toast('✅ '+ok+' foto(s) colocada(s). Confira e troque a que não for a certa (🔎 Internet no item).')}
+// foto de fundo do cardápio: lado maior 1100 px
+function fotoFundo(arq){return new Promise((ok,er)=>{const u=URL.createObjectURL(arq),im=new Image();im.onload=()=>{const k=Math.min(1,1100/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.72))};im.onerror=()=>{URL.revokeObjectURL(u);er(new Error('foto inválida'))};im.src=u})}
 // reduz a foto (lado maior 420 px, JPEG) para caber na nuvem e abrir rápido
 function fotoPequena(arq,max=420){return new Promise((ok,er)=>{const u=URL.createObjectURL(arq),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),lado=Math.min(im.width,im.height),c=document.createElement('canvas');
   // recorte quadrado no centro (fica bonito na lista e no cardápio)
@@ -405,9 +439,9 @@ function telaVender(){
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
   let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="cc ${cat===c?'on':''}" style="--gc:${corCat(c)}">${iconeCat(c)} ${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
   if(editar){
-    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
+    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><button class="btn sec" id="fotosNet" style="margin:0 0 8px">🔎 Buscar fotos na internet para os itens sem foto</button><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:22px">${iconeCat(c)}</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"><input type="color" data-cor="${esc(c)}" value="${corCat(c)}" title="Cor do grupo" style="width:46px;height:40px;padding:2px;flex:none"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"><div class="fotoItem" style="grid-column:1/3"><span class="fi">${i.f?`<img src="${i.f}" alt="">`:'📷'}</span><label class="btn sec">${i.f?'🔄 Trocar foto':'📸 Colocar foto'}<input type="file" accept="image/*" data-fitem="${i.id}" hidden></label>${i.f?`<button class="btn sec" data-ftira="${i.id}" style="color:var(--bad)">Tirar</button>`:''}</div><details style="grid-column:1/3"><summary style="font-size:13px;color:var(--mut);cursor:pointer">Ícone: <span style="font-size:18px">${iconeItem(i)}</span>${ehDestaque(i)?` · cor <span style="display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:middle;background:${i.cor||corDrink(i)}"></span>`:''} · trocar</summary>${ehDestaque(i)?`<label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px">Cor do destaque <input type="color" data-icor="${i.id}" value="${(()=>{const c=i.cor||'';return /^#[0-9a-f]{6}$/i.test(c)?c:'#7c3aed'})()}" style="width:46px;height:34px;padding:2px"></label>`:''}<div class="emo" style="margin-top:6px">${EMOJIS.map(em=>`<button data-emo="${i.id}" data-em="${em}" class="${iconeItem(i)===em?'on':''}">${em}</button>`).join('')}<button data-emo="${i.id}" data-em="" title="Ícone do grupo" style="font-size:12px">padrão</button></div></details></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:22px">${iconeCat(c)}</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"><input type="color" data-cor="${esc(c)}" value="${corCat(c)}" title="Cor do grupo" style="width:46px;height:40px;padding:2px;flex:none"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"><div class="fotoItem" style="grid-column:1/3"><span class="fi">${i.f?`<img src="${i.f}" alt="">`:'📷'}</span><label class="btn sec">${i.f?'🔄 Trocar foto':'📸 Colocar foto'}<input type="file" accept="image/*" data-fitem="${i.id}" hidden></label><button class="btn sec" data-fnet="${i.id}">🔎 Internet</button>${i.f?`<button class="btn sec" data-ftira="${i.id}" style="color:var(--bad)">Tirar</button>`:''}</div><details style="grid-column:1/3"><summary style="font-size:13px;color:var(--mut);cursor:pointer">Ícone: <span style="font-size:18px">${iconeItem(i)}</span>${ehDestaque(i)?` · cor <span style="display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:middle;background:${i.cor||corDrink(i)}"></span>`:''} · trocar</summary>${ehDestaque(i)?`<label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px">Cor do destaque <input type="color" data-icor="${i.id}" value="${(()=>{const c=i.cor||'';return /^#[0-9a-f]{6}$/i.test(c)?c:'#7c3aed'})()}" style="width:46px;height:34px;padding:2px"></label>`:''}<div class="emo" style="margin-top:6px">${EMOJIS.map(em=>`<button data-emo="${i.id}" data-em="${em}" class="${iconeItem(i)===em?'on':''}">${em}</button>`).join('')}<button data-emo="${i.id}" data-em="" title="Ícone do grupo" style="font-size:12px">padrão</button></div></details></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
@@ -432,9 +466,9 @@ function menuHTML(){
   const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));
   const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
   const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
-  return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
+  return `<div class="menu${fundoMenu?' foto':''}"${fundoMenu?` style="--fundo:url('${fundoMenu}')"`:''}><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
   ${C.map(c=>`<div class="mc">${iconeCat(c)} ${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>i.f?`<div class="mf2"><img src="${i.f}" alt=""><div><div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}</div></div>`:`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
-  <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
+  <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect${A.some(i=>i.fc)?'<br><span style="font-size:9.5px;letter-spacing:0;opacity:.8">Fotos: '+esc([...new Set(A.filter(i=>i.fc).map(i=>i.fc))].join('; '))+'</span>':''}</div></div>`;
 }
 function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
   if(!el){el=document.createElement('div');el.id='cliente';el.className='cliente';document.body.appendChild(el)}
@@ -448,7 +482,10 @@ async function imagemCardapio(){
   const FT=132; // tamanho da foto na imagem
   const H=300+lin.reduce((s,l)=>s+(l.cat?110:imgs[l.i.id]?FT+28:66+(l.i.d?42:0)),0)+140;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
-  const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.9);bg.addColorStop(0,'#5b21b6');bg.addColorStop(.45,'#2e1065');bg.addColorStop(1,'#12051f');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.95);bg.addColorStop(0,'#4c1d95');bg.addColorStop(.4,'#2a0f47');bg.addColorStop(.72,'#1c0d16');bg.addColorStop(1,'#3a2306');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  // fundo transparente: Lampião e Maria Bonita (ou a foto escolhida)
+  await new Promise(ok=>{const im=new Image();im.onload=()=>{g.save();if(fundoMenu){g.globalAlpha=.3;const k=Math.max(W/im.width,H/im.height);g.drawImage(im,(W-im.width*k)/2,(H-im.height*k)/2,im.width*k,im.height*k)}else{g.globalAlpha=.2;const w=Math.min(W*1.05,H*0.85*600/760),h=w*760/600;g.drawImage(im,(W-w)/2,H-h-40,w,h)}g.restore();ok()};im.onerror=()=>ok();im.src=fundoMenu||'icons/cangaco.svg'});
+  g.strokeStyle='rgba(250,204,21,.45)';g.lineWidth=4;g.strokeRect(24,24,W-48,H-48);
   const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   g.textAlign='center';g.fillStyle='#ffffff';g.font='900 74px '+F;
   const nb=nomeBar().toUpperCase();g.fillText(nb,W/2,150);
@@ -472,6 +509,7 @@ async function imagemCardapio(){
     g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
     if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-160,'italic 400 28px '+F);g.font='italic 400 28px '+F;g.fillText(d,80,y+18);y+=42}});
   g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
+  {const cr=[...new Set(A.filter(i=>i.fc).map(i=>i.fc))];if(cr.length){g.font='400 16px '+F;g.fillStyle='rgba(245,243,255,.45)';g.fillText(fit('Fotos: '+cr.join('; '),W-120,'400 16px '+F),W/2,H-34)}}
   return cv.toDataURL('image/png');
 }
 async function compartilharImagem(){
@@ -489,7 +527,9 @@ function telaCardapio(){
   if(itens.length){
     let h=menuHTML();
     h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Imagem para imprimir</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
-    h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div></div>`;
+    h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div>
+      <h2 style="margin-top:14px">🌵 Fundo do cardápio</h2><p class="sub" style="margin:0 0 8px">${fundoMenu?'Foto escolhida por você, transparente por trás do cardápio.':'Lampião e Maria Bonita (xilogravura), transparente por trás do cardápio.'}</p>
+      <div class="pgs"><label class="btn sec" style="margin:0;text-align:center">📷 Usar minha foto<input type="file" accept="image/*" id="fundoArq" hidden></label>${fundoMenu?'<button id="fundoPadrao">🌵 Voltar para Lampião e Maria Bonita</button>':''}</div></div>`;
     h+=fotoCard();
     if(fotos.length)h+=fotosHTML();
     h+=`<div class="card"><h2>Atualizar ou excluir</h2><p class="sub">🔄 <b>Atualizar pela foto</b>: escaneia o cardápio de novo e <b>troca o cardápio todo</b> pelo novo (nomes, preços e grupos). 🗑️ <b>Excluir</b>: apaga todos os itens.</p><div class="pgs"><button id="atualizarCard">🔄 Atualizar pela foto</button><button id="zerarCard" style="color:var(--bad)">🗑️ Excluir cardápio</button></div></div>`;
@@ -761,6 +801,9 @@ async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(J
 
 /* ---------- eventos ---------- */
 document.addEventListener('click',async ev=>{
+  {const bn=ev.target.closest&&ev.target.closest('[data-fnet]');if(bn){const i=itens.find(x=>x.id===bn.dataset.fnet);if(i)abrirBuscaFoto(i);return}}
+  if(ev.target.closest&&ev.target.closest('#fotosNet')){const b=ev.target.closest('#fotosNet');if(b.dataset.ocupado)return;b.dataset.ocupado=1;try{await fotosParaTodos(b)}finally{b.dataset.ocupado=''}return}
+  if(ev.target.closest&&ev.target.closest('#fundoPadrao')){try{await db.doc('config/fundo').set({img:'',t:Date.now()});toast('🌵 Fundo: Lampião e Maria Bonita')}catch(x){toast('Sem permissão para alterar')}return}
   {const tb=ev.target.closest&&ev.target.closest('[data-ftira]');if(tb){const i=itens.find(x=>x.id===tb.dataset.ftira);if(!i)return;if(!tb.dataset.s){tb.dataset.s=1;tb.textContent='Tirar?';setTimeout(()=>{tb.dataset.s='';tb.textContent='Tirar'},2500);return}const o={...strip(i)};delete o.f;await db.collection('itens').doc(i.id).set(o);toast('Foto tirada');return}}
   const b=ev.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.aba){aba=d.aba;draw();return}
@@ -817,6 +860,7 @@ document.addEventListener('input',e=>{const t=e.target;
   if(t.id==='rec'&&folha){folha.recebido=t.value;const pos=t.selectionStart;desenharFolha();const n=$('#rec');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}return}
 });
 document.addEventListener('change',async e=>{const t=e.target;
+  if(t.id==='fundoArq'){const arq=t.files&&t.files[0];t.value='';if(!arq)return;try{toast('🌵 Salvando o fundo…');const img=await fotoFundo(arq);await db.doc('config/fundo').set({img,t:Date.now()});toast('✅ Fundo do cardápio trocado')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.dataset&&t.dataset.fitem){const i=itens.find(x=>x.id===t.dataset.fitem),arq=t.files&&t.files[0];t.value='';if(!i||!arq)return;
     try{toast('📸 Salvando a foto…');const f=await fotoPequena(arq);await db.collection('itens').doc(i.id).set({...strip(i),f});toast('✅ Foto de '+i.n+' salva')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
@@ -845,6 +889,7 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
   // só as miniaturas (v:2); a foto grande baixa ao abrir. Fotos antigas grandes não são baixadas.
   db.collection('fotos').where('v','==',2).onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.mini).sort((a,b)=>b.t-a.t);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
+  db.doc('config/fundo').onSnapshot(s=>{const d=s.exists&&s.data();fundoMenu=(d&&d.img)||'';draw()},()=>{});
   db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||'',cores:d.cores||{}};draw()},()=>{});
   draw();
 })();

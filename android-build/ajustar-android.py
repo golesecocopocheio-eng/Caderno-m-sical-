@@ -35,10 +35,28 @@ manif = Path('android/app/src/main/AndroidManifest.xml')
 m = manif.read_text(encoding='utf-8')
 if 'IMAGE_CAPTURE' not in m:
     m = m.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>\n    </queries>\n</manifest>')
+# atualizar o app por dentro (baixa o APK novo e abre o instalador)
+if 'REQUEST_INSTALL_PACKAGES' not in m:
+    m = m.replace('<application', '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <application', 1)
 manif.write_text(m, encoding='utf-8')
+# o FileProvider do Capacitor precisa enxergar a pasta temporária (cache) onde o APK novo é baixado
+caminhos = Path('android/app/src/main/res/xml/file_paths.xml')
+if caminhos.exists():
+    c = caminhos.read_text(encoding='utf-8')
+    if '<cache-path' not in c:
+        c = c.replace('</paths>', '    <cache-path name="cache_app" path="." />\n</paths>')
+        caminhos.write_text(c, encoding='utf-8')
+else:
+    caminhos.parent.mkdir(parents=True, exist_ok=True)
+    caminhos.write_text('<?xml version="1.0" encoding="utf-8"?>\n<paths xmlns:android="http://schemas.android.com/apk/res/android">\n    <cache-path name="cache_app" path="." />\n</paths>\n', encoding='utf-8')
+if 'fileprovider' not in m:
+    m = manif.read_text(encoding='utf-8')
+    m = m.replace('</application>', '        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">\n            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />\n        </provider>\n    </application>', 1)
+    manif.write_text(m, encoding='utf-8')
 # ---- leitor de texto nativo (ML Kit) ----
 java = Path('android/app/src/main/java/br/bar/caixaportaria')
 shutil.copy('nativo/LeitorTextoPlugin.java', java / 'LeitorTextoPlugin.java')
+shutil.copy('nativo/AtualizarPlugin.java', java / 'AtualizarPlugin.java')
 main = java / 'MainActivity.java'
 ma = main.read_text(encoding='utf-8')
 if 'LeitorTextoPlugin' not in ma:
@@ -47,6 +65,7 @@ if 'LeitorTextoPlugin' not in ma:
         '    @Override\n'
         '    public void onCreate(android.os.Bundle savedInstanceState) {\n'
         '        registerPlugin(LeitorTextoPlugin.class);\n'
+        '        registerPlugin(AtualizarPlugin.class);\n'
         '        super.onCreate(savedInstanceState);\n'
         '    }\n'
         '}', ma)

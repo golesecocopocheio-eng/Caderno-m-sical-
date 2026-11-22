@@ -138,10 +138,9 @@ body.venda{background:var(--bg)}
 .emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
 .emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
 .emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
-.menu{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(120% 70% at 50% 0%,#4c1d95 0%,#2a0f47 42%,#1c0d16 72%,#3a2306 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px;border:1px solid rgba(250,204,21,.35)}
-/* 🌵 fundo: Lampião e Maria Bonita (xilogravura) ou a foto escolhida, transparente por trás do cardápio */
-.menu:before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fundo,url(icons/cangaco.svg)) center 92%/min(118%,560px) auto no-repeat;opacity:var(--fop,.22);pointer-events:none}
-.menu.foto:before{background-size:cover;background-position:center;opacity:var(--fop,.32)}
+.menu{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(90% 45% at 50% 0%,rgba(250,204,21,.18),transparent 70%),radial-gradient(80% 40% at 50% 100%,rgba(217,119,6,.32),transparent 75%),linear-gradient(180deg,#4c1d95 0%,#2e1065 38%,#1f0b3a 70%,#2a1405 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px;border:1px solid rgba(250,204,21,.35)}
+/* fundo roxo e dourado; se o bar escolher uma foto, ela fica transparente por trás do cardápio */
+.menu:before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fundo,none) center/cover no-repeat;opacity:.32;pointer-events:none}
 .menu:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,5,31,.15),rgba(18,5,31,.05) 40%,rgba(18,5,31,.35));pointer-events:none}
 .menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
 .menu .mt span{color:#facc15}
@@ -482,9 +481,11 @@ async function imagemCardapio(){
   const FT=132; // tamanho da foto na imagem
   const H=300+lin.reduce((s,l)=>s+(l.cat?110:imgs[l.i.id]?FT+28:66+(l.i.d?42:0)),0)+140;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
-  const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.95);bg.addColorStop(0,'#4c1d95');bg.addColorStop(.4,'#2a0f47');bg.addColorStop(.72,'#1c0d16');bg.addColorStop(1,'#3a2306');g.fillStyle=bg;g.fillRect(0,0,W,H);
-  // fundo transparente: Lampião e Maria Bonita (ou a foto escolhida)
-  await new Promise(ok=>{const im=new Image();im.onload=()=>{g.save();if(fundoMenu){g.globalAlpha=.3;const k=Math.max(W/im.width,H/im.height);g.drawImage(im,(W-im.width*k)/2,(H-im.height*k)/2,im.width*k,im.height*k)}else{g.globalAlpha=.2;const w=Math.min(W*1.05,H*0.85*600/760),h=w*760/600;g.drawImage(im,(W-w)/2,H-h-40,w,h)}g.restore();ok()};im.onerror=()=>ok();im.src=fundoMenu||'icons/cangaco.svg'});
+  // roxo e dourado: roxo em cima, brilho dourado no alto e um dourado quente embaixo
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#4c1d95');bg.addColorStop(.38,'#2e1065');bg.addColorStop(.7,'#1f0b3a');bg.addColorStop(1,'#2a1405');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const gl=(x,y,r,cor)=>{const gg=g.createRadialGradient(x,y,0,x,y,r);gg.addColorStop(0,cor);gg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gg;g.fillRect(0,0,W,H)};
+  gl(W/2,0,W*.75,'rgba(250,204,21,.16)');gl(W/2,H,W*.9,'rgba(217,119,6,.30)');
+  if(fundoMenu)await new Promise(ok=>{const im=new Image();im.onload=()=>{g.save();g.globalAlpha=.3;const k=Math.max(W/im.width,H/im.height);g.drawImage(im,(W-im.width*k)/2,(H-im.height*k)/2,im.width*k,im.height*k);g.restore();ok()};im.onerror=()=>ok();im.src=fundoMenu});
   g.strokeStyle='rgba(250,204,21,.45)';g.lineWidth=4;g.strokeRect(24,24,W-48,H-48);
   const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   g.textAlign='center';g.fillStyle='#ffffff';g.font='900 74px '+F;
@@ -528,8 +529,8 @@ function telaCardapio(){
     let h=menuHTML();
     h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Imagem para imprimir</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
     h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div>
-      <h2 style="margin-top:14px">🌵 Fundo do cardápio</h2><p class="sub" style="margin:0 0 8px">${fundoMenu?'Foto escolhida por você, transparente por trás do cardápio.':'Lampião e Maria Bonita (xilogravura), transparente por trás do cardápio.'}</p>
-      <div class="pgs"><label class="btn sec" style="margin:0;text-align:center">📷 Usar minha foto<input type="file" accept="image/*" id="fundoArq" hidden></label>${fundoMenu?'<button id="fundoPadrao">🌵 Voltar para Lampião e Maria Bonita</button>':''}</div></div>`;
+      <h2 style="margin-top:14px">🎨 Fundo do cardápio</h2><p class="sub" style="margin:0 0 8px">${fundoMenu?'Imagem escolhida por você, transparente por cima do roxo e dourado.':'Roxo e dourado. Se quiser, coloque uma imagem sua por trás (ela fica transparente).'}</p>
+      <div class="pgs"><label class="btn sec" style="margin:0;text-align:center">🖼️ Usar uma imagem<input type="file" accept="image/*" id="fundoArq" hidden></label>${fundoMenu?'<button id="fundoPadrao">🎨 Só roxo e dourado</button>':''}</div></div>`;
     h+=fotoCard();
     if(fotos.length)h+=fotosHTML();
     h+=`<div class="card"><h2>Atualizar ou excluir</h2><p class="sub">🔄 <b>Atualizar pela foto</b>: escaneia o cardápio de novo e <b>troca o cardápio todo</b> pelo novo (nomes, preços e grupos). 🗑️ <b>Excluir</b>: apaga todos os itens.</p><div class="pgs"><button id="atualizarCard">🔄 Atualizar pela foto</button><button id="zerarCard" style="color:var(--bad)">🗑️ Excluir cardápio</button></div></div>`;
@@ -803,7 +804,7 @@ async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(J
 document.addEventListener('click',async ev=>{
   {const bn=ev.target.closest&&ev.target.closest('[data-fnet]');if(bn){const i=itens.find(x=>x.id===bn.dataset.fnet);if(i)abrirBuscaFoto(i);return}}
   if(ev.target.closest&&ev.target.closest('#fotosNet')){const b=ev.target.closest('#fotosNet');if(b.dataset.ocupado)return;b.dataset.ocupado=1;try{await fotosParaTodos(b)}finally{b.dataset.ocupado=''}return}
-  if(ev.target.closest&&ev.target.closest('#fundoPadrao')){try{await db.doc('config/fundo').set({img:'',t:Date.now()});toast('🌵 Fundo: Lampião e Maria Bonita')}catch(x){toast('Sem permissão para alterar')}return}
+  if(ev.target.closest&&ev.target.closest('#fundoPadrao')){try{await db.doc('config/fundo').set({img:'',t:Date.now()});toast('🎨 Fundo: roxo e dourado')}catch(x){toast('Sem permissão para alterar')}return}
   {const tb=ev.target.closest&&ev.target.closest('[data-ftira]');if(tb){const i=itens.find(x=>x.id===tb.dataset.ftira);if(!i)return;if(!tb.dataset.s){tb.dataset.s=1;tb.textContent='Tirar?';setTimeout(()=>{tb.dataset.s='';tb.textContent='Tirar'},2500);return}const o={...strip(i)};delete o.f;await db.collection('itens').doc(i.id).set(o);toast('Foto tirada');return}}
   const b=ev.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.aba){aba=d.aba;draw();return}
@@ -860,7 +861,7 @@ document.addEventListener('input',e=>{const t=e.target;
   if(t.id==='rec'&&folha){folha.recebido=t.value;const pos=t.selectionStart;desenharFolha();const n=$('#rec');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}return}
 });
 document.addEventListener('change',async e=>{const t=e.target;
-  if(t.id==='fundoArq'){const arq=t.files&&t.files[0];t.value='';if(!arq)return;try{toast('🌵 Salvando o fundo…');const img=await fotoFundo(arq);await db.doc('config/fundo').set({img,t:Date.now()});toast('✅ Fundo do cardápio trocado')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
+  if(t.id==='fundoArq'){const arq=t.files&&t.files[0];t.value='';if(!arq)return;try{toast('🖼️ Salvando o fundo…');const img=await fotoFundo(arq);await db.doc('config/fundo').set({img,t:Date.now()});toast('✅ Fundo do cardápio trocado')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.dataset&&t.dataset.fitem){const i=itens.find(x=>x.id===t.dataset.fitem),arq=t.files&&t.files[0];t.value='';if(!i||!arq)return;
     try{toast('📸 Salvando a foto…');const f=await fotoPequena(arq);await db.collection('itens').doc(i.id).set({...strip(i),f});toast('✅ Foto de '+i.n+' salva')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}

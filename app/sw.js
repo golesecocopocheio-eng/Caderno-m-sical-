@@ -1,5 +1,5 @@
 // Funciona offline: usa a versão da rede quando há internet e a cópia salva quando não há.
-const CACHE = 'bar-caixa-portaria-v14';
+const CACHE = 'bar-caixa-portaria-v16';
 const ASSETS = ['./', './index.html', './caixa.html', './portaria.html', './estoque.html', './cardapio.html', './porta.html', './porta.webmanifest', './contagem.html', './contagem.webmanifest', './tradutor.html', './tradutor.js', './tradutor.webmanifest', './icons/tradutor.svg', './icons/clan-speak-192.png', './icons/clan-speak-512.png', './icons/clan-speak-maskable-512.png', './icons/clan-speak-apple.png', './vendor/qrcode.js', './claude-local.js', './foto.js', './precos.js', './ferramentas.js', './firebase-config.js',
   './vendor/firebase-app-compat.js', './vendor/firebase-auth-compat.js', './vendor/firebase-firestore-compat.js', './manifest.webmanifest', './icon.svg',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png', './icons/logo-horizontal.png',

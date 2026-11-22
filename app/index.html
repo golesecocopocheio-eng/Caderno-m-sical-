@@ -349,7 +349,7 @@ fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').t
    Um toque baixa e abre o instalador do Android em "Atualizar"; os dados ficam (mesma assinatura). */
 (function(){
   if(!window.Capacitor||!(window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()))return;
-  const REPO='golesecocopocheio-eng/Caderno-m-sical-';let minha=0,ultima=0,checado=0,url='';
+  const REPO='golesecocopocheio-eng/Caderno-m-sical-';let minha=0,ultima=0,checado=0,url='',baixando=false;
   const plug=()=>{try{return window.Capacitor.isPluginAvailable('Atualizar')?window.Capacitor.Plugins.Atualizar:null}catch(e){return null}};
   function faixa(){let f=document.getElementById('atualizaBar');if(f)return f;f=document.createElement('div');f.id='atualizaBar';
     f.style.cssText='position:fixed;left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:9998;background:linear-gradient(120deg,#5b21b6,#7c3aed);color:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(40,10,90,.45);display:flex;gap:10px;align-items:center;font:600 14px/1.3 system-ui,sans-serif';
@@ -370,7 +370,8 @@ fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').t
     try{if(!minha){const v=await (await fetch('versao.txt',{cache:'no-store'})).text();minha=+(v.trim().split('.')[1]||0)}if(!minha)return;
       const r=await fetch('https://api.github.com/repos/'+REPO+'/releases/latest',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;
       const j=await r.json(),n=+(String(j.tag_name||'').replace(/\D/g,''))||0,a=(j.assets||[]).find(x=>/BarConect\.apk$/.test(x.name));
-      if(n>minha&&a){ultima=n;url=a.browser_download_url;if(sessionStorage.getItem('atu-depois')!==String(n))mostrar()}}catch(e){}}
+      // achou versão nova: já baixa sozinho e abre o instalador (o Android só pede o toque em "Atualizar")
+      if(n>minha&&a){ultima=n;url=a.browser_download_url;if(sessionStorage.getItem('atu-depois')===String(n))return;if(plug()){if(!baixando){baixando=true;sessionStorage.setItem('atu-depois',String(n));baixar().finally(()=>{baixando=false})}}else mostrar()}}catch(e){}}
   setTimeout(checar,2500);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checar()});
 })();

@@ -98,6 +98,34 @@ body.venda{background:var(--bg)}
 .prod .pc .qt,.prod .pc.auto .qt{position:static;order:-1;background:var(--ac);color:#fff;min-width:24px;height:24px;font-size:12.5px;box-shadow:none;margin-right:-4px}
 .cats button.cc{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--bd)}
 .cats button.cc.on{color:var(--bg);background:var(--tx);box-shadow:none}
+/* 🎨 escolha do fundo do cardápio */
+.temas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}
+.temas button{border:2px solid transparent;border-radius:14px;padding:0;overflow:hidden;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
+.temas button i{display:block;height:46px;position:relative}
+.temas button i:after{content:'';position:absolute;right:7px;bottom:7px;width:14px;height:14px;border-radius:50%;background:var(--a);box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.temas button span{display:block;font-size:11.5px;font-weight:700;padding:5px 2px 6px;color:var(--tx)}
+.temas button.on{border-color:var(--ac);box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 30%,transparent)}
+.cores2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.cores2 label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:8px 10px;border:1px solid var(--bd);border-radius:12px;font-weight:600;font-size:13.5px}
+.cores2 input[type=color]{width:44px;height:32px;padding:0;border:0;background:none}
+.fimg{display:flex;gap:10px;align-items:center;margin-top:6px}
+.fimg .th{width:64px;height:64px;border-radius:12px;background:var(--bg) center/cover;flex:none;border:1px solid var(--bd);display:grid;place-items:center;font-size:24px}
+.rng{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;font-weight:600}
+.rng input{flex:1;accent-color:var(--ac)}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13.5px}
+/* 📸 fotos reais dos itens */
+.prod .pc .ic.ft,.prod .pc.auto .ic.ft{padding:0;overflow:hidden;background:var(--bg)}
+.prod .pc .ic.ft img{width:100%;height:100%;object-fit:cover;display:block}
+.prod.dest .pc .ic.ft,.prod.clas .pc .ic.ft,.prod .pc.auto .ic.ft{width:64px;height:64px;border-radius:16px}
+.prod .pc .ic.ft{width:52px;height:52px;border-radius:14px}
+.fotoItem{display:flex;align-items:center;gap:8px;margin-top:2px}
+.fotoItem .fi{width:46px;height:46px;border-radius:12px;overflow:hidden;display:grid;place-items:center;background:var(--bg);font-size:20px;flex:none}
+.fotoItem .fi img{width:100%;height:100%;object-fit:cover}
+.fotoItem .btn{width:auto;margin:0;padding:8px 12px;font-size:13.5px}
+.menu .mf2{display:flex;gap:12px;align-items:center;padding:8px 0}
+.menu .mf2 img{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.35);border:2px solid color-mix(in srgb,var(--ma) 60%,transparent)}
+.menu .mf2>div{flex:1;min-width:0}.menu .mf2 .mi{padding:0 0 2px}.menu .mf2 .md{margin:0}
+.cliente .menu .mf2 img{width:84px;height:84px}
 /* ===== ✨ Drinks Autorais em destaque; 🥃 Clássicos logo abaixo ===== */
 .gtit.dest{margin:16px 0 0;padding:16px 16px 14px;border-radius:18px 18px 0 0;background:linear-gradient(125deg,#5b21b6,#7c3aed 55%,#a855f7);box-shadow:none;gap:10px}
 .gtit.dest i{width:38px;height:38px;font-size:21px;border-radius:12px;background:rgba(255,255,255,.18)}
@@ -125,16 +153,22 @@ body.venda{background:var(--bg)}
 .emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
 .emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
 .emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
-.menu{background:radial-gradient(120% 80% at 50% 0%,#5b21b6 0%,#2e1065 45%,#12051f 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px}
+.menu{--m0:#4c1d95;--m1:#2e1065;--m2:#1f0b3a;--m3:#2a1405;--ma:#facc15;--mp:#fde047;--mg1:rgba(250,204,21,.18);--mg2:rgba(217,119,6,.32);--mv:31,11,58;position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(90% 45% at 50% 0%,var(--mg1),transparent 70%),radial-gradient(80% 40% at 50% 100%,var(--mg2),transparent 75%),linear-gradient(180deg,var(--m0) 0%,var(--m1) 38%,var(--m2) 70%,var(--m3) 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(0,0,0,.3);margin-bottom:12px;border:1px solid color-mix(in srgb,var(--ma) 40%,transparent)}
+/* fundo roxo e dourado; se o bar escolher uma foto, ela fica transparente por trás do cardápio */
+/* imagem de fundo translúcida + véu da cor do tema por cima, para as bebidas ficarem bem legíveis */
+.menu:before{content:'';position:absolute;inset:-12px;z-index:-2;background:var(--fundo,none) center/cover no-repeat;opacity:var(--fop,.22);filter:blur(var(--fbl,0px)) saturate(.9);pointer-events:none}
+.menu:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(var(--mv),.12),rgba(var(--mv),.04) 40%,rgba(var(--mv),.3));pointer-events:none}
+.menu.comfoto:after{background:linear-gradient(180deg,rgba(var(--mv),.5),rgba(var(--mv),.38) 45%,rgba(var(--mv),.62))}
+.menu.comfoto .mt,.menu.comfoto .ms,.menu.comfoto .mc,.menu.comfoto .mi,.menu.comfoto .md{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 .menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
-.menu .mt span{color:#facc15}
-.menu .ms{text-align:center;color:#fcd34d;font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px}
-.menu .mc{display:flex;align-items:center;gap:10px;margin:22px 0 8px;color:#facc15;font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
-.menu .mc:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(250,204,21,.6),transparent)}
+.menu .mt span{color:var(--ma)}
+.menu .ms{text-align:center;color:var(--ma);font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px;opacity:.9}
+.menu .mc{display:flex;align-items:center;gap:10px;margin:22px 0 8px;color:var(--ma);font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+.menu .mc:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--ma) 65%,transparent),transparent)}
 .menu .mi{display:flex;align-items:baseline;gap:6px;padding:7px 0;font-size:16px}
 .menu .mi .mn{font-weight:600}
 .menu .mi .ml{flex:1;border-bottom:2px dotted rgba(245,243,255,.28);transform:translateY(-4px);min-width:16px}
-.menu .mi .mp{font-weight:800;color:#fde047;white-space:nowrap}
+.menu .mi .mp{font-weight:800;color:var(--mp);white-space:nowrap}
 .menu .md{color:rgba(245,243,255,.62);font-size:13px;font-style:italic;margin:-5px 0 6px;line-height:1.3}
 .cliente .menu .md{font-size:15px}
 .menu .mf{text-align:center;color:rgba(245,243,255,.55);font-size:11px;letter-spacing:.12em;margin-top:22px}
@@ -146,7 +180,7 @@ body.venda{background:var(--bg)}
 .scan .c1{top:8px;left:8px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}.scan .c2{top:8px;right:8px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}.scan .c3{bottom:8px;left:8px;border-right:0;border-top:0;border-radius:0 0 0 8px}.scan .c4{bottom:8px;right:8px;border-left:0;border-top:0;border-radius:0 0 8px 0}
 .scan b{font-size:19px;letter-spacing:.02em}.scan p{margin:0;color:#fcd34d;font-size:14px;min-height:20px}
 @keyframes varre{from{top:4%}to{top:94%}}
-.cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#12051f;padding:20px 14px 40px}
+.cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#0b0710;padding:20px 14px 40px}
 .cliente .menu{max-width:620px;margin:0 auto;box-shadow:none}
 .cliente .menu .mi{font-size:19px}.cliente .menu .mt{font-size:32px}
 .prod button{position:relative;text-align:left;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:14px;padding:12px 10px;min-height:74px;font-size:14.5px;font-weight:600;line-height:1.25}
@@ -213,6 +247,18 @@ const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString('sv-SE');
 const toast=m=>{const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)};
 const PG={dinheiro:'💵 Dinheiro',pix:'⚡ Pix',credito:'💳 Crédito',debito:'💳 Débito'};
 const CFG0={maquinas:[{id:'mp',n:'Mercado Pago (Point)'},{id:'sant',n:'Santander (Getnet)'}],contas:[{id:'cmp',n:'Mercado Pago',tipo:'Conta digital',chave:'',nome:'',cidade:''},{id:'csant',n:'Santander',tipo:'Banco físico',chave:'',nome:'',cidade:''}]};
+let fundoMenu='',fundo={tema:'roxo',b:'',a:'',op:.22,bl:true}; // fundo do cardápio: cores do tema + imagem translúcida
+const TEMAS={roxo:['#4c1d95','#facc15','Roxo e dourado'],preto:['#2a2a2a','#d4af37','Preto e ouro'],vinho:['#7f1d1d','#fbbf24','Vinho'],verde:['#166534','#facc15','Verde garrafa'],
+  azul:['#1e3a8a','#fcd34d','Azul noite'],sertao:['#9a3412','#fde68a','Sertão'],rosa:['#9d174d','#fde68a','Rosa'],grafite:['#334155','#5eead4','Grafite']};
+const hexRgb=h=>{h=String(h||'').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const n=parseInt(h,16)||0;return[(n>>16)&255,(n>>8)&255,n&255]};
+const rgbHex=c=>'#'+c.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const misturar=(h1,h2,t)=>{const a=hexRgb(h1),b=hexRgb(h2);return rgbHex(a.map((v,k)=>v+(b[k]-v)*t))};
+const rgba=(h,o)=>'rgba('+hexRgb(h).join(',')+','+o+')';
+function coresFundo(){const t=TEMAS[fundo.tema];const b=t?t[0]:(fundo.b||'#4c1d95'),a=t?t[1]:(fundo.a||'#facc15');
+  const m2=misturar(b,'#000',.62);return{b,a,m0:b,m1:misturar(b,'#000',.38),m2,m3:misturar(misturar(a,'#000',.78),b,.25),mp:misturar(a,'#fff',.2),v:hexRgb(m2).join(',')}}
+function estiloFundo(){const c=coresFundo();let st=`--m0:${c.m0};--m1:${c.m1};--m2:${c.m2};--m3:${c.m3};--ma:${c.a};--mp:${c.mp};--mg1:${rgba(c.a,.16)};--mg2:${rgba(c.a,.24)};--mv:${c.v};`;
+  if(fundoMenu)st+=`--fundo:url('${fundoMenu}');--fop:${Math.max(.05,Math.min(.6,+fundo.op||.22))};--fbl:${fundo.bl?'6px':'0px'};`;return st}
+async function salvarFundo(extra){fundo={...fundo,...(extra||{})};try{await db.doc('config/fundo').set({img:fundoMenu,tema:fundo.tema,b:fundo.b||'',a:fundo.a||'',op:fundo.op,bl:!!fundo.bl,t:Date.now()})}catch(e){toast('Sem permissão para alterar')}}
 let db=null,dono=true,me='',itens=[],vendas=[],cfg=JSON.parse(JSON.stringify(CFG0)),aba='vender',cat='',carrinho={},ver=noiteDe(Date.now()),leitura=null,folha=null,carAberto=false,fotos=[],editar=false,carregado=false,fotoVer=null;
 
 /* ---------- Pix: BR Code (copia e cola) com o valor, para a chave da conta ---------- */
@@ -281,7 +327,8 @@ const ativos=()=>itens.filter(i=>i.on!==false);
 // Drinks Autorais primeiro, Clássicos logo abaixo; depois os outros grupos na ordem do cardápio
 const rankCat=c=>/autora/i.test(c)?0:/cl[aá]ssic/i.test(c)?1:2;
 const categorias=()=>{const m=new Map();itens.forEach(i=>{const k=i.c||'Outros',o=i.o??1e9;if(!m.has(k)||o<m.get(k))m.set(k,o)});return [...m.entries()].sort((a,b)=>rankCat(a[0])-rankCat(b[0])||a[1]-b[1]||a[0].localeCompare(b[0],'pt')).map(x=>x[0])};
-const classeCat=c=>rankCat(c)===0?' dest':rankCat(c)===1?' clas':'';
+// Autorais e Clássicos com o mesmo destaque (mesma faixa e mesmos cartões)
+const classeCat=c=>rankCat(c)<=1?' dest':'';
 const PALETA=['#7c3aed','#d97706','#0891b2','#db2777','#16a34a','#dc2626','#2563eb','#9333ea','#0d9488','#ea580c'];
 const corCat=c=>{const m=(cfg.cores||{})[c];if(m)return m;const k=categorias().indexOf(c);if(/autora/i.test(c))return '#7c3aed';if(/cl[aá]ssic/i.test(c))return '#d97706';if(/cerveja|chopp/i.test(c))return '#ca8a04';if(/petisco|por[cç]|cozinha|lanche/i.test(c))return '#ea580c';if(/sem\s*[aá]lcool|suco|refri|[aá]gua|soft/i.test(c))return '#0891b2';if(/vinho|espumante/i.test(c))return '#9f1239';if(/dose|shot|destilad|whisk|gin/i.test(c))return '#0f766e';return PALETA[(k<0?0:k)%PALETA.length]};
 const iconeCat=c=>/autora/i.test(c)?'🍸':/cl[aá]ssic/i.test(c)?'🥃':/caipi/i.test(c)?'🍋':/cerveja|chopp/i.test(c)?'🍺':/petisco|por[cç]|cozinha|lanche/i.test(c)?'🍟':/sem\s*[aá]lcool|suco|refri|soft/i.test(c)?'🥤':/[aá]gua/i.test(c)?'💧':/vinho/i.test(c)?'🍷':/espumante/i.test(c)?'🥂':/dose|shot|destilad|whisk/i.test(c)?'🥃':/drink|coquet/i.test(c)?'🍹':/sobremesa/i.test(c)?'🍨':'✨';
@@ -296,6 +343,40 @@ const ICONE_ING=[[/lichia/i,'🍒'],[/morango/i,'🍓'],[/maracuj/i,'💛'],[/ca
 const iconeAuto=i=>{if(ehClassico(i))for(const [r,e] of ICONE_CLASSICO)if(r.test(i.n))return e;for(const [r,e] of ICONE_NOME)if(r.test(i.n))return e;for(const [r,e] of ICONE_ING)if(r.test(i.d||''))return e;return '🍸'};
 const corDrink=i=>{let h=0;for(const ch of String(i.n||''))h=(h*31+ch.charCodeAt(0))>>>0;const hue=[275,330,15,35,190,160,300,250,350,200][h%10];return `hsl(${hue} 70% 44%)`};
 const iconeItem=i=>i.e||(ehDestaque(i)?iconeAuto(i):iconeCat(i.c||'Outros'));
+// 📸 foto real do item (tirada no bar) no lugar do ícone
+const fotoOuIcone=i=>i.f?`<img src="${i.f}" alt="" loading="lazy">`:iconeItem(i);
+/* 🔎 fotos da internet: Wikimedia Commons (fotos livres, com o autor guardado para o crédito) */
+const ehDrinkCat=c=>/autora|cl[aá]ssic|drink|coquet|caipi/i.test(c||'');
+function buscaPara(i){const c=i.c||'',n=i.n.replace(/\(.*?\)/g,'').trim();
+  if(ehDrinkCat(c))return n+' cocktail';if(/cerve|chopp|beer/i.test(c))return n+' beer';if(/refri|sem [aá]lcool|soft|suco|[aá]gua/i.test(c+' '+n))return n+' drink';if(/dose|destil|whisk|vodka|gin|rum|licor/i.test(c))return n+' bottle';return n}
+const semTags=h=>String(h||'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+async function buscarFotos(q,n=12){
+  const u='https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit='+n+'&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=480';
+  const r=await fetch(u);if(!r.ok)throw new Error('busca '+r.status);const j=await r.json();
+  return Object.values((j.query||{}).pages||{}).sort((a,b)=>(a.index||0)-(b.index||0)).map(p=>{const ii=(p.imageinfo||[])[0]||{},m=ii.extmetadata||{};return{t:ii.thumburl||ii.url,autor:semTags((m.Artist||{}).value).slice(0,60),lic:semTags((m.LicenseShortName||{}).value),pag:ii.descriptionurl||''}}).filter(x=>x.t&&/\.(jpe?g|png|webp)/i.test(x.t))}
+function fotoDaUrl(url,max=420){return new Promise((ok,er)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{const lado=Math.min(im.width,im.height),q=Math.round(Math.min(max,lado)),c=document.createElement('canvas');c.width=q;c.height=q;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(im,(im.width-lado)/2,(im.height-lado)/2,lado,lado,0,0,q,q);ok(c.toDataURL('image/jpeg',.8))}catch(e){er(e)}};im.onerror=()=>er(new Error('não abriu a foto'));im.src=url})}
+async function salvarFotoNet(i,x){const f=await fotoDaUrl(x.t);const o={...strip(i),f};o.fc=(x.autor||'autor desconhecido')+(x.lic?' · '+x.lic:'')+' · Wikimedia Commons';await db.collection('itens').doc(i.id).set(o)}
+function abrirBuscaFoto(i){let el=$('#buscaFoto');if(!el){el=document.createElement('div');el.id='buscaFoto';el.className='fundo';document.body.appendChild(el);el.addEventListener('click',e=>{if(e.target===el)el.remove()})}
+  const q0=buscaPara(i);
+  el.innerHTML=`<div class="folha" style="max-height:88vh;overflow:auto"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🔎 Foto para ${esc(i.n)}</h2><button class="x" id="bfX">✕</button></div>
+    <div class="row" style="margin:10px 0"><input id="bfQ" value="${esc(q0)}" style="flex:1"><button class="btn" id="bfIr" style="width:auto;margin:0;padding:10px 14px">Buscar</button></div>
+    <p class="sub" id="bfMsg" style="margin:0 0 8px">Buscando fotos livres…</p><div id="bfG" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+    <p class="sub" style="margin-top:10px;font-size:12px">Fotos livres do Wikimedia Commons; o nome do autor vai junto no rodapé do cardápio. Drink autoral é melhor fotografar o seu.</p></div>`;
+  const ir=async()=>{const g=$('#bfG'),m=$('#bfMsg');g.innerHTML='';m.textContent='Buscando fotos livres…';
+    try{const rs=await buscarFotos($('#bfQ').value.trim()||q0);if(!rs.length){m.textContent='Nenhuma foto achada. Tente outro nome (em inglês costuma achar mais, ex.: "negroni cocktail").';return}
+      m.textContent='Toque na foto que é o seu item:';g.innerHTML=rs.map((x,k)=>`<button data-bf="${k}" style="border:0;padding:0;border-radius:12px;overflow:hidden;aspect-ratio:1;background:var(--bg)"><img src="${x.t}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></button>`).join('');
+      g.querySelectorAll('[data-bf]').forEach(b=>b.onclick=async()=>{m.textContent='Salvando a foto…';try{await salvarFotoNet(i,rs[+b.dataset.bf]);toast('✅ Foto de '+i.n+' salva');el.remove()}catch(x){m.textContent='Não consegui usar esta foto ('+(x.message||x)+'). Tente outra.'}})}
+    catch(x){m.textContent='Sem internet ou a busca falhou agora. Tente de novo.'}};
+  $('#bfX').onclick=()=>el.remove();$('#bfIr').onclick=ir;$('#bfQ').onkeydown=e=>{if(e.key==='Enter')ir()};ir()}
+async function fotosParaTodos(btn){const sem=itens.filter(i=>!i.f&&i.on!==false&&!/autora/i.test(i.c||''));if(!sem.length){toast('Todos os itens (menos os autorais) já têm foto');return}
+  let ok=0,k=0;for(const i of sem){k++;btn.textContent='🔎 Buscando '+k+' de '+sem.length+'…';try{const rs=await buscarFotos(buscaPara(i),4);if(rs[0]){await salvarFotoNet(i,rs[0]);ok++}}catch(e){}}
+  btn.textContent='🔎 Buscar fotos na internet para os itens sem foto';toast('✅ '+ok+' foto(s) colocada(s). Confira e troque a que não for a certa (🔎 Internet no item).')}
+// foto de fundo do cardápio: lado maior 1100 px
+function fotoFundo(arq){return new Promise((ok,er)=>{const u=URL.createObjectURL(arq),im=new Image();im.onload=()=>{const k=Math.min(1,1100/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.72))};im.onerror=()=>{URL.revokeObjectURL(u);er(new Error('foto inválida'))};im.src=u})}
+// reduz a foto (lado maior 420 px, JPEG) para caber na nuvem e abrir rápido
+function fotoPequena(arq,max=420){return new Promise((ok,er)=>{const u=URL.createObjectURL(arq),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),lado=Math.min(im.width,im.height),c=document.createElement('canvas');
+  // recorte quadrado no centro (fica bonito na lista e no cardápio)
+  const q=Math.round(Math.min(max,lado));c.width=q;c.height=q;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(im,(im.width-lado)/2,(im.height-lado)/2,lado,lado,0,0,q,q);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.8))};im.onerror=()=>{URL.revokeObjectURL(u);er(new Error('foto inválida'))};im.src=u})}
 const porOrdem=(x,y)=>(x.o??1e9)-(y.o??1e9)||x.n.localeCompare(y.n,'pt');
 const totalCarrinho=()=>Object.entries(carrinho).reduce((s,[id,q])=>{const i=itens.find(x=>x.id===id);return s+(i?i.p*q:0)},0);
 const qtdCarrinho=()=>Object.values(carrinho).reduce((a,b)=>a+b,0);
@@ -386,14 +467,14 @@ function telaVender(){
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
   let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="cc ${cat===c?'on':''}" style="--gc:${corCat(c)}">${iconeCat(c)} ${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
   if(editar){
-    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
+    h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><button class="btn sec" id="fotosNet" style="margin:0 0 8px">🔎 Buscar fotos na internet para os itens sem foto</button><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:22px">${iconeCat(c)}</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"><input type="color" data-cor="${esc(c)}" value="${corCat(c)}" title="Cor do grupo" style="width:46px;height:40px;padding:2px;flex:none"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"><details style="grid-column:1/3"><summary style="font-size:13px;color:var(--mut);cursor:pointer">Ícone: <span style="font-size:18px">${iconeItem(i)}</span>${ehDestaque(i)?` · cor <span style="display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:middle;background:${i.cor||corDrink(i)}"></span>`:''} · trocar</summary>${ehDestaque(i)?`<label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px">Cor do destaque <input type="color" data-icor="${i.id}" value="${(()=>{const c=i.cor||'';return /^#[0-9a-f]{6}$/i.test(c)?c:'#7c3aed'})()}" style="width:46px;height:34px;padding:2px"></label>`:''}<div class="emo" style="margin-top:6px">${EMOJIS.map(em=>`<button data-emo="${i.id}" data-em="${em}" class="${iconeItem(i)===em?'on':''}">${em}</button>`).join('')}<button data-emo="${i.id}" data-em="" title="Ícone do grupo" style="font-size:12px">padrão</button></div></details></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
+      h+=`<div class="row" style="margin:14px 2px 6px;gap:6px"><span style="font-size:22px">${iconeCat(c)}</span><input data-k="gr" data-grupo="${esc(c)}" value="${esc(c)}" style="font-weight:800;font-size:15px;padding:7px 10px"><input type="color" data-cor="${esc(c)}" value="${corCat(c)}" title="Cor do grupo" style="width:46px;height:40px;padding:2px;flex:none"></div><div class="card" style="padding:4px 12px">${l.map(i=>`<div class="it" style="flex-wrap:wrap"><div style="flex:1;display:grid;grid-template-columns:1fr 78px;gap:6px"><input data-k="en" data-ed="n" data-id="${i.id}" value="${esc(i.n)}" style="${i.on===false?'opacity:.5':''}"><input data-k="ep" data-ed="p" data-id="${i.id}" value="${campo(i.p)}" inputmode="decimal" style="text-align:right;font-weight:700${!i.p?';border-color:var(--bad)':''}" title="${i.custo?'custo da ficha '+R(i.custo):''}">${!i.p&&i.custo?`<small style="grid-column:1/3;color:var(--mut);margin-top:-2px">custo pela ficha: ${R(i.custo)} · preencha o preço de venda</small>`:''}<input data-k="ed" data-ed="d" data-id="${i.id}" value="${esc(i.d||'')}" placeholder="Descrição (ingredientes)" style="grid-column:1/3;font-size:13px;padding:7px 10px"><input data-k="ec" data-ed="c" data-id="${i.id}" value="${esc(i.c||'')}" list="catsL" placeholder="Grupo" style="grid-column:1/3;font-size:13px;padding:7px 10px;color:var(--ac);font-weight:600"><div class="fotoItem" style="grid-column:1/3"><span class="fi">${i.f?`<img src="${i.f}" alt="">`:'📷'}</span><label class="btn sec">${i.f?'🔄 Trocar foto':'📸 Colocar foto'}<input type="file" accept="image/*" data-fitem="${i.id}" hidden></label><button class="btn sec" data-fnet="${i.id}">🔎 Internet</button>${i.f?`<button class="btn sec" data-ftira="${i.id}" style="color:var(--bad)">Tirar</button>`:''}</div><details style="grid-column:1/3"><summary style="font-size:13px;color:var(--mut);cursor:pointer">Ícone: <span style="font-size:18px">${iconeItem(i)}</span>${ehDestaque(i)?` · cor <span style="display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:middle;background:${i.cor||corDrink(i)}"></span>`:''} · trocar</summary>${ehDestaque(i)?`<label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px">Cor do destaque <input type="color" data-icor="${i.id}" value="${(()=>{const c=i.cor||'';return /^#[0-9a-f]{6}$/i.test(c)?c:'#7c3aed'})()}" style="width:46px;height:34px;padding:2px"></label>`:''}<div class="emo" style="margin-top:6px">${EMOJIS.map(em=>`<button data-emo="${i.id}" data-em="${em}" class="${iconeItem(i)===em?'on':''}">${em}</button>`).join('')}<button data-emo="${i.id}" data-em="" title="Ícone do grupo" style="font-size:12px">padrão</button></div></details></div><button class="x" data-on="${i.id}" title="${i.on===false?'Mostrar na venda':'Esconder da venda'}">${i.on===false?'🙈':'👁️'}</button><button class="x" data-del="${i.id}">✕</button></div>`).join('')}</div>`});
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-    const gc=corCat(c);h+=`<div class="gtit${classeCat(c)}" style="--gc:${gc}"><i>${iconeCat(c)}</i><b>${esc(c)}${rankCat(c)===0?'<em>✨ criações da casa</em>':rankCat(c)===1?'<em>🏆 receitas consagradas</em>':''}</b><small>${l.length}</small></div><div class="prod${classeCat(c)}" style="--gc:${gc}">${l.map(i=>ehDestaque(i)?`<button class="pc auto${carrinho[i.id]?' tem':''}" style="--dc:${i.cor||corDrink(i)}" data-add="${i.id}"><span class="ic">${iconeItem(i)}</span><span class="tx"><span class="nm">${esc(i.n)}</span>${i.d?`<span class="ds">${esc(i.d)}</span>`:''}<span class="sl">${ehAutoral(i)?'✨ Autoral':'🥃 Clássico'}</span></span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`
-      :`<button class="pc${carrinho[i.id]?' tem':''}" data-add="${i.id}"><span class="ic">${iconeItem(i)}</span><span class="nm">${esc(i.n)}</span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
+    const gc=corCat(c);h+=`<div class="gtit${classeCat(c)}" style="--gc:${gc}"><i>${iconeCat(c)}</i><b>${esc(c)}${rankCat(c)===0?'<em>✨ criações da casa</em>':rankCat(c)===1?'<em>🏆 receitas consagradas</em>':''}</b><small>${l.length}</small></div><div class="prod${classeCat(c)}" style="--gc:${gc}">${l.map(i=>ehDestaque(i)?`<button class="pc auto${carrinho[i.id]?' tem':''}" style="--dc:${i.cor||corDrink(i)}" data-add="${i.id}"><span class="ic${i.f?' ft':''}">${fotoOuIcone(i)}</span><span class="tx"><span class="nm">${esc(i.n)}</span>${i.d?`<span class="ds">${esc(i.d)}</span>`:''}<span class="sl">${ehAutoral(i)?'✨ Autoral':'🥃 Clássico'}</span></span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`
+      :`<button class="pc${carrinho[i.id]?' tem':''}" data-add="${i.id}"><span class="ic${i.f?' ft':''}">${fotoOuIcone(i)}</span><span class="nm">${esc(i.n)}</span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
   return h;
 }
 function desenharCarrinho(){
@@ -413,39 +494,58 @@ function menuHTML(){
   const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));
   const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
   const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
-  return `<div class="menu"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
-  ${C.map(c=>`<div class="mc">${iconeCat(c)} ${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
-  <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect</div></div>`;
+  return `<div class="menu${fundoMenu?' comfoto':''}" style="${estiloFundo()}"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
+  ${C.map(c=>`<div class="mc">${iconeCat(c)} ${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>i.f?`<div class="mf2"><img src="${i.f}" alt=""><div><div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}</div></div>`:`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
+  <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect${A.some(i=>i.fc)?'<br><span style="font-size:9.5px;letter-spacing:0;opacity:.8">Fotos: '+esc([...new Set(A.filter(i=>i.fc).map(i=>i.fc))].join('; '))+'</span>':''}</div></div>`;
 }
 function mostrarCliente(on){let el=$('#cliente');if(!on){if(el)el.remove();return}
   if(!el){el=document.createElement('div');el.id='cliente';el.className='cliente';document.body.appendChild(el)}
   el.innerHTML=`<button class="x" id="clienteFechar" style="position:fixed;top:12px;right:14px;color:#fff;font-size:26px;z-index:31">✕</button>${menuHTML()}`}
 // imagem do cardápio (para WhatsApp, Instagram, imprimir)
-function imagemCardapio(){
+async function imagemCardapio(){
   const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c)),W=1080,lin=[];
   C.forEach(c=>{lin.push({cat:c});A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).forEach(i=>lin.push({i}))});
-  const H=300+lin.reduce((s,l)=>s+(l.cat?110:66+(l.i.d?42:0)),0)+140;
+  // fotos dos itens (quando tem): carrega antes de desenhar
+  const imgs={};await Promise.all(A.filter(i=>i.f).map(i=>new Promise(ok=>{const im=new Image();im.onload=()=>{imgs[i.id]=im;ok()};im.onerror=()=>ok();im.src=i.f})));
+  const FT=132; // tamanho da foto na imagem
+  const H=300+lin.reduce((s,l)=>s+(l.cat?110:imgs[l.i.id]?FT+28:66+(l.i.d?42:0)),0)+140;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
-  const bg=g.createRadialGradient(W/2,0,40,W/2,0,Math.max(W,H)*.9);bg.addColorStop(0,'#5b21b6');bg.addColorStop(.45,'#2e1065');bg.addColorStop(1,'#12051f');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  // roxo e dourado: roxo em cima, brilho dourado no alto e um dourado quente embaixo
+  const CF=coresFundo(),AC=CF.a,PR=CF.mp;
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,CF.m0);bg.addColorStop(.38,CF.m1);bg.addColorStop(.7,CF.m2);bg.addColorStop(1,CF.m3);g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const gl=(x,y,r,cor)=>{const gg=g.createRadialGradient(x,y,0,x,y,r);gg.addColorStop(0,cor);gg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gg;g.fillRect(0,0,W,H)};
+  gl(W/2,0,W*.75,rgba(AC,.16));gl(W/2,H,W*.9,rgba(AC,.24));
+  if(fundoMenu){await new Promise(ok=>{const im=new Image();im.onload=()=>{g.save();g.globalAlpha=Math.max(.05,Math.min(.6,+fundo.op||.22));if(fundo.bl)g.filter='blur(10px)';const k=Math.max(W/im.width,H/im.height)*1.04;g.drawImage(im,(W-im.width*k)/2,(H-im.height*k)/2,im.width*k,im.height*k);g.restore();ok()};im.onerror=()=>ok();im.src=fundoMenu});
+    const v=g.createLinearGradient(0,0,0,H);v.addColorStop(0,'rgba('+CF.v+',.5)');v.addColorStop(.45,'rgba('+CF.v+',.38)');v.addColorStop(1,'rgba('+CF.v+',.62)');g.fillStyle=v;g.fillRect(0,0,W,H)}
+  g.strokeStyle=rgba(AC,.5);g.lineWidth=4;g.strokeRect(24,24,W-48,H-48);
   const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   g.textAlign='center';g.fillStyle='#ffffff';g.font='900 74px '+F;
   const nb=nomeBar().toUpperCase();g.fillText(nb,W/2,150);
-  g.fillStyle='#fcd34d';g.font='600 30px '+F;g.fillText(((cfg.sub||'').trim()||'Cardápio').toUpperCase().split('').join(' '),W/2,215);
+  g.fillStyle=AC;g.font='600 30px '+F;g.fillText(((cfg.sub||'').trim()||'Cardápio').toUpperCase().split('').join(' '),W/2,215);
   let y=300;g.textAlign='left';
   const fit=(t,max,font)=>{g.font=font;if(g.measureText(t).width<=max)return t;while(t.length>3&&g.measureText(t+'…').width>max)t=t.slice(0,-1);return t+'…'};
   lin.forEach(l=>{
-    if(l.cat){y+=40;g.fillStyle='#facc15';g.font='800 34px '+F;const t=l.cat.toUpperCase();g.fillText(t,80,y+20);const w=g.measureText(t).width;
-      const gr=g.createLinearGradient(100+w,0,W-80,0);gr.addColorStop(0,'rgba(250,204,21,.7)');gr.addColorStop(1,'rgba(250,204,21,0)');g.fillStyle=gr;g.fillRect(100+w,y+8,W-180-w,3);y+=70;return}
+    if(l.cat){y+=40;g.fillStyle=AC;g.font='800 34px '+F;const t=l.cat.toUpperCase();g.fillText(t,80,y+20);const w=g.measureText(t).width;
+      const gr=g.createLinearGradient(100+w,0,W-80,0);gr.addColorStop(0,rgba(AC,.7));gr.addColorStop(1,rgba(AC,0));g.fillStyle=gr;g.fillRect(100+w,y+8,W-180-w,3);y+=70;return}
     const i=l.i,pr=i.p?R(i.p):'—';g.font='800 38px '+F;const pw=g.measureText(pr).width;
+    const im=imgs[i.id];
+    if(im){ // linha com foto: foto redonda à esquerda, nome/preço/descrição ao lado
+      const x0=80,y0=y+4,r=24;g.save();g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x0+FT,y0,x0+FT,y0+FT,r);g.arcTo(x0+FT,y0+FT,x0,y0+FT,r);g.arcTo(x0,y0+FT,x0,y0,r);g.arcTo(x0,y0,x0+FT,y0,r);g.closePath();g.clip();g.drawImage(im,x0,y0,FT,FT);g.restore();
+      g.strokeStyle=rgba(AC,.6);g.lineWidth=3;g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x0+FT,y0,x0+FT,y0+FT,r);g.arcTo(x0+FT,y0+FT,x0,y0+FT,r);g.arcTo(x0,y0+FT,x0,y0,r);g.arcTo(x0,y0,x0+FT,y0,r);g.closePath();g.stroke();
+      const tx=x0+FT+28,nm=fit(i.n,W-80-tx-pw-24,'700 38px '+F);g.fillStyle='#f5f3ff';g.font='700 38px '+F;g.fillText(nm,tx,y0+52);
+      g.fillStyle=PR;g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y0+52);g.textAlign='left';
+      if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-80-tx,'italic 400 27px '+F);g.font='italic 400 27px '+F;g.fillText(d,tx,y0+98)}
+      y+=FT+28;return}
     const nome=fit(i.n,W-200-pw,'600 38px '+F);g.fillStyle='#f5f3ff';g.font='600 38px '+F;g.fillText(nome,80,y+30);const nw=g.measureText(nome).width;
     g.fillStyle='rgba(245,243,255,.35)';for(let x=80+nw+16;x<W-80-pw-16;x+=14)g.fillRect(x,y+26,5,5);
-    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
+    g.fillStyle=PR;g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
     if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-160,'italic 400 28px '+F);g.font='italic 400 28px '+F;g.fillText(d,80,y+18);y+=42}});
   g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
+  {const cr=[...new Set(A.filter(i=>i.fc).map(i=>i.fc))];if(cr.length){g.font='400 16px '+F;g.fillStyle='rgba(245,243,255,.45)';g.fillText(fit('Fotos: '+cr.join('; '),W-120,'400 16px '+F),W/2,H-34)}}
   return cv.toDataURL('image/png');
 }
 async function compartilharImagem(){
-  const url=imagemCardapio(),nome='cardapio-'+nomeBar().toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
+  const url=await imagemCardapio(),nome='cardapio-'+nomeBar().toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
   const P=window.parent,Cap=P&&P.Capacitor&&P.Capacitor.Plugins;
   try{
     if(Cap&&Cap.Filesystem&&Cap.Share){const r=await Cap.Filesystem.writeFile({path:nome,data:url.split(',')[1],directory:'CACHE'});await Cap.Share.share({title:'Cardápio',files:[r.uri],dialogTitle:'Compartilhar cardápio'});return}
@@ -458,8 +558,15 @@ window.__cardImagem=imagemCardapio;
 function telaCardapio(){
   if(itens.length){
     let h=menuHTML();
-    h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Compartilhar imagem</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
-    h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div></div>`;
+    h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Imagem para imprimir</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
+    h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div>
+      <h2 style="margin-top:16px">🎨 Fundo do cardápio</h2><p class="sub" style="margin:0 0 4px">Escolha as cores. A mudança aparece no cardápio acima, no Mostrar ao cliente e na imagem para imprimir.</p>
+      <div class="temas">${Object.entries(TEMAS).map(([k,[b,a,n]])=>`<button data-tema="${k}" class="${fundo.tema===k?'on':''}" style="--a:${a}"><i style="background:linear-gradient(160deg,${b},${misturar(b,'#000',.6)})"></i><span>${n}</span></button>`).join('')}<button data-tema="livre" class="${!TEMAS[fundo.tema]?'on':''}" style="--a:${fundo.a||'#facc15'}"><i style="background:conic-gradient(from 90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)"></i><span>Cor livre</span></button></div>
+      ${!TEMAS[fundo.tema]?`<div class="cores2"><label>Cor do fundo<input type="color" id="fCorB" value="${fundo.b||'#4c1d95'}"></label><label>Cor de destaque<input type="color" id="fCorA" value="${fundo.a||'#facc15'}"></label></div>`:''}
+      <h2 style="margin-top:6px">🖼️ Imagem de fundo</h2>
+      <div class="fimg"><span class="th" style="${fundoMenu?`background-image:url('${fundoMenu}')`:''}">${fundoMenu?'':'🖼️'}</span><div style="flex:1"><p class="sub" style="margin:0 0 6px">${fundoMenu?'A imagem fica translúcida, atrás de um véu da cor do fundo, para as bebidas continuarem fáceis de ler.':'Opcional: uma foto do bar, do drink ou da sua arte, bem suave por trás do cardápio.'}</p>
+      <div class="pgs" style="margin:0"><label class="btn sec" style="margin:0;text-align:center">${fundoMenu?'🔄 Trocar imagem':'🖼️ Escolher imagem'}<input type="file" accept="image/*" id="fundoArq" hidden></label>${fundoMenu?'<button id="fundoPadrao" style="color:var(--bad)">Tirar imagem</button>':''}</div></div></div>
+      ${fundoMenu?`<div class="rng">Força da imagem<input type="range" id="fOp" min="5" max="50" step="1" value="${Math.round((+fundo.op||.22)*100)}"><b id="fOpV">${Math.round((+fundo.op||.22)*100)}%</b></div><label class="chk"><input type="checkbox" id="fBl" ${fundo.bl?'checked':''}> Desfocar a imagem (fica mais suave e realça as bebidas)</label>`:''}</div>`;
     h+=fotoCard();
     if(fotos.length)h+=fotosHTML();
     h+=`<div class="card"><h2>Atualizar ou excluir</h2><p class="sub">🔄 <b>Atualizar pela foto</b>: escaneia o cardápio de novo e <b>troca o cardápio todo</b> pelo novo (nomes, preços e grupos). 🗑️ <b>Excluir</b>: apaga todos os itens.</p><div class="pgs"><button id="atualizarCard">🔄 Atualizar pela foto</button><button id="zerarCard" style="color:var(--bad)">🗑️ Excluir cardápio</button></div></div>`;
@@ -731,6 +838,11 @@ async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(J
 
 /* ---------- eventos ---------- */
 document.addEventListener('click',async ev=>{
+  {const bn=ev.target.closest&&ev.target.closest('[data-fnet]');if(bn){const i=itens.find(x=>x.id===bn.dataset.fnet);if(i)abrirBuscaFoto(i);return}}
+  if(ev.target.closest&&ev.target.closest('#fotosNet')){const b=ev.target.closest('#fotosNet');if(b.dataset.ocupado)return;b.dataset.ocupado=1;try{await fotosParaTodos(b)}finally{b.dataset.ocupado=''}return}
+  if(ev.target.closest&&ev.target.closest('#fundoPadrao')){fundoMenu='';await salvarFundo();toast('Imagem de fundo tirada');return}
+  {const bt=ev.target.closest&&ev.target.closest('[data-tema]');if(bt){const k=bt.dataset.tema;if(k==='livre'){const c=coresFundo();await salvarFundo({tema:'livre',b:fundo.b||c.b,a:fundo.a||c.a})}else await salvarFundo({tema:k});return}}
+  {const tb=ev.target.closest&&ev.target.closest('[data-ftira]');if(tb){const i=itens.find(x=>x.id===tb.dataset.ftira);if(!i)return;if(!tb.dataset.s){tb.dataset.s=1;tb.textContent='Tirar?';setTimeout(()=>{tb.dataset.s='';tb.textContent='Tirar'},2500);return}const o={...strip(i)};delete o.f;await db.collection('itens').doc(i.id).set(o);toast('Foto tirada');return}}
   const b=ev.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.aba){aba=d.aba;draw();return}
   if(d.cat!==undefined&&b.closest('.cats')){cat=d.cat;draw();return}
@@ -785,7 +897,17 @@ document.addEventListener('click',async ev=>{
 document.addEventListener('input',e=>{const t=e.target;
   if(t.id==='rec'&&folha){folha.recebido=t.value;const pos=t.selectionStart;desenharFolha();const n=$('#rec');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}return}
 });
+document.addEventListener('input',e=>{const t=e.target;
+  // mexendo na força da imagem: muda na hora no cardápio (salva quando soltar)
+  if(t.id==='fOp'){const v=+t.value/100;fundo.op=v;const m=document.querySelector('.menu');if(m)m.style.setProperty('--fop',v);const l=$('#fOpV');if(l)l.textContent=t.value+'%'}
+  if(t.id==='fCorB'||t.id==='fCorA'){fundo[t.id==='fCorB'?'b':'a']=t.value;const m=document.querySelector('.menu');if(m)m.setAttribute('style',estiloFundo())}});
 document.addEventListener('change',async e=>{const t=e.target;
+  if(t.id==='fOp'){await salvarFundo({op:+t.value/100});return}
+  if(t.id==='fBl'){await salvarFundo({bl:t.checked});return}
+  if(t.id==='fCorB'||t.id==='fCorA'){await salvarFundo({tema:'livre'});return}
+  if(t.id==='fundoArq'){const arq=t.files&&t.files[0];t.value='';if(!arq)return;try{toast('🖼️ Salvando a imagem…');fundoMenu=await fotoFundo(arq);await salvarFundo();toast('✅ Imagem de fundo colocada. Ajuste a força se quiser.')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
+  if(t.dataset&&t.dataset.fitem){const i=itens.find(x=>x.id===t.dataset.fitem),arq=t.files&&t.files[0];t.value='';if(!i||!arq)return;
+    try{toast('📸 Salvando a foto…');const f=await fotoPequena(arq);await db.collection('itens').doc(i.id).set({...strip(i),f});toast('✅ Foto de '+i.n+' salva')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
   if(t.id==='dia'){ver=t.value||noiteDe(Date.now());draw();return}
   if(t.dataset.icor!==undefined){const i=itens.find(x=>x.id===t.dataset.icor);if(i){await db.collection('itens').doc(i.id).set({...strip(i),cor:t.value});toast('✅ Cor de '+i.n)}return}
@@ -812,6 +934,7 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
   // só as miniaturas (v:2); a foto grande baixa ao abrir. Fotos antigas grandes não são baixadas.
   db.collection('fotos').where('v','==',2).onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.mini).sort((a,b)=>b.t-a.t);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
+  db.doc('config/fundo').onSnapshot(s=>{const d=(s.exists&&s.data())||{};fundoMenu=d.img||'';fundo={tema:d.tema===undefined?'roxo':d.tema,b:d.b||'',a:d.a||'',op:d.op===undefined?.22:+d.op,bl:d.bl===undefined?true:!!d.bl};if(!document.querySelector('.rng input:active'))draw()},()=>{});
   db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||'',cores:d.cores||{}};draw()},()=>{});
   draw();
 })();

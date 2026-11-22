@@ -110,13 +110,18 @@ body.venda{background:var(--bg)}
 .prod.dest .pc.auto .nm,.prod.dest .pc .nm{font-size:16.5px;font-weight:800}
 .prod.dest .pc.auto .sl{color:#7c3aed;font-weight:800}
 .prod.dest .pc small,.prod.dest .pc.auto small{color:#fff;background:#7c3aed;padding:6px 11px;border-radius:99px;font-size:14.5px}
-.gtit.clas{margin-top:22px}
-.gtit.clas b{color:#b45309}
-.gtit.clas i{width:30px;height:30px;font-size:16px;border-radius:10px;background:#fef3c7}
-.prod.clas{border-color:#fde68a}
-.prod.clas .pc.auto .sl{color:#b45309}
-.prod.clas .pc small,.prod.clas .pc.auto small{color:#92400e}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .prod.dest{border-color:#4c1d95}:root:not([data-theme="light"]) .prod.dest .pc .ic{background:#2e1f52}:root:not([data-theme="light"]) .gtit.clas i{background:#3b2a0a}:root:not([data-theme="light"]) .prod.clas{border-color:#4a3510}:root:not([data-theme="light"]) .prod.clas .pc small{color:#fbbf24}}
+.gtit.clas{margin:22px 0 0;padding:16px 16px 14px;border-radius:18px 18px 0 0;background:linear-gradient(125deg,#92400e,#d97706 55%,#f59e0b);box-shadow:none;gap:10px}
+.gtit.clas i{width:38px;height:38px;font-size:21px;border-radius:12px;background:rgba(255,255,255,.2)}
+.gtit.clas b{color:#fff;font-size:14px;letter-spacing:.16em;white-space:nowrap}
+.gtit.clas em{display:block;font-style:normal;font-size:11.5px;font-weight:600;color:#fef3c7;letter-spacing:.04em;text-transform:none;margin-top:2px}
+.gtit.clas small{color:#92400e;background:#fff;padding:3px 10px;border-radius:99px;font-weight:800}
+.prod.clas{border-radius:0 0 18px 18px;border:1.5px solid #fcd34d;border-top:0;box-shadow:0 10px 26px rgba(217,119,6,.14)}
+.prod.clas .pc,.prod.clas .pc.auto{padding:14px 14px}
+.prod.clas .pc .ic,.prod.clas .pc.auto .ic{width:48px;height:48px;font-size:25px;background:#fffbeb;border-radius:14px}
+.prod.clas .pc.auto .nm,.prod.clas .pc .nm{font-size:16.5px;font-weight:800}
+.prod.clas .pc.auto .sl{color:#b45309;font-weight:800}
+.prod.clas .pc small,.prod.clas .pc.auto small{color:#fff;background:#d97706;padding:6px 11px;border-radius:99px;font-size:14.5px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .prod.dest{border-color:#4c1d95}:root:not([data-theme="light"]) .prod.dest .pc .ic{background:#2e1f52}:root:not([data-theme="light"]) .prod.clas{border-color:#78350f}:root:not([data-theme="light"]) .prod.clas .pc .ic{background:#3b2a0a}}
 .emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
 .emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
 .emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
@@ -387,7 +392,7 @@ function telaVender(){
     return h;
   }
   (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
-    const gc=corCat(c);h+=`<div class="gtit${classeCat(c)}" style="--gc:${gc}"><i>${iconeCat(c)}</i><b>${esc(c)}${rankCat(c)===0?'<em>✨ criações da casa</em>':''}</b><small>${l.length}</small></div><div class="prod${classeCat(c)}" style="--gc:${gc}">${l.map(i=>ehDestaque(i)?`<button class="pc auto${carrinho[i.id]?' tem':''}" style="--dc:${i.cor||corDrink(i)}" data-add="${i.id}"><span class="ic">${iconeItem(i)}</span><span class="tx"><span class="nm">${esc(i.n)}</span>${i.d?`<span class="ds">${esc(i.d)}</span>`:''}<span class="sl">${ehAutoral(i)?'✨ Autoral':'🥃 Clássico'}</span></span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`
+    const gc=corCat(c);h+=`<div class="gtit${classeCat(c)}" style="--gc:${gc}"><i>${iconeCat(c)}</i><b>${esc(c)}${rankCat(c)===0?'<em>✨ criações da casa</em>':rankCat(c)===1?'<em>🏆 receitas consagradas</em>':''}</b><small>${l.length}</small></div><div class="prod${classeCat(c)}" style="--gc:${gc}">${l.map(i=>ehDestaque(i)?`<button class="pc auto${carrinho[i.id]?' tem':''}" style="--dc:${i.cor||corDrink(i)}" data-add="${i.id}"><span class="ic">${iconeItem(i)}</span><span class="tx"><span class="nm">${esc(i.n)}</span>${i.d?`<span class="ds">${esc(i.d)}</span>`:''}<span class="sl">${ehAutoral(i)?'✨ Autoral':'🥃 Clássico'}</span></span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`
       :`<button class="pc${carrinho[i.id]?' tem':''}" data-add="${i.id}"><span class="ic">${iconeItem(i)}</span><span class="nm">${esc(i.n)}</span><small>${R(i.p)}</small>${carrinho[i.id]?`<span class="qt">${carrinho[i.id]}</span>`:''}</button>`).join('')}</div>`});
   return h;
 }

@@ -345,6 +345,35 @@ $('#trocar').onclick=()=>{
 };
 $('#recarregar').onclick=()=>location.reload();
 fetch('versao.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'').then(v=>{$('#versao').textContent=(window.Capacitor?'📱 Bar Conect · Android · versão ':'🌐 Bar Conect · site · versão ')+(v.trim()||'em teste')});
+/* 🔔 Atualização do app: ao abrir (e ao voltar para o app) vê se tem versão nova do APK.
+   Um toque baixa e abre o instalador do Android em "Atualizar"; os dados ficam (mesma assinatura). */
+(function(){
+  if(!window.Capacitor||!(window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()))return;
+  const REPO='golesecocopocheio-eng/Caderno-m-sical-';let minha=0,ultima=0,checado=0,url='';
+  const plug=()=>{try{return window.Capacitor.isPluginAvailable('Atualizar')?window.Capacitor.Plugins.Atualizar:null}catch(e){return null}};
+  function faixa(){let f=document.getElementById('atualizaBar');if(f)return f;f=document.createElement('div');f.id='atualizaBar';
+    f.style.cssText='position:fixed;left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:9998;background:linear-gradient(120deg,#5b21b6,#7c3aed);color:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(40,10,90,.45);display:flex;gap:10px;align-items:center;font:600 14px/1.3 system-ui,sans-serif';
+    document.body.appendChild(f);return f}
+  function mostrar(){const f=faixa();f.innerHTML='<span style="font-size:24px">🔔</span><span style="flex:1">Nova versão <b>1.'+ultima+'</b><br><small style="font-weight:500;opacity:.85">Atualiza por cima, sem perder nada</small></span><button id="atuOk" style="all:unset;background:#facc15;color:#2e1065;font-weight:800;padding:10px 14px;border-radius:12px;cursor:pointer">Atualizar</button><button id="atuX" aria-label="Depois" style="all:unset;padding:6px 8px;opacity:.8;cursor:pointer">✕</button>';
+    document.getElementById('atuX').onclick=()=>{sessionStorage.setItem('atu-depois',String(ultima));f.remove()};
+    document.getElementById('atuOk').onclick=baixar}
+  async function baixar(){const f=faixa(),p=plug();
+    if(!p){location.href=url;return}
+    f.innerHTML='<span style="font-size:22px">⬇️</span><span style="flex:1" id="atuTx">Baixando a versão 1.'+ultima+'… 0%</span>';
+    let ouv=null;try{ouv=await p.addListener('progresso',e=>{const t=document.getElementById('atuTx');if(t)t.textContent='Baixando a versão 1.'+ultima+'… '+e.p+'%'})}catch(e){}
+    try{const r=await p.instalar({url});
+      if(r&&r.permissao===false){f.innerHTML='<span style="font-size:22px">🔓</span><span style="flex:1">Ative <b>"Permitir desta fonte"</b> para o Bar Conect e volte aqui.</span><button id="atuOk" style="all:unset;background:#facc15;color:#2e1065;font-weight:800;padding:10px 14px;border-radius:12px">Tentar de novo</button>';document.getElementById('atuOk').onclick=baixar}
+      else{f.innerHTML='<span style="font-size:22px">📲</span><span style="flex:1">Toque em <b>Atualizar</b> na tela do Android.</span><button id="atuX" style="all:unset;padding:6px 8px">✕</button>';document.getElementById('atuX').onclick=()=>f.remove()}}
+    catch(e){f.innerHTML='<span style="font-size:22px">⚠️</span><span style="flex:1">Não consegui baixar agora. Confira a internet.</span><button id="atuOk" style="all:unset;background:#facc15;color:#2e1065;font-weight:800;padding:10px 14px;border-radius:12px">Tentar</button>';document.getElementById('atuOk').onclick=baixar}
+    finally{try{ouv&&ouv.remove()}catch(e){}}}
+  async function checar(){if(Date.now()-checado<10*60*1000)return;checado=Date.now();
+    try{if(!minha){const v=await (await fetch('versao.txt',{cache:'no-store'})).text();minha=+(v.trim().split('.')[1]||0)}if(!minha)return;
+      const r=await fetch('https://api.github.com/repos/'+REPO+'/releases/latest',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;
+      const j=await r.json(),n=+(String(j.tag_name||'').replace(/\D/g,''))||0,a=(j.assets||[]).find(x=>/BarConect\.apk$/.test(x.name));
+      if(n>minha&&a){ultima=n;url=a.browser_download_url;if(sessionStorage.getItem('atu-depois')!==String(n))mostrar()}}catch(e){}}
+  setTimeout(checar,2500);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checar()});
+})();
 $('#importar').onclick=()=>$('#arquivo').click();
 $('#arquivo').onchange=async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;

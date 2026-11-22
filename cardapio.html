@@ -98,6 +98,21 @@ body.venda{background:var(--bg)}
 .prod .pc .qt,.prod .pc.auto .qt{position:static;order:-1;background:var(--ac);color:#fff;min-width:24px;height:24px;font-size:12.5px;box-shadow:none;margin-right:-4px}
 .cats button.cc{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--bd)}
 .cats button.cc.on{color:var(--bg);background:var(--tx);box-shadow:none}
+/* 🎨 escolha do fundo do cardápio */
+.temas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}
+.temas button{border:2px solid transparent;border-radius:14px;padding:0;overflow:hidden;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
+.temas button i{display:block;height:46px;position:relative}
+.temas button i:after{content:'';position:absolute;right:7px;bottom:7px;width:14px;height:14px;border-radius:50%;background:var(--a);box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.temas button span{display:block;font-size:11.5px;font-weight:700;padding:5px 2px 6px;color:var(--tx)}
+.temas button.on{border-color:var(--ac);box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 30%,transparent)}
+.cores2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.cores2 label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:8px 10px;border:1px solid var(--bd);border-radius:12px;font-weight:600;font-size:13.5px}
+.cores2 input[type=color]{width:44px;height:32px;padding:0;border:0;background:none}
+.fimg{display:flex;gap:10px;align-items:center;margin-top:6px}
+.fimg .th{width:64px;height:64px;border-radius:12px;background:var(--bg) center/cover;flex:none;border:1px solid var(--bd);display:grid;place-items:center;font-size:24px}
+.rng{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;font-weight:600}
+.rng input{flex:1;accent-color:var(--ac)}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13.5px}
 /* 📸 fotos reais dos itens */
 .prod .pc .ic.ft,.prod .pc.auto .ic.ft{padding:0;overflow:hidden;background:var(--bg)}
 .prod .pc .ic.ft img{width:100%;height:100%;object-fit:cover;display:block}
@@ -108,7 +123,7 @@ body.venda{background:var(--bg)}
 .fotoItem .fi img{width:100%;height:100%;object-fit:cover}
 .fotoItem .btn{width:auto;margin:0;padding:8px 12px;font-size:13.5px}
 .menu .mf2{display:flex;gap:12px;align-items:center;padding:8px 0}
-.menu .mf2 img{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.35);border:2px solid rgba(250,204,21,.55)}
+.menu .mf2 img{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.35);border:2px solid color-mix(in srgb,var(--ma) 60%,transparent)}
 .menu .mf2>div{flex:1;min-width:0}.menu .mf2 .mi{padding:0 0 2px}.menu .mf2 .md{margin:0}
 .cliente .menu .mf2 img{width:84px;height:84px}
 /* ===== ✨ Drinks Autorais em destaque; 🥃 Clássicos logo abaixo ===== */
@@ -138,19 +153,22 @@ body.venda{background:var(--bg)}
 .emo{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/3}
 .emo button{border:1px solid var(--bd);background:var(--card);border-radius:10px;font-size:18px;padding:4px 6px;line-height:1}
 .emo button.on{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
-.menu{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(90% 45% at 50% 0%,rgba(250,204,21,.18),transparent 70%),radial-gradient(80% 40% at 50% 100%,rgba(217,119,6,.32),transparent 75%),linear-gradient(180deg,#4c1d95 0%,#2e1065 38%,#1f0b3a 70%,#2a1405 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(46,16,101,.35);margin-bottom:12px;border:1px solid rgba(250,204,21,.35)}
+.menu{--m0:#4c1d95;--m1:#2e1065;--m2:#1f0b3a;--m3:#2a1405;--ma:#facc15;--mp:#fde047;--mg1:rgba(250,204,21,.18);--mg2:rgba(217,119,6,.32);--mv:31,11,58;position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(90% 45% at 50% 0%,var(--mg1),transparent 70%),radial-gradient(80% 40% at 50% 100%,var(--mg2),transparent 75%),linear-gradient(180deg,var(--m0) 0%,var(--m1) 38%,var(--m2) 70%,var(--m3) 100%);color:#f5f3ff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 14px 40px rgba(0,0,0,.3);margin-bottom:12px;border:1px solid color-mix(in srgb,var(--ma) 40%,transparent)}
 /* fundo roxo e dourado; se o bar escolher uma foto, ela fica transparente por trás do cardápio */
-.menu:before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fundo,none) center/cover no-repeat;opacity:.32;pointer-events:none}
-.menu:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,5,31,.15),rgba(18,5,31,.05) 40%,rgba(18,5,31,.35));pointer-events:none}
+/* imagem de fundo translúcida + véu da cor do tema por cima, para as bebidas ficarem bem legíveis */
+.menu:before{content:'';position:absolute;inset:-12px;z-index:-2;background:var(--fundo,none) center/cover no-repeat;opacity:var(--fop,.22);filter:blur(var(--fbl,0px)) saturate(.9);pointer-events:none}
+.menu:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(var(--mv),.12),rgba(var(--mv),.04) 40%,rgba(var(--mv),.3));pointer-events:none}
+.menu.comfoto:after{background:linear-gradient(180deg,rgba(var(--mv),.5),rgba(var(--mv),.38) 45%,rgba(var(--mv),.62))}
+.menu.comfoto .mt,.menu.comfoto .ms,.menu.comfoto .mc,.menu.comfoto .mi,.menu.comfoto .md{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 .menu .mt{text-align:center;font:900 26px/1.1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
-.menu .mt span{color:#facc15}
-.menu .ms{text-align:center;color:#fcd34d;font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px}
-.menu .mc{display:flex;align-items:center;gap:10px;margin:22px 0 8px;color:#facc15;font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
-.menu .mc:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(250,204,21,.6),transparent)}
+.menu .mt span{color:var(--ma)}
+.menu .ms{text-align:center;color:var(--ma);font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;margin:8px 0 4px;opacity:.9}
+.menu .mc{display:flex;align-items:center;gap:10px;margin:22px 0 8px;color:var(--ma);font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+.menu .mc:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--ma) 65%,transparent),transparent)}
 .menu .mi{display:flex;align-items:baseline;gap:6px;padding:7px 0;font-size:16px}
 .menu .mi .mn{font-weight:600}
 .menu .mi .ml{flex:1;border-bottom:2px dotted rgba(245,243,255,.28);transform:translateY(-4px);min-width:16px}
-.menu .mi .mp{font-weight:800;color:#fde047;white-space:nowrap}
+.menu .mi .mp{font-weight:800;color:var(--mp);white-space:nowrap}
 .menu .md{color:rgba(245,243,255,.62);font-size:13px;font-style:italic;margin:-5px 0 6px;line-height:1.3}
 .cliente .menu .md{font-size:15px}
 .menu .mf{text-align:center;color:rgba(245,243,255,.55);font-size:11px;letter-spacing:.12em;margin-top:22px}
@@ -162,7 +180,7 @@ body.venda{background:var(--bg)}
 .scan .c1{top:8px;left:8px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}.scan .c2{top:8px;right:8px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}.scan .c3{bottom:8px;left:8px;border-right:0;border-top:0;border-radius:0 0 0 8px}.scan .c4{bottom:8px;right:8px;border-left:0;border-top:0;border-radius:0 0 8px 0}
 .scan b{font-size:19px;letter-spacing:.02em}.scan p{margin:0;color:#fcd34d;font-size:14px;min-height:20px}
 @keyframes varre{from{top:4%}to{top:94%}}
-.cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#12051f;padding:20px 14px 40px}
+.cliente{position:fixed;inset:0;z-index:30;overflow:auto;background:#0b0710;padding:20px 14px 40px}
 .cliente .menu{max-width:620px;margin:0 auto;box-shadow:none}
 .cliente .menu .mi{font-size:19px}.cliente .menu .mt{font-size:32px}
 .prod button{position:relative;text-align:left;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:14px;padding:12px 10px;min-height:74px;font-size:14.5px;font-weight:600;line-height:1.25}
@@ -229,7 +247,18 @@ const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString('sv-SE');
 const toast=m=>{const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)};
 const PG={dinheiro:'💵 Dinheiro',pix:'⚡ Pix',credito:'💳 Crédito',debito:'💳 Débito'};
 const CFG0={maquinas:[{id:'mp',n:'Mercado Pago (Point)'},{id:'sant',n:'Santander (Getnet)'}],contas:[{id:'cmp',n:'Mercado Pago',tipo:'Conta digital',chave:'',nome:'',cidade:''},{id:'csant',n:'Santander',tipo:'Banco físico',chave:'',nome:'',cidade:''}]};
-let fundoMenu=''; // foto escolhida para o fundo do cardápio ('' = Lampião e Maria Bonita)
+let fundoMenu='',fundo={tema:'roxo',b:'',a:'',op:.22,bl:true}; // fundo do cardápio: cores do tema + imagem translúcida
+const TEMAS={roxo:['#4c1d95','#facc15','Roxo e dourado'],preto:['#2a2a2a','#d4af37','Preto e ouro'],vinho:['#7f1d1d','#fbbf24','Vinho'],verde:['#166534','#facc15','Verde garrafa'],
+  azul:['#1e3a8a','#fcd34d','Azul noite'],sertao:['#9a3412','#fde68a','Sertão'],rosa:['#9d174d','#fde68a','Rosa'],grafite:['#334155','#5eead4','Grafite']};
+const hexRgb=h=>{h=String(h||'').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const n=parseInt(h,16)||0;return[(n>>16)&255,(n>>8)&255,n&255]};
+const rgbHex=c=>'#'+c.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const misturar=(h1,h2,t)=>{const a=hexRgb(h1),b=hexRgb(h2);return rgbHex(a.map((v,k)=>v+(b[k]-v)*t))};
+const rgba=(h,o)=>'rgba('+hexRgb(h).join(',')+','+o+')';
+function coresFundo(){const t=TEMAS[fundo.tema];const b=t?t[0]:(fundo.b||'#4c1d95'),a=t?t[1]:(fundo.a||'#facc15');
+  const m2=misturar(b,'#000',.62);return{b,a,m0:b,m1:misturar(b,'#000',.38),m2,m3:misturar(misturar(a,'#000',.78),b,.25),mp:misturar(a,'#fff',.2),v:hexRgb(m2).join(',')}}
+function estiloFundo(){const c=coresFundo();let st=`--m0:${c.m0};--m1:${c.m1};--m2:${c.m2};--m3:${c.m3};--ma:${c.a};--mp:${c.mp};--mg1:${rgba(c.a,.16)};--mg2:${rgba(c.a,.24)};--mv:${c.v};`;
+  if(fundoMenu)st+=`--fundo:url('${fundoMenu}');--fop:${Math.max(.05,Math.min(.6,+fundo.op||.22))};--fbl:${fundo.bl?'6px':'0px'};`;return st}
+async function salvarFundo(extra){fundo={...fundo,...(extra||{})};try{await db.doc('config/fundo').set({img:fundoMenu,tema:fundo.tema,b:fundo.b||'',a:fundo.a||'',op:fundo.op,bl:!!fundo.bl,t:Date.now()})}catch(e){toast('Sem permissão para alterar')}}
 let db=null,dono=true,me='',itens=[],vendas=[],cfg=JSON.parse(JSON.stringify(CFG0)),aba='vender',cat='',carrinho={},ver=noiteDe(Date.now()),leitura=null,folha=null,carAberto=false,fotos=[],editar=false,carregado=false,fotoVer=null;
 
 /* ---------- Pix: BR Code (copia e cola) com o valor, para a chave da conta ---------- */
@@ -465,7 +494,7 @@ function menuHTML(){
   const A=ativos(),C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));
   const nb=esc(nomeBar()),k=nb.lastIndexOf(' ');
   const titulo=k>0?nb.slice(0,k)+' <span>'+nb.slice(k+1)+'</span>':'<span>'+nb+'</span>';
-  return `<div class="menu${fundoMenu?' foto':''}"${fundoMenu?` style="--fundo:url('${fundoMenu}')"`:''}><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
+  return `<div class="menu${fundoMenu?' comfoto':''}" style="${estiloFundo()}"><div class="mt">${titulo}</div><div class="ms">${esc((cfg.sub||'').trim()||'Cardápio')}</div>
   ${C.map(c=>`<div class="mc">${iconeCat(c)} ${esc(c)}</div>`+A.filter(i=>(i.c||'Outros')===c).sort(porOrdem).map(i=>i.f?`<div class="mf2"><img src="${i.f}" alt=""><div><div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}</div></div>`:`<div class="mi"><span class="mn">${esc(i.n)}</span><span class="ml"></span><span class="mp">${i.p?R(i.p):'—'}</span></div>${i.d?`<div class="md">${esc(i.d)}</div>`:''}`).join('')).join('')}
   <div class="mf">${new Date().toLocaleDateString('pt-BR')} · Bar Conect${A.some(i=>i.fc)?'<br><span style="font-size:9.5px;letter-spacing:0;opacity:.8">Fotos: '+esc([...new Set(A.filter(i=>i.fc).map(i=>i.fc))].join('; '))+'</span>':''}</div></div>`;
 }
@@ -482,32 +511,34 @@ async function imagemCardapio(){
   const H=300+lin.reduce((s,l)=>s+(l.cat?110:imgs[l.i.id]?FT+28:66+(l.i.d?42:0)),0)+140;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
   // roxo e dourado: roxo em cima, brilho dourado no alto e um dourado quente embaixo
-  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#4c1d95');bg.addColorStop(.38,'#2e1065');bg.addColorStop(.7,'#1f0b3a');bg.addColorStop(1,'#2a1405');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const CF=coresFundo(),AC=CF.a,PR=CF.mp;
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,CF.m0);bg.addColorStop(.38,CF.m1);bg.addColorStop(.7,CF.m2);bg.addColorStop(1,CF.m3);g.fillStyle=bg;g.fillRect(0,0,W,H);
   const gl=(x,y,r,cor)=>{const gg=g.createRadialGradient(x,y,0,x,y,r);gg.addColorStop(0,cor);gg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gg;g.fillRect(0,0,W,H)};
-  gl(W/2,0,W*.75,'rgba(250,204,21,.16)');gl(W/2,H,W*.9,'rgba(217,119,6,.30)');
-  if(fundoMenu)await new Promise(ok=>{const im=new Image();im.onload=()=>{g.save();g.globalAlpha=.3;const k=Math.max(W/im.width,H/im.height);g.drawImage(im,(W-im.width*k)/2,(H-im.height*k)/2,im.width*k,im.height*k);g.restore();ok()};im.onerror=()=>ok();im.src=fundoMenu});
-  g.strokeStyle='rgba(250,204,21,.45)';g.lineWidth=4;g.strokeRect(24,24,W-48,H-48);
+  gl(W/2,0,W*.75,rgba(AC,.16));gl(W/2,H,W*.9,rgba(AC,.24));
+  if(fundoMenu){await new Promise(ok=>{const im=new Image();im.onload=()=>{g.save();g.globalAlpha=Math.max(.05,Math.min(.6,+fundo.op||.22));if(fundo.bl)g.filter='blur(10px)';const k=Math.max(W/im.width,H/im.height)*1.04;g.drawImage(im,(W-im.width*k)/2,(H-im.height*k)/2,im.width*k,im.height*k);g.restore();ok()};im.onerror=()=>ok();im.src=fundoMenu});
+    const v=g.createLinearGradient(0,0,0,H);v.addColorStop(0,'rgba('+CF.v+',.5)');v.addColorStop(.45,'rgba('+CF.v+',.38)');v.addColorStop(1,'rgba('+CF.v+',.62)');g.fillStyle=v;g.fillRect(0,0,W,H)}
+  g.strokeStyle=rgba(AC,.5);g.lineWidth=4;g.strokeRect(24,24,W-48,H-48);
   const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   g.textAlign='center';g.fillStyle='#ffffff';g.font='900 74px '+F;
   const nb=nomeBar().toUpperCase();g.fillText(nb,W/2,150);
-  g.fillStyle='#fcd34d';g.font='600 30px '+F;g.fillText(((cfg.sub||'').trim()||'Cardápio').toUpperCase().split('').join(' '),W/2,215);
+  g.fillStyle=AC;g.font='600 30px '+F;g.fillText(((cfg.sub||'').trim()||'Cardápio').toUpperCase().split('').join(' '),W/2,215);
   let y=300;g.textAlign='left';
   const fit=(t,max,font)=>{g.font=font;if(g.measureText(t).width<=max)return t;while(t.length>3&&g.measureText(t+'…').width>max)t=t.slice(0,-1);return t+'…'};
   lin.forEach(l=>{
-    if(l.cat){y+=40;g.fillStyle='#facc15';g.font='800 34px '+F;const t=l.cat.toUpperCase();g.fillText(t,80,y+20);const w=g.measureText(t).width;
-      const gr=g.createLinearGradient(100+w,0,W-80,0);gr.addColorStop(0,'rgba(250,204,21,.7)');gr.addColorStop(1,'rgba(250,204,21,0)');g.fillStyle=gr;g.fillRect(100+w,y+8,W-180-w,3);y+=70;return}
+    if(l.cat){y+=40;g.fillStyle=AC;g.font='800 34px '+F;const t=l.cat.toUpperCase();g.fillText(t,80,y+20);const w=g.measureText(t).width;
+      const gr=g.createLinearGradient(100+w,0,W-80,0);gr.addColorStop(0,rgba(AC,.7));gr.addColorStop(1,rgba(AC,0));g.fillStyle=gr;g.fillRect(100+w,y+8,W-180-w,3);y+=70;return}
     const i=l.i,pr=i.p?R(i.p):'—';g.font='800 38px '+F;const pw=g.measureText(pr).width;
     const im=imgs[i.id];
     if(im){ // linha com foto: foto redonda à esquerda, nome/preço/descrição ao lado
       const x0=80,y0=y+4,r=24;g.save();g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x0+FT,y0,x0+FT,y0+FT,r);g.arcTo(x0+FT,y0+FT,x0,y0+FT,r);g.arcTo(x0,y0+FT,x0,y0,r);g.arcTo(x0,y0,x0+FT,y0,r);g.closePath();g.clip();g.drawImage(im,x0,y0,FT,FT);g.restore();
-      g.strokeStyle='rgba(250,204,21,.6)';g.lineWidth=3;g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x0+FT,y0,x0+FT,y0+FT,r);g.arcTo(x0+FT,y0+FT,x0,y0+FT,r);g.arcTo(x0,y0+FT,x0,y0,r);g.arcTo(x0,y0,x0+FT,y0,r);g.closePath();g.stroke();
+      g.strokeStyle=rgba(AC,.6);g.lineWidth=3;g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x0+FT,y0,x0+FT,y0+FT,r);g.arcTo(x0+FT,y0+FT,x0,y0+FT,r);g.arcTo(x0,y0+FT,x0,y0,r);g.arcTo(x0,y0,x0+FT,y0,r);g.closePath();g.stroke();
       const tx=x0+FT+28,nm=fit(i.n,W-80-tx-pw-24,'700 38px '+F);g.fillStyle='#f5f3ff';g.font='700 38px '+F;g.fillText(nm,tx,y0+52);
-      g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y0+52);g.textAlign='left';
+      g.fillStyle=PR;g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y0+52);g.textAlign='left';
       if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-80-tx,'italic 400 27px '+F);g.font='italic 400 27px '+F;g.fillText(d,tx,y0+98)}
       y+=FT+28;return}
     const nome=fit(i.n,W-200-pw,'600 38px '+F);g.fillStyle='#f5f3ff';g.font='600 38px '+F;g.fillText(nome,80,y+30);const nw=g.measureText(nome).width;
     g.fillStyle='rgba(245,243,255,.35)';for(let x=80+nw+16;x<W-80-pw-16;x+=14)g.fillRect(x,y+26,5,5);
-    g.fillStyle='#fde047';g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
+    g.fillStyle=PR;g.font='800 38px '+F;g.textAlign='right';g.fillText(pr,W-80,y+30);g.textAlign='left';y+=66;
     if(i.d){g.fillStyle='rgba(245,243,255,.62)';const d=fit(i.d,W-160,'italic 400 28px '+F);g.font='italic 400 28px '+F;g.fillText(d,80,y+18);y+=42}});
   g.textAlign='center';g.fillStyle='rgba(245,243,255,.5)';g.font='500 24px '+F;g.fillText('Bar Conect · '+new Date().toLocaleDateString('pt-BR'),W/2,H-60);
   {const cr=[...new Set(A.filter(i=>i.fc).map(i=>i.fc))];if(cr.length){g.font='400 16px '+F;g.fillStyle='rgba(245,243,255,.45)';g.fillText(fit('Fotos: '+cr.join('; '),W-120,'400 16px '+F),W/2,H-34)}}
@@ -529,8 +560,13 @@ function telaCardapio(){
     let h=menuHTML();
     h+=`<div class="pgs" style="margin-bottom:8px"><button id="clienteBtn">🖥️ Mostrar ao cliente</button><button id="imgBtn">🖼️ Imagem para imprimir</button><button id="irEditar">✏️ Editar valores</button><button id="copiarCard">📋 Copiar texto</button></div>`;
     h+=`<div class="card"><h2>Nome no cardápio</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label style="margin:0">Nome do bar<input data-k="nb" id="nbNome" value="${esc(cfg.nome||'')}" placeholder="Bar Conect"></label><label style="margin:0">Frase de baixo<input data-k="nb" id="nbSub" value="${esc(cfg.sub||'')}" placeholder="Cardápio"></label></div>
-      <h2 style="margin-top:14px">🎨 Fundo do cardápio</h2><p class="sub" style="margin:0 0 8px">${fundoMenu?'Imagem escolhida por você, transparente por cima do roxo e dourado.':'Roxo e dourado. Se quiser, coloque uma imagem sua por trás (ela fica transparente).'}</p>
-      <div class="pgs"><label class="btn sec" style="margin:0;text-align:center">🖼️ Usar uma imagem<input type="file" accept="image/*" id="fundoArq" hidden></label>${fundoMenu?'<button id="fundoPadrao">🎨 Só roxo e dourado</button>':''}</div></div>`;
+      <h2 style="margin-top:16px">🎨 Fundo do cardápio</h2><p class="sub" style="margin:0 0 4px">Escolha as cores. A mudança aparece no cardápio acima, no Mostrar ao cliente e na imagem para imprimir.</p>
+      <div class="temas">${Object.entries(TEMAS).map(([k,[b,a,n]])=>`<button data-tema="${k}" class="${fundo.tema===k?'on':''}" style="--a:${a}"><i style="background:linear-gradient(160deg,${b},${misturar(b,'#000',.6)})"></i><span>${n}</span></button>`).join('')}<button data-tema="livre" class="${!TEMAS[fundo.tema]?'on':''}" style="--a:${fundo.a||'#facc15'}"><i style="background:conic-gradient(from 90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)"></i><span>Cor livre</span></button></div>
+      ${!TEMAS[fundo.tema]?`<div class="cores2"><label>Cor do fundo<input type="color" id="fCorB" value="${fundo.b||'#4c1d95'}"></label><label>Cor de destaque<input type="color" id="fCorA" value="${fundo.a||'#facc15'}"></label></div>`:''}
+      <h2 style="margin-top:6px">🖼️ Imagem de fundo</h2>
+      <div class="fimg"><span class="th" style="${fundoMenu?`background-image:url('${fundoMenu}')`:''}">${fundoMenu?'':'🖼️'}</span><div style="flex:1"><p class="sub" style="margin:0 0 6px">${fundoMenu?'A imagem fica translúcida, atrás de um véu da cor do fundo, para as bebidas continuarem fáceis de ler.':'Opcional: uma foto do bar, do drink ou da sua arte, bem suave por trás do cardápio.'}</p>
+      <div class="pgs" style="margin:0"><label class="btn sec" style="margin:0;text-align:center">${fundoMenu?'🔄 Trocar imagem':'🖼️ Escolher imagem'}<input type="file" accept="image/*" id="fundoArq" hidden></label>${fundoMenu?'<button id="fundoPadrao" style="color:var(--bad)">Tirar imagem</button>':''}</div></div></div>
+      ${fundoMenu?`<div class="rng">Força da imagem<input type="range" id="fOp" min="5" max="50" step="1" value="${Math.round((+fundo.op||.22)*100)}"><b id="fOpV">${Math.round((+fundo.op||.22)*100)}%</b></div><label class="chk"><input type="checkbox" id="fBl" ${fundo.bl?'checked':''}> Desfocar a imagem (fica mais suave e realça as bebidas)</label>`:''}</div>`;
     h+=fotoCard();
     if(fotos.length)h+=fotosHTML();
     h+=`<div class="card"><h2>Atualizar ou excluir</h2><p class="sub">🔄 <b>Atualizar pela foto</b>: escaneia o cardápio de novo e <b>troca o cardápio todo</b> pelo novo (nomes, preços e grupos). 🗑️ <b>Excluir</b>: apaga todos os itens.</p><div class="pgs"><button id="atualizarCard">🔄 Atualizar pela foto</button><button id="zerarCard" style="color:var(--bad)">🗑️ Excluir cardápio</button></div></div>`;
@@ -804,7 +840,8 @@ async function salvarCfg(){try{await db.doc('config/pagamento').set(JSON.parse(J
 document.addEventListener('click',async ev=>{
   {const bn=ev.target.closest&&ev.target.closest('[data-fnet]');if(bn){const i=itens.find(x=>x.id===bn.dataset.fnet);if(i)abrirBuscaFoto(i);return}}
   if(ev.target.closest&&ev.target.closest('#fotosNet')){const b=ev.target.closest('#fotosNet');if(b.dataset.ocupado)return;b.dataset.ocupado=1;try{await fotosParaTodos(b)}finally{b.dataset.ocupado=''}return}
-  if(ev.target.closest&&ev.target.closest('#fundoPadrao')){try{await db.doc('config/fundo').set({img:'',t:Date.now()});toast('🎨 Fundo: roxo e dourado')}catch(x){toast('Sem permissão para alterar')}return}
+  if(ev.target.closest&&ev.target.closest('#fundoPadrao')){fundoMenu='';await salvarFundo();toast('Imagem de fundo tirada');return}
+  {const bt=ev.target.closest&&ev.target.closest('[data-tema]');if(bt){const k=bt.dataset.tema;if(k==='livre'){const c=coresFundo();await salvarFundo({tema:'livre',b:fundo.b||c.b,a:fundo.a||c.a})}else await salvarFundo({tema:k});return}}
   {const tb=ev.target.closest&&ev.target.closest('[data-ftira]');if(tb){const i=itens.find(x=>x.id===tb.dataset.ftira);if(!i)return;if(!tb.dataset.s){tb.dataset.s=1;tb.textContent='Tirar?';setTimeout(()=>{tb.dataset.s='';tb.textContent='Tirar'},2500);return}const o={...strip(i)};delete o.f;await db.collection('itens').doc(i.id).set(o);toast('Foto tirada');return}}
   const b=ev.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.aba){aba=d.aba;draw();return}
@@ -860,8 +897,15 @@ document.addEventListener('click',async ev=>{
 document.addEventListener('input',e=>{const t=e.target;
   if(t.id==='rec'&&folha){folha.recebido=t.value;const pos=t.selectionStart;desenharFolha();const n=$('#rec');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}return}
 });
+document.addEventListener('input',e=>{const t=e.target;
+  // mexendo na força da imagem: muda na hora no cardápio (salva quando soltar)
+  if(t.id==='fOp'){const v=+t.value/100;fundo.op=v;const m=document.querySelector('.menu');if(m)m.style.setProperty('--fop',v);const l=$('#fOpV');if(l)l.textContent=t.value+'%'}
+  if(t.id==='fCorB'||t.id==='fCorA'){fundo[t.id==='fCorB'?'b':'a']=t.value;const m=document.querySelector('.menu');if(m)m.setAttribute('style',estiloFundo())}});
 document.addEventListener('change',async e=>{const t=e.target;
-  if(t.id==='fundoArq'){const arq=t.files&&t.files[0];t.value='';if(!arq)return;try{toast('🖼️ Salvando o fundo…');const img=await fotoFundo(arq);await db.doc('config/fundo').set({img,t:Date.now()});toast('✅ Fundo do cardápio trocado')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
+  if(t.id==='fOp'){await salvarFundo({op:+t.value/100});return}
+  if(t.id==='fBl'){await salvarFundo({bl:t.checked});return}
+  if(t.id==='fCorB'||t.id==='fCorA'){await salvarFundo({tema:'livre'});return}
+  if(t.id==='fundoArq'){const arq=t.files&&t.files[0];t.value='';if(!arq)return;try{toast('🖼️ Salvando a imagem…');fundoMenu=await fotoFundo(arq);await salvarFundo();toast('✅ Imagem de fundo colocada. Ajuste a força se quiser.')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.dataset&&t.dataset.fitem){const i=itens.find(x=>x.id===t.dataset.fitem),arq=t.files&&t.files[0];t.value='';if(!i||!arq)return;
     try{toast('📸 Salvando a foto…');const f=await fotoPequena(arq);await db.collection('itens').doc(i.id).set({...strip(i),f});toast('✅ Foto de '+i.n+' salva')}catch(x){toast('Não consegui usar esta foto: '+(x.message||x))}return}
   if(t.id==='fotoGal'){const a=[...(t.files||[])];t.value='';lerFotos(a);return}
@@ -890,7 +934,7 @@ document.addEventListener('toggle',e=>{if(e.target.id==='carDet')carAberto=e.tar
   // só as miniaturas (v:2); a foto grande baixa ao abrir. Fotos antigas grandes não são baixadas.
   db.collection('fotos').where('v','==',2).onSnapshot(s=>{fotos=s.docs.map(d=>({id:d.id,...d.data()})).filter(f=>f.mini).sort((a,b)=>b.t-a.t);draw();if(fotoVer)verFoto()},()=>{});
   db.collection('vendas').onSnapshot(s=>{vendas=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{});
-  db.doc('config/fundo').onSnapshot(s=>{const d=s.exists&&s.data();fundoMenu=(d&&d.img)||'';draw()},()=>{});
+  db.doc('config/fundo').onSnapshot(s=>{const d=(s.exists&&s.data())||{};fundoMenu=d.img||'';fundo={tema:d.tema===undefined?'roxo':d.tema,b:d.b||'',a:d.a||'',op:d.op===undefined?.22:+d.op,bl:d.bl===undefined?true:!!d.bl};if(!document.querySelector('.rng input:active'))draw()},()=>{});
   db.doc('config/pagamento').onSnapshot(s=>{const d=s.exists&&s.data();if(d)cfg={maquinas:d.maquinas||CFG0.maquinas,contas:d.contas||CFG0.contas,nome:d.nome||'',sub:d.sub||'',cores:d.cores||{}};draw()},()=>{});
   draw();
 })();

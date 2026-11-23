@@ -634,7 +634,7 @@ async function dawRemix(){const d=daw,s=d.s;if(d.recording)return;if(s.audios.fi
  save(s);put(s);dawRender();toast('Remix pronto: tempo alinhado e volumes equilibrados.')}
 /* ===== Análise musical no próprio aparelho (sem internet, sem chave) ===== */
 const anaWait=()=>new Promise(r=>setTimeout(r,0));
-function anaMono(s,pred){const T=s.audios.filter(a=>mx.buf[a.id]&&!a.mute&&(!pred||pred(a)));if(!T.length)return null;const R=11025;let len=0;
+function anaMono(s,pred,R0){const T=s.audios.filter(a=>mx.buf[a.id]&&!a.mute&&(!pred||pred(a)));if(!T.length)return null;const R=R0||11025;let len=0;
  const parts=T.map(a=>{const b=mx.buf[a.id],f=Math.max(1,Math.round(b.sampleRate/R)),n=Math.floor(b.length/f),ch=b.numberOfChannels,o=new Float32Array(n);
   for(let c=0;c<ch;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++){let m=0;for(let k=0;k<f;k++)m+=d[i*f+k];o[i]+=m/f/ch}}
   const off=Math.max(0,Math.round((a.off||0)/1000*R));len=Math.max(len,off+n);return{o,off,g:a.vol==null?1:a.vol}});
@@ -708,6 +708,51 @@ function anaShow(s,r,close){const bx=$('#anab');if(!bx)return;const k=r.key,nm=k
  $('#anaa').onclick=()=>{if(r.rit)s.bpm=r.rit.bpm;if(k){s.key=nm;s.mode=k.m}s.upd=Date.now();save(s);put(s);const bp=$('#dbpm');if(bp)bp.value=s.bpm;toast('Andamento e tom aplicados. Dá para mudar quando quiser.')};
  $('#anac2').onclick=()=>{const line='[Acordes sugeridos pela análise — confira]\n'+ch.map(c=>c.name).join('  ');s.cifra=(s.cifra?s.cifra.replace(/\s+$/,'')+'\n\n':'')+line;s.upd=Date.now();save(s);put(s);toast('Acordes adicionados no fim da cifra. Nada foi apagado.')};
  $('#anan').onclick=()=>{const line='Melodia (análise): '+notes.slice(0,48).map(n=>anaNm(n.midi)).join(' ');s.notas=(s.notas?s.notas.replace(/\s+$/,'')+'\n\n':'')+line;s.upd=Date.now();save(s);put(s);toast('Melodia adicionada nas notas.')}}
+
+/* ===== Transcrição da letra cantada (serviço externo, com limite de gasto) ===== */
+const IAP=.04/3600; // US$ por segundo de áudio (Groq Whisper large-v3-turbo; confira o preço atual)
+const iaCfg=()=>{try{return JSON.parse(localStorage.getItem('cm_ia')||'{}')}catch(e){return{}}};
+const iaSet=c=>{try{localStorage.setItem('cm_ia',JSON.stringify(c))}catch(e){}};
+const iaUso=()=>{try{const m=new Date().toISOString().slice(0,7),l=JSON.parse(localStorage.getItem('cm_iau')||'[]');return{l,mes:l.filter(x=>x.m===m).reduce((a,x)=>a+x.usd,0)}}catch(e){return{l:[],mes:0}}};
+const iaLog=(sec,usd,nome)=>{try{const u=iaUso().l;u.push({at:Date.now(),m:new Date().toISOString().slice(0,7),sec,usd,nome});localStorage.setItem('cm_iau',JSON.stringify(u.slice(-200)))}catch(e){}};
+const usd=v=>'US$ '+(v<.01?v.toFixed(4):v.toFixed(2)).replace('.',',');
+const iaUrl=u=>(u||'').trim().replace(/\/+$/,'');
+function trOpen(){const d=daw,s=d&&d.s;if(!s)return;if(d.recording)return toast('Pare a gravação antes.');if(!s.audios.some(a=>mx.buf[a.id]))return toast('Grave ou importe uma faixa primeiro.');mixStop();
+ const sh=document.createElement('div');sh.id='trsheet';sh.className='sheet';sh.style.zIndex=70;
+ const sel=s.audios.filter(a=>mx.buf[a.id]),dv=sel.find(a=>instOf(a)==='voz')||sel[0];
+ sh.innerHTML=`<div class="shin"><div class="row"><h2 style="flex:1;margin:0;font-size:20px">${IC.wand} Transcrever letra</h2><button id="trx" style="flex:0 0 auto">✕ Fechar</button></div>
+ <p class="hint">Escreve a letra que está cantada numa faixa. É um serviço externo pago por uso, bem barato. O app mostra o custo antes e só envia quando você tocar.</p><div id="trb"></div></div>`;document.body.appendChild(sh);
+ $('#trx').onclick=()=>sh.remove();const bx=$('#trb');
+ const paint=()=>{const c=iaCfg(),u=iaUso(),lim=c.lim==null?1:+c.lim,ok=!!(c.url&&c.tok);
+  bx.innerHTML=`<label class="sel"><span>Faixa</span><select id="trt">${sel.map(a=>`<option value="${a.id}" ${a===dv?'selected':''}>${esc(a.name||instOf(a))}</option>`).join('')}</select></label>
+  <label class="sel"><span>Idioma da letra</span><select id="trl"><option value="pt">Português</option><option value="">Detectar sozinho</option><option value="en">Inglês</option><option value="es">Espanhol</option></select></label>
+  <p class="hint" id="trc"></p><div class="stack"><button class="pri" id="trg" ${ok?'':'disabled'}>Transcrever agora</button></div>
+  <p class="hint" id="truso">Gasto neste mês: ${usd(u.mes)} de ${usd(lim)} (limite seu).</p>
+  <details class="dly" ${ok?'':'open'} style="margin:14px 0 0"><summary>Servidor e limite</summary><div style="padding:0 12px 12px;display:flex;flex-direction:column;gap:8px">
+  <input id="tru" placeholder="Endereço do servidor (https://…workers.dev)" value="${esc(c.url||'')}" autocapitalize="off"><input id="trk" type="password" placeholder="Senha do app" value="${esc(c.tok||'')}">
+  <label class="sel"><span>Limite por mês (US$)</span><input id="trm" type="number" step="0.5" min="0" value="${lim}"></label>
+  <div class="row"><button id="trs">Salvar</button><button id="trp">Testar</button></div><p class="hint" id="trh">Passo a passo para criar o servidor: pasta studio-servidor/PASSOS.md do projeto. Eu te guio se precisar.</p></div></details><div id="trr"></div>`;
+  const est=()=>{const a=s.audios.find(x=>x.id===$('#trt').value),b=a&&mx.buf[a.id],sec=b?Math.max(10,b.duration):0,cost=sec*IAP;$('#trc').textContent=b?`Duração ${Math.floor(b.duration/60)}:${String(Math.round(b.duration%60)).padStart(2,'0')} — custo estimado ${usd(cost)}.`+(cost+u.mes>lim?' Passa do seu limite do mês.':''):'';return{a,b,sec,cost}};
+  $('#trt').onchange=est;est();
+  $('#trs').onclick=()=>{iaSet({url:iaUrl($('#tru').value),tok:$('#trk').value.trim(),lim:Math.max(0,+$('#trm').value||0)});toast('Salvo');paint()};
+  $('#trp').onclick=async()=>{const u2=iaUrl($('#tru').value),k=$('#trk').value.trim(),h=$('#trh');h.textContent='Testando…';try{const r=await fetch(u2+'/ping',{headers:{'x-app-token':k}}),j=await r.json();h.textContent=j.ok?'Servidor respondeu. Pode salvar.':(j.erro||'O servidor respondeu com erro.')}catch(e){h.textContent='Não consegui falar com o servidor. Confira o endereço e a internet.'}};
+  $('#trg').onclick=async()=>{const{a,b,sec,cost}=est();if(!b)return;const c2=iaCfg(),u2=iaUso(),lim2=c2.lim==null?1:+c2.lim;
+   if(u2.mes+cost>lim2)return toast('Isso passaria do limite do mês. Aumente o limite se quiser continuar.');
+   if(b.duration>600)return toast('Máximo de 10 minutos por vez. Corte a faixa e tente de novo.');
+   const g=$('#trg'),r=$('#trr');g.disabled=true;g.textContent='Enviando…';
+   try{const m=anaMono({audios:[a]},null,16000);if(!m)throw 0;const ac=AC(),ab=ac.createBuffer(1,m.y.length,16000);ab.copyToChannel(m.y,0);const blob=wav(ab),fd=new FormData();fd.append('file',blob,'audio.wav');const lg=$('#trl').value;if(lg)fd.append('language',lg);
+    const resp=await fetch(iaUrl(c2.url)+'/transcrever',{method:'POST',headers:{'x-app-token':c2.tok},body:fd}),j=await resp.json().catch(()=>({erro:'Resposta inválida do servidor.'}));
+    if(!resp.ok||j.erro)throw new Error(j.erro||'Falhou');
+    iaLog(Math.round(sec),cost,a.name||'faixa');
+    const L=(j.trechos||[]).filter(t=>t.texto&&!(t.semFala>.6)).map(t=>t.texto);const txt=(L.length?L:[j.texto||'']).join('\n').trim();
+    s.transc=s.transc||[];s.transc.push({at:Date.now(),faixa:a.name||'',texto:txt});s.upd=Date.now();save(s);put(s);
+    r.innerHTML=`<h3 class="anah">Letra reconhecida</h3><p class="hint">Revise antes de usar: o reconhecimento pode errar palavras, principalmente com instrumento tocando junto.</p><textarea id="trtx" class="dlyt" style="margin:0;width:100%;min-height:30vh">${esc(txt)}</textarea>
+    <div class="stack"><button class="pri" id="tra">Adicionar ao fim da letra</button><button id="trcp">Guardar só no rascunho (ouvido)</button></div><p class="hint">Nada é apagado: o texto vai para o fim. As versões ficam guardadas na música.</p>`;
+    $('#tra').onclick=()=>{const t=$('#trtx').value.trim();if(!t)return;s.letra=(s.letra?s.letra.replace(/\s+$/,'')+'\n\n':'')+t;s.upd=Date.now();save(s);put(s);if(daw&&daw.lyrDraw)daw.lyrDraw();toast('Adicionado ao fim da letra.')};
+    $('#trcp').onclick=()=>{const t=$('#trtx').value.trim();if(!t)return;s.ouvido=(s.ouvido?s.ouvido.replace(/\s+$/,'')+'\n':'')+t;s.upd=Date.now();save(s);put(s);toast('Guardado no rascunho.')};
+    g.textContent='Transcrever de novo';g.disabled=false;paintUso()}
+   catch(e){g.disabled=false;g.textContent='Transcrever agora';r.innerHTML=`<p class="hint">${esc(e&&e.message&&e.message!=='Failed to fetch'?e.message:'Não consegui falar com o servidor. Confira a internet e o endereço.')}</p>`}}};
+ const paintUso=()=>{const c=iaCfg(),l=c.lim==null?1:+c.lim,e=$('#truso');if(e)e.textContent='Gasto neste mês: '+usd(iaUso().mes)+' de '+usd(l)+' (limite seu).'};paint()}
 async function dawNoise(){const d=daw,s=d.s,a=s.audios.find(x=>x.id===d.sel),b=a&&mx.buf[a.id];if(!b)return;const bt=$('#dsn');if(bt){bt.disabled=true;bt.textContent='Limpando…'}mixStop();
  try{const ac=AC(),nb=ac.createBuffer(b.numberOfChannels,b.length,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++){const out=await denoise(b.getChannelData(c),.6,v=>{if(bt&&daw===d)bt.textContent='Limpando '+Math.round((c+v)/b.numberOfChannels*100)+'%'});nb.copyToChannel(out,c)}
   dawSnap();const n={...a,id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'limpo',name:a.name+' (sem ruído)',blob:wav(nb)};delete n._p;s.audios.splice(s.audios.indexOf(a)+1,0,n);d.sel=n.id;save(s);put(s);await loadBufs(s);dawRender();toast('Faixa sem ruído criada. A original foi mantida.')}
@@ -780,7 +825,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  const e=document.createElement('div');e.id='daw';e.className='sheet daw';
  e.innerHTML=`<div class="dh"><button id="dx" class="rb sm" aria-label="Fechar o estúdio">${IC.x}</button><div class="dti"><b>${esc(s.title||'Sem título')}</b><small id="dtm">0:00.0 / 0:00.0</small></div><div class="lvl" id="dvu" aria-label="Nível do microfone"><i></i></div></div>
  <div class="dt"><div class="tr"><button id="dhome" class="rb" aria-label="Voltar ao início">${IC.rew}</button><button id="dplay" class="rb pl" aria-label="Tocar">${IC.play}</button><button id="drecb" class="rcb">${IC.rec} Gravar</button></div>
- <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dana">${IC.wand} Analisar</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
+ <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dana">${IC.wand} Analisar</button><button id="dtr">${IC.notes} Transcrever letra</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
  <details class="dly" id="dly" ${(s.letra||s.ouvido||'').trim()?'open':''}><summary>${IC.notes} Letra <button id="dlye" class="mini" type="button">Editar</button></summary><div id="dlyv" class="dlyv"></div><div id="dlvi" class="dlvi" aria-live="polite"></div><textarea id="dlyt" class="dlyt" hidden placeholder="Cole ou escreva a letra aqui"></textarea></details>
  <div class="dbody" id="dbody"><div class="dleft" id="dleft"></div><div class="dright" id="dscr"><div class="dinner" id="dinner"></div></div></div>
  <div class="dsel" id="dsel"></div>`;
@@ -794,7 +839,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  $('#dbl').onclick=async()=>{const fl=s.audios.filter(x=>x.blob&&x.blob.size).map(x=>{const t=x.blob.type||'audio/webm',ex=/wav/.test(t)?'wav':/mp4|aac|m4a/.test(t)?'m4a':/mpeg|mp3/.test(t)?'mp3':/ogg/.test(t)?'ogg':'webm';return new File([x.blob],((s.title||'musica')+' - '+(x.name||'faixa')).replace(/[^\w\- ]+/g,'').trim().slice(0,60)+'.'+ex,{type:t})});if(!fl.length)return toast('Grave ou importe uma faixa primeiro.');
   if(navigator.canShare&&navigator.canShare({files:fl})){try{await navigator.share({files:fl,title:s.title||'Música'});toast('Escolha o BandLab na lista de apps.')}catch(x){}}
   else{fl.forEach((f,i)=>setTimeout(()=>{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)},i*500));toast('Arquivos baixados. No BandLab, importe-os no estúdio.');openExt('https://www.bandlab.com/')}};
- $('#dana').onclick=anaOpen; $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
+ $('#dana').onclick=anaOpen;$('#dtr').onclick=trOpen; $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
  $('#dzo').onclick=()=>zoom(.7);$('#dzi').onclick=()=>zoom(1.4);
  const lyrOf=()=>(s.letra||'').trim()?s.letra:(s.ouvido||'');
  daw.lyr=null;const lyrDraw=()=>{const v=$('#dlyv');if(!v)return;const L=lyrOf(s).split('\n');let n=0;daw.lyr=L.map(t=>{const x=t.trim(),h=/^\[.*\]$/.test(x)||/^(intro|verso|pr[eé]-refr[aã]o|refr[aã]o|ponte|final)\s*\d*:?$/i.test(x),on=!!x&&!h;return {t:x,h,on,i:on?n++:-1}});daw.nl=n;daw.cl=-2;

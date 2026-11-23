@@ -98,6 +98,11 @@ body.venda{background:var(--bg)}
 .prod .pc .qt,.prod .pc.auto .qt{position:static;order:-1;background:var(--ac);color:#fff;min-width:24px;height:24px;font-size:12.5px;box-shadow:none;margin-right:-4px}
 .cats button.cc{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--bd)}
 .cats button.cc.on{color:var(--bg);background:var(--tx);box-shadow:none}
+.mpd{border:1px solid var(--bd);border-radius:14px;padding:10px 12px;margin:8px 0;background:var(--card)}
+.mpd.on{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.seg button{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:10px;padding:9px 4px;font-weight:700;font-size:13.5px}
+.seg button.on{background:var(--ac);border-color:var(--ac);color:#fff}
 /* 🎨 escolha do fundo do cardápio */
 .temas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}
 .temas button{border:2px solid transparent;border-radius:14px;padding:0;overflow:hidden;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
@@ -393,7 +398,11 @@ const nomeVia=id=>{const m=cfg.maquinas.find(x=>x.id===id);if(m)return m.n;const
    O app manda o valor para a maquininha (modo integrado/PDV) e acompanha até aprovar.
    A chave (Access Token) fica SÓ neste celular: ela dá acesso à conta Mercado Pago, então
    não vai para a nuvem do bar nem para o backup. Só funciona no APK (o navegador bloqueia). */
-const MP={tk:()=>localStorage.getItem('mp-token')||'',dev:()=>localStorage.getItem('mp-device')||'',maq:()=>localStorage.getItem('mp-maquina')||'mp'};
+// várias maquininhas: cada uma com a sua função neste celular (🍸 bar = vendas do cardápio, 🚪 portaria = entradas)
+const mpPapeis=()=>{let o={};try{o=JSON.parse(localStorage.getItem('mp-papeis')||'{}')||{}}catch(e){}const velho=localStorage.getItem('mp-device');if(velho&&!o[velho]&&!Object.values(o).some(x=>x.papel==='bar')){o[velho]={papel:'bar'};localStorage.setItem('mp-papeis',JSON.stringify(o))}return o};
+const mpSalvarPapeis=o=>{localStorage.setItem('mp-papeis',JSON.stringify(o));const b=Object.keys(o).find(k=>o[k].papel==='bar');if(b)localStorage.setItem('mp-device',b);else localStorage.removeItem('mp-device')};
+const mpDoPapel=p=>{const o=mpPapeis();return Object.keys(o).find(k=>o[k].papel===p)||''};
+const MP={tk:()=>localStorage.getItem('mp-token')||'',dev:()=>mpDoPapel('bar'),maq:()=>localStorage.getItem('mp-maquina')||'mp'};
 const mpLigada=()=>!!(MP.tk()&&MP.dev());
 let mpEst={devs:null,msg:'',busy:false},mpCob=null;
 async function mpReq(method,path,body){
@@ -415,8 +424,8 @@ async function mpBuscar(){
   mpEst.busy=false;draw();
 }
 async function mpModoPDV(id){
-  mpEst.msg='Ativando o modo integrado…';draw();
-  try{await mpReq('PATCH','/point/integration-api/devices/'+encodeURIComponent(id),{operating_mode:'PDV'});await mpBuscar();mpEst.msg='✅ Modo integrado ativado. Reinicie a maquininha (desligue e ligue) para valer.';draw()}
+  mpEst.msg='Ativando o modo integrado na maquininha '+id.slice(-6)+'…';draw();
+  try{await mpReq('PATCH','/point/integration-api/devices/'+encodeURIComponent(id),{operating_mode:'PDV'});await mpBuscar();mpEst.msg='✅ Modo integrado ativado na maquininha '+id.slice(-6)+'. Desligue e ligue essa maquininha para valer.';draw()}
   catch(e){mpEst.msg='❌ Não consegui ativar: '+(e.message||e);draw()}
 }
 async function mpCobrar(){
@@ -615,11 +624,15 @@ function telaPag(){
   <p class="sub" style="font-size:12px">🔒 A chave fica guardada <b>só neste celular</b>. Não vai para a nuvem nem para o backup. Em outro celular que for cobrar, coloque de novo.</p></details>
   <button class="btn" id="mpBuscar" ${mpEst.busy?'disabled':''}>${tk?'2. Conectar e buscar a maquininha':'Salvar chave e conectar'}</button>
   ${mpEst.msg?`<p class="msg" style="font-weight:600;color:var(--tx)">${esc(mpEst.msg)}</p>`:''}
-  ${mpEst.devs&&mpEst.devs.length?`<div class="opc">${mpEst.devs.map(d=>`<button data-mpdev="${esc(d.id)}" class="${dev===d.id?'on':''}">${esc(d.id)}<small>${d.operating_mode==='PDV'?'✅ modo integrado (PDV)':'⚠️ modo '+esc(d.operating_mode||'?')+' — precisa ativar o integrado'}</small></button>`).join('')}</div>
-    ${(()=>{const d=mpEst.devs.find(x=>x.id===dev);return d&&d.operating_mode!=='PDV'?`<button class="btn sec" data-mppdv="${esc(d.id)}">Ativar modo integrado nesta maquininha</button>`:''})()}`:''}
-  ${dev?`<label>3. Qual maquininha da lista de cobrança é essa?<select id="mpMaq">${cfg.maquinas.map(m=>`<option value="${m.id}" ${MP.maq()===m.id?'selected':''}>${esc(m.n)}</option>`).join('')}</select></label>
-    <p class="sub" style="margin-top:8px">✅ Pronto: ao cobrar em Crédito ou Débito e escolher <b>${esc(nomeVia(MP.maq()))}</b>, aparece <b>📲 Enviar para a maquininha</b>.</p>
-    <button class="link" id="mpDesligar" style="color:var(--bad)">Desligar a maquininha deste celular</button>`:''}
+  ${mpEst.devs&&mpEst.devs.length?`<p class="sub" style="margin:10px 0 6px"><b>Suas maquininhas</b>: ative o modo integrado em cada uma e diga para que serve neste celular.</p>${mpEst.devs.map(d=>{const pp=mpPapeis()[d.id]||{},papel=pp.papel||'',pdv=d.operating_mode==='PDV';return `<div class="mpd${papel?' on':''}">
+      <div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>💳 ${esc(pp.nome||'Maquininha '+d.id.slice(-6))}</b><small style="display:block;color:var(--mut);font-size:12px">${esc(d.id)}</small></div><span class="chip" style="color:${pdv?'var(--ok)':'var(--am)'}">${pdv?'✅ integrado':'⚠️ '+esc(d.operating_mode||'?')}</span></div>
+      ${pdv?'':`<button class="btn sec" data-mppdv="${esc(d.id)}" style="margin:8px 0 0">⚡ Ativar modo integrado nesta</button>`}
+      <div class="seg" style="margin-top:8px"><button data-mppapel="${esc(d.id)}" data-p="bar" class="${papel==='bar'?'on':''}">🍸 Bar</button><button data-mppapel="${esc(d.id)}" data-p="portaria" class="${papel==='portaria'?'on':''}">🚪 Portaria</button><button data-mppapel="${esc(d.id)}" data-p="" class="${!papel?'on':''}">Não usar</button></div>
+      <input data-mpnome="${esc(d.id)}" value="${esc(pp.nome||'')}" placeholder="Nome (ex.: Point do bar)" style="margin-top:8px;font-size:14px;padding:8px 10px"></div>`}).join('')}`:''}
+  ${dev?`<label>Na lista de cobrança, a maquininha do 🍸 bar aparece como<select id="mpMaq">${cfg.maquinas.map(m=>`<option value="${m.id}" ${MP.maq()===m.id?'selected':''}>${esc(m.n)}</option>`).join('')}</select></label>
+    <p class="sub" style="margin-top:8px">✅ Bar: ao cobrar em Crédito ou Débito e escolher <b>${esc(nomeVia(MP.maq()))}</b>, aparece <b>📲 Enviar para a maquininha</b>.${mpDoPapel('portaria')?'<br>✅ Portaria: na aba 🚪 Portaria, a entrada em 💳 Cartão vai direto para a maquininha da portaria.':''}</p>`:''}
+  ${mpDoPapel('portaria')&&!dev?`<p class="sub" style="margin-top:8px">✅ Portaria: na aba 🚪 Portaria, a entrada em 💳 Cartão vai direto para a maquininha da portaria.</p>`:''}
+  ${dev||mpDoPapel('portaria')?`<button class="link" id="mpDesligar" style="color:var(--bad)">Desligar as maquininhas deste celular</button>`:''}
   </div>`;
   h+=`<div class="card"><h2>Santander (Getnet)</h2><p class="sub" style="margin:0">A ligação automática da Getnet depende de liberação comercial do banco. Por enquanto: passe o valor na maquininha e confirme a venda no app.</p></div>`;}
   if(!dono)h+='<p class="msg">Só o dono altera maquininhas e contas.</p>';
@@ -856,9 +869,9 @@ document.addEventListener('click',async ev=>{
   if(b.id==='mpCancelar'){mpCancelar();return}
   if(b.id==='mpDeNovo'){mpCob=null;desenharFolha();return}
   if(b.id==='mpBuscar'){const t=$('#mpTk');if(t)localStorage.setItem('mp-token',t.value.trim());if(!MP.tk()){mpEst.msg='Cole o Access Token primeiro.';draw();return}mpBuscar();return}
-  if(d.mpdev){localStorage.setItem('mp-device',d.mpdev);draw();return}
+  if(d.mppapel!==undefined){const o=mpPapeis(),p=d.p||'';Object.keys(o).forEach(k=>{if(p&&o[k].papel===p&&k!==d.mppapel)o[k].papel=''});o[d.mppapel]={...(o[d.mppapel]||{}),papel:p};mpSalvarPapeis(o);toast(p?'✅ Maquininha da '+(p==='bar'?'🍸 bar':'🚪 portaria')+' escolhida':'Maquininha sem uso neste celular');draw();return}
   if(d.mppdv){mpModoPDV(d.mppdv);return}
-  if(b.id==='mpDesligar'){['mp-token','mp-device'].forEach(k=>localStorage.removeItem(k));mpEst={devs:null,msg:'Maquininha desligada deste celular.',busy:false};draw();return}
+  if(b.id==='mpDesligar'){['mp-token','mp-device','mp-papeis'].forEach(k=>localStorage.removeItem(k));mpEst={devs:null,msg:'Maquininhas desligadas deste celular.',busy:false};draw();return}
   if(d.pg&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
   if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
@@ -914,6 +927,7 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.dataset.cor!==undefined){cfg.cores={...(cfg.cores||{}),[t.dataset.cor]:t.value};await salvarCfg();toast('✅ Cor do grupo '+t.dataset.cor);return}
   if(t.id==='nbNome'||t.id==='nbSub'){cfg[t.id==='nbNome'?'nome':'sub']=t.value.trim();await salvarCfg();return}
   if(t.id==='mpMaq'){localStorage.setItem('mp-maquina',t.value);draw();return}
+  if(t.dataset&&t.dataset.mpnome){const o=mpPapeis();o[t.dataset.mpnome]={...(o[t.dataset.mpnome]||{}),nome:t.value.trim().slice(0,30)};mpSalvarPapeis(o);toast('✅ Nome salvo');return}
   if(t.id==='mpTk'){localStorage.setItem('mp-token',t.value.trim());return}
   try{
     if(t.dataset.grupo!==undefined){const de=t.dataset.grupo,para=t.value.trim();if(!para||para===de)return;for(const i of itens.filter(x=>(x.c||'Outros')===de))await db.collection('itens').doc(i.id).set({...strip(i),c:para});if(cat===de)cat=para;toast('✅ Grupo agora se chama '+para);return}

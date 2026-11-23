@@ -70,6 +70,12 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="row" style="margin-top:6px"><button class="btn" id="listaOk" style="margin-top:0">✅ Lançar</button><button class="btn" id="listaCancela" style="margin-top:0;background:var(--bd);color:var(--tx)">Cancelar</button></div>
   </div>
 
+  <div class="card" id="mpBox" hidden style="border:2px solid #009ee3">
+    <b>💳 Maquininha da portaria</b>
+    <div id="mpTxt" style="margin:8px 0;font-size:16px;font-weight:600"></div>
+    <div class="row"><button class="btn" id="mpCancela" style="margin-top:0;background:var(--bd);color:var(--tx)">Cancelar</button><button class="btn" id="mpSem" style="margin-top:0;background:#334155;color:#fff">Lançar sem a maquininha</button></div>
+  </div>
+
   <div class="card dono" hidden>
     <div class="sub" style="margin:0">Total da noite</div>
     <div class="tot" id="total">R$ 0,00</div>
@@ -103,6 +109,12 @@ label{font-size:13px;color:var(--mut);flex:1}
       <button class="btn" id="zerar" style="background:var(--bd);color:var(--tx)">Zerar valores</button>
     </div>
   </div>
+
+  <details class="card" id="mpCfg">
+    <summary style="cursor:pointer;font-weight:700">💳 Maquininha Mercado Pago da portaria <span id="mpCfgSt" style="font-weight:600;color:var(--mut);font-size:13px"></span></summary>
+    <div class="sub" style="margin:8px 0 0">Com a maquininha ligada, a entrada em <b>💳 Cartão</b> manda o valor direto para a Point e só lança quando o pagamento for aprovado.</div>
+    <div id="mpCfgCorpo"></div>
+  </details>
 
   <div class="card" id="listaCard" hidden>
     <b>📝 Lista da noite (<span id="listaQtd">0</span>)</b>
@@ -209,7 +221,70 @@ function conf(key,msg){
   setTimeout(()=>{if(armed===key){armed=null;$("#status").textContent=NUVEM_BAR?"● Sincronizado ao vivo":"📱 Salvo neste celular"}},5000);
   return false;
 }
+/* ---------- 💳 Mercado Pago Point na portaria ----------
+   Usa a mesma chave (Access Token) e a lista de maquininhas da aba Cardápio → Receber, guardadas só neste celular.
+   A maquininha marcada como 🚪 Portaria recebe o valor das entradas em Cartão. */
+const MPP={tk:()=>localStorage.getItem("mp-token")||"",papeis:()=>{try{return JSON.parse(localStorage.getItem("mp-papeis")||"{}")||{}}catch(e){return{}}},
+  dev(){const o=this.papeis();return Object.keys(o).find(k=>o[k].papel==="portaria")||""}};
+const mpPortaria=()=>!!(MPP.tk()&&MPP.dev());
+async function mpReq(method,path,body){
+  const url="https://api.mercadopago.com"+path,headers={Authorization:"Bearer "+MPP.tk(),"Content-Type":"application/json"};
+  if(method==="POST")headers["X-Idempotency-Key"]="porta-"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  let H=null;try{H=(window.parent.Capacitor||window.Capacitor).Plugins.CapacitorHttp}catch(e){}
+  let st,data;
+  if(H){const r=await H.request({url,method,headers,data:body});st=r.status;data=r.data;if(typeof data==="string"){try{data=JSON.parse(data)}catch(e){}}}
+  else{const r=await fetch(url,{method,headers,body:body?JSON.stringify(body):undefined});st=r.status;data=await r.json().catch(()=>({}))}
+  if(st>=400){const e=new Error(st===401?"chave (Access Token) inválida":((data&&(data.message||data.error))||("erro "+st)));e.status=st;throw e}
+  return data;
+}
+let mpCob=null; // {id, en}
+function mpMostra(txt,pronto){$("#mpBox").hidden=false;$("#mpTxt").innerHTML=txt;$("#mpBox").scrollIntoView({block:"center",behavior:"smooth"})}
+async function mpGravar(en,extra){Object.assign(en,extra||{});await db.collection("entradas").add(en);await db.collection("log").add({...en,tipo:"lancou"})}
+async function mpCobrarEntrada(en){
+  const cents=Math.round(en.valor*100);mpCob={id:"",en};mpMostra("📲 Enviando <b>"+brl(en.valor)+"</b> para a maquininha…");
+  try{
+    const r=await mpReq("POST","/point/integration-api/devices/"+encodeURIComponent(MPP.dev())+"/payment-intents",{amount:cents,additional_info:{external_reference:"porta-"+Date.now(),print_on_terminal:true}});
+    mpCob.id=r.id;mpMostra("📲 <b>"+brl(en.valor)+"</b> na maquininha. Peça para a pessoa aproximar ou inserir o cartão.");
+    for(let i=0;i<100&&mpCob&&mpCob.id===r.id;i++){
+      await new Promise(x=>setTimeout(x,3000));if(!mpCob||mpCob.id!==r.id)return;
+      let d;try{d=await mpReq("GET","/point/integration-api/payment-intents/"+encodeURIComponent(r.id))}catch(e){continue}
+      const st=d&&d.state;
+      if(st==="FINISHED"){let ok=true,pid=d.payment&&d.payment.id;if(pid){try{const p=await mpReq("GET","/v1/payments/"+pid);ok=p.status==="approved"}catch(e){}}
+        if(ok){const e=mpCob.en;mpCob=null;await mpGravar(e,{mp:String(pid||r.id)});mpMostra("✅ Aprovado! Entrada lançada.");setTimeout(()=>{if(!mpCob)$("#mpBox").hidden=true},2500);return}
+        mpMostra("❌ Pagamento não aprovado. Tente outro cartão ou outra forma.");mpCob=null;return}
+      if(st==="CANCELED"||st==="ABANDONED"||st==="ERROR"){mpMostra(st==="CANCELED"?"Cobrança cancelada na maquininha. Nada foi lançado.":"❌ A maquininha não concluiu. Toque na entrada de novo.");mpCob=null;return}
+      if(st==="PROCESSING")mpMostra("⏳ Processando o pagamento…");
+    }
+    if(mpCob){mpMostra("Tempo esgotado. Se aprovou na maquininha, toque em <b>Lançar sem a maquininha</b>.")}
+  }catch(e){mpMostra("❌ "+(e.message||e)+". Confira se a maquininha da portaria está ligada e no modo integrado.")}
+}
+async function mpCfgDesenhar(devs,msg){
+  const tk=MPP.tk(),dev=MPP.dev(),o=MPP.papeis();
+  $("#mpCfgSt").textContent=mpPortaria()?"· ✅ ligada ("+((o[dev]||{}).nome||dev.slice(-6))+")":"· não ligada";
+  let h=`<label style="display:block;margin-top:10px">Access Token (o mesmo da aba Cardápio → Receber)<input id="mpTkP" type="password" autocomplete="off" autocapitalize="none" placeholder="APP_USR-…" value="${tk?"••••••••":""}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)"></label>
+    <button class="btn" id="mpBuscaP">🔎 Buscar as maquininhas</button>`;
+  if(msg)h+=`<div class="msg" style="font-weight:600;color:var(--tx)">${msg}</div>`;
+  if(devs)h+=devs.map(d=>{const p=(o[d.id]||{}).papel,pdv=d.operating_mode==="PDV";return `<div style="border:1px solid ${p==="portaria"?"var(--ok)":"var(--bd)"};border-radius:12px;padding:10px;margin-top:8px"><b>💳 ${(o[d.id]||{}).nome||"Maquininha "+d.id.slice(-6)}</b> <small style="color:${pdv?"var(--ok)":"#b45309"}">${pdv?"✅ integrado":"⚠️ "+(d.operating_mode||"?")}</small>${p&&p!=="portaria"?`<small style="display:block;color:var(--mut)">hoje usada no 🍸 bar</small>`:""}
+      <div class="row" style="margin-top:6px">${pdv?"":`<button class="btn" data-mpativa="${d.id}" style="margin-top:0;background:#b45309">⚡ Ativar integrado</button>`}<button class="btn" data-mpusa="${d.id}" style="margin-top:0;${p==="portaria"?"background:var(--ok)":"background:#009ee3"}">${p==="portaria"?"✅ É a da portaria":"🚪 Usar na portaria"}</button></div></div>`}).join("");
+  if(mpPortaria())h+=`<button class="link" id="mpTiraP" style="margin-top:10px;color:#b42318">Não usar maquininha na portaria</button>`;
+  $("#mpCfgCorpo").innerHTML=h;
+}
+async function mpBuscarP(){const v=$("#mpTkP").value.trim();if(v&&!/^•+$/.test(v))localStorage.setItem("mp-token",v);if(!MPP.tk()){mpCfgDesenhar(null,"Cole o Access Token primeiro.");return}
+  mpCfgDesenhar(null,"Buscando…");try{const d=await mpReq("GET","/point/integration-api/devices");const ds=(d&&d.devices)||[];mpCfgDesenhar(ds,ds.length?"Escolha a maquininha da portaria:":"Nenhuma maquininha nessa conta.")}catch(e){mpCfgDesenhar(null,"❌ "+(e.message||e)+(window.parent.Capacitor||window.Capacitor?"":" (só funciona no app instalado)"))}}
+mpCfgDesenhar();
+// a configuração feita na aba Cardápio → Receber aparece aqui na hora
+addEventListener("storage",e=>{if(!e.key||/^mp-/.test(e.key))mpCfgDesenhar()});
+document.getElementById("mpCfg").addEventListener("toggle",()=>{if(document.getElementById("mpCfg").open&&!document.querySelector("[data-mpusa]"))mpCfgDesenhar()});
 document.addEventListener("click",async ev=>{
+  {const b=ev.target.closest&&ev.target.closest("#mpBuscaP,[data-mpusa],[data-mpativa],#mpTiraP,#mpCancela,#mpSem");if(b){
+    if(b.id==="mpBuscaP"){mpBuscarP();return}
+    if(b.dataset.mpusa){const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});o[b.dataset.mpusa]={...(o[b.dataset.mpusa]||{}),papel:"portaria"};localStorage.setItem("mp-papeis",JSON.stringify(o));mpBuscarP();return}
+    if(b.dataset.mpativa){try{await mpReq("PATCH","/point/integration-api/devices/"+encodeURIComponent(b.dataset.mpativa),{operating_mode:"PDV"});await mpBuscarP();$("#mpCfgCorpo").insertAdjacentHTML("afterbegin",'<div class="msg" style="font-weight:600;color:var(--ok)">✅ Modo integrado ativado. Desligue e ligue a maquininha.</div>')}catch(e){mpCfgDesenhar(null,"❌ Não consegui ativar: "+(e.message||e))}return}
+    if(b.id==="mpTiraP"){const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});localStorage.setItem("mp-papeis",JSON.stringify(o));mpCfgDesenhar();return}
+    if(b.id==="mpCancela"){const c=mpCob;mpCob=null;$("#mpBox").hidden=true;if(c&&c.id){try{await mpReq("DELETE","/point/integration-api/devices/"+encodeURIComponent(MPP.dev())+"/payment-intents/"+encodeURIComponent(c.id))}catch(e){}}$("#status").textContent="Cobrança cancelada. Nada foi lançado.";return}
+    if(b.id==="mpSem"){const c=mpCob;mpCob=null;$("#mpBox").hidden=true;if(c){if(c.id){try{await mpReq("DELETE","/point/integration-api/devices/"+encodeURIComponent(MPP.dev())+"/payment-intents/"+encodeURIComponent(c.id))}catch(e){}}await mpGravar(c.en);$("#status").textContent="Entrada lançada sem a maquininha."}return}
+  }}
+
   const t=ev.target.closest("button");if(!t)return;
   if(t.dataset.pg){pg=t.dataset.pg;render();return}
   if(t.id==="listaCancela"){$("#listaBox").hidden=true;return}
@@ -228,6 +303,8 @@ document.addEventListener("click",async ev=>{
       }
       const free=cat==="clan"||pg==="cortesia"||(cat==="lista"&&!preco(cat));
       const en={cat,pg:free?"cortesia":pg,valor:free?0:cent(preco(cat))/100,noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
+      // 💳 cartão com a maquininha da portaria ligada: manda o valor e só lança quando aprovar
+      if(!free&&pg==="cartao"&&en.valor>0&&mpPortaria()){if(mpCob){$("#status").textContent="Termine a cobrança aberta na maquininha primeiro.";return}mpCobrarEntrada(en);return}
       await db.collection("entradas").add(en);
       await db.collection("log").add({...en,tipo:"lancou"});
       if(pg==="cortesia"&&cat!=="clan"){pg="dinheiro";render();$("#status").textContent="🎁 Cortesia lançada. Pagamento voltou para 💵 Dinheiro."}

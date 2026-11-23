@@ -222,6 +222,11 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .dly{margin:0 10px 6px;border:1px solid var(--line);border-radius:14px;background:var(--card);flex:0 0 auto}.dly>summary{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700;font-size:16px;min-height:44px;cursor:pointer}.dly>summary svg{width:22px;height:22px}.dly .mini{margin-left:auto;min-height:36px;padding:0 14px;font-size:14px}
 .dlyv{max-height:22vh;overflow-y:auto;padding:4px 14px 12px;scroll-behavior:smooth}.dlyv p{margin:3px 0;font-size:19px;line-height:1.35;color:var(--mute);transition:color .2s,transform .2s}.dlyv p.on{color:var(--ink);font-weight:800;transform:translateX(3px)}.dlyv p.sec{font-size:13px;font-weight:700;color:var(--chord);margin-top:10px}.dlyv p.gap{height:8px;margin:0}
 .dlvi{padding:0 14px 10px;font-size:19px;font-weight:700;color:var(--chord);min-height:0}.dlvi:empty{display:none}.dlyt[hidden],.dlyv[hidden]{display:none}.dlyt{display:block;width:calc(100% - 24px);margin:0 12px 12px;min-height:22vh;font-size:18px;line-height:1.4;box-sizing:border-box}
+.anap{padding:24px 4px}.anapb{height:10px;border-radius:6px;background:var(--line);overflow:hidden}.anapb i{display:block;height:100%;width:0;background:var(--gold,#d4a72c);transition:width .2s}
+.anag{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}.anac{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:2px}.anac small{color:var(--mute);font-size:13px}.anac b{font-size:28px}.anac em{font-style:normal;font-size:13px;color:var(--mute)}
+.anah{font-size:17px;margin:18px 0 6px}.anach{display:flex;flex-wrap:wrap;gap:6px}.anach span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700;font-size:17px;min-width:44px;text-align:center}.anach span.lo{opacity:.45}
+#anasheet .stack{display:flex;flex-direction:column;gap:10px;margin-top:18px}#anasheet .stack button{min-height:50px;font-size:16px}
+#anasheet svg.i{width:24px;height:24px;vertical-align:-5px;margin-right:6px}
 </style>
 </head>
 <body>
@@ -627,6 +632,82 @@ async function dawAlign(mode){const d=daw,s=d.s;if(d.recording)return;const T=s.
 async function dawRemix(){const d=daw,s=d.s;if(d.recording)return;if(s.audios.filter(a=>mx.buf[a.id]).length<2)return toast('Precisa de pelo menos duas faixas.');
  await dawAlign('all');dawSnap();const tg=-20;let n=0;s.audios.forEach(a=>{const db=dawDbRms(a);if(db==null)return;const bonus=instOf(a)==='voz'?2:0;a.vol=Math.max(.3,Math.min(1.5,Math.pow(10,(tg+bonus-db)/20)));n++});
  save(s);put(s);dawRender();toast('Remix pronto: tempo alinhado e volumes equilibrados.')}
+/* ===== Análise musical no próprio aparelho (sem internet, sem chave) ===== */
+const anaWait=()=>new Promise(r=>setTimeout(r,0));
+function anaMono(s,pred){const T=s.audios.filter(a=>mx.buf[a.id]&&!a.mute&&(!pred||pred(a)));if(!T.length)return null;const R=11025;let len=0;
+ const parts=T.map(a=>{const b=mx.buf[a.id],f=Math.max(1,Math.round(b.sampleRate/R)),n=Math.floor(b.length/f),ch=b.numberOfChannels,o=new Float32Array(n);
+  for(let c=0;c<ch;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++){let m=0;for(let k=0;k<f;k++)m+=d[i*f+k];o[i]+=m/f/ch}}
+  const off=Math.max(0,Math.round((a.off||0)/1000*R));len=Math.max(len,off+n);return{o,off,g:a.vol==null?1:a.vol}});
+ len=Math.min(len,R*600);const y=new Float32Array(len);parts.forEach(p=>{for(let i=0;i<p.o.length&&p.off+i<len;i++)y[p.off+i]+=p.o[i]*p.g});return{y,R}}
+function anaBpm(y,R){const H=256,W=1024,n=Math.floor((y.length-W)/H);if(n<96)return null;const e=new Float32Array(n);
+ for(let i=0;i<n;i++){let t=0;for(let k=0;k<W;k+=2){const v=y[i*H+k];t+=v*v}e[i]=Math.sqrt(t/(W/2))}
+ const fl=new Float32Array(n);let mu=0;for(let i=1;i<n;i++){fl[i]=Math.max(0,e[i]-e[i-1]);mu+=fl[i]}mu/=n;for(let i=0;i<n;i++)fl[i]=Math.max(0,fl[i]-mu);
+ let a0=0;for(let i=0;i<n;i++)a0+=fl[i]*fl[i];if(a0<1e-9)return null;const fps=R/H,lo=Math.floor(fps*60/200),hi=Math.ceil(fps*60/60),ac=new Float32Array(hi+2);
+ for(let l=lo-1;l<=hi+1;l++){let t=0;for(let i=l;i<n;i++)t+=fl[i]*fl[i-l];ac[l]=t/a0*(n/(n-l))}
+ let best=-1,bl=0;for(let l=lo;l<=hi;l++){const bpm=60*fps/l,w=Math.exp(-.5*Math.pow(Math.log2(bpm/110)/.9,2)),v=ac[l]*w;if(ac[l]>=ac[l-1]&&ac[l]>=ac[l+1]&&v>best){best=v;bl=l}}
+ if(!bl)return null;const a=ac[bl-1],b=ac[bl],c=ac[bl+1],d=a-2*b+c,fr=d?bl+.5*(a-c)/d:bl;let bpm=60*fps/fr;
+ while(bpm<70)bpm*=2;while(bpm>180)bpm/=2;return{bpm:Math.round(bpm),conf:Math.max(0,Math.min(1,ac[bl]/.35))}}
+const KM=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88],Km=[6.33,2.68,3.52,5.38,2.6,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+const anaCor=(x,p)=>{let mx_=0,mp=0;for(let i=0;i<12;i++){mx_+=x[i];mp+=p[i]}mx_/=12;mp/=12;let a=0,b=0,c=0;for(let i=0;i<12;i++){const u=x[i]-mx_,v=p[i]-mp;a+=u*v;b+=u*u;c+=v*v}return b&&c?a/Math.sqrt(b*c):0};
+async function anaChroma(y,R,prog){const W=4096,H=W*2>y.length?W:W,nf=Math.floor((y.length-W)/H);if(nf<3)return null;const step=Math.max(1,Math.ceil(nf/260)),hann=new Float32Array(W);for(let i=0;i<W;i++)hann[i]=.5-.5*Math.cos(2*Math.PI*i/(W-1));
+ const notes=[];for(let m=36;m<=83;m++)notes.push({pc:m%12,w:2*Math.PI*440*Math.pow(2,(m-69)/12)/R});const fr=[];
+ for(let f=0;f<nf;f+=step){const o=f*H,c=new Float32Array(12);let en=0;for(let i=0;i<W;i+=4){const v=y[o+i];en+=v*v}en=Math.sqrt(en/(W/4));
+  if(en>.004){for(const nt of notes){const co=2*Math.cos(nt.w);let s1=0,s2=0;for(let i=0;i<W;i+=2){const s0=y[o+i]*hann[i]+co*s1-s2;s2=s1;s1=s0}c[nt.pc]+=Math.sqrt(Math.max(0,s1*s1+s2*s2-co*s1*s2))}
+   let t=0;for(let i=0;i<12;i++){c[i]=Math.sqrt(c[i]);t+=c[i]}if(t>0)for(let i=0;i<12;i++)c[i]/=t}else en=0;
+  fr.push({t:o/R,c,en});if(fr.length%12===0){prog&&prog(f/nf);await anaWait()}}
+ return{fr,dt:H*step/R}}
+function anaKey(fr){const s=new Float32Array(12);fr.forEach(f=>{if(f.en)for(let i=0;i<12;i++)s[i]+=f.c[i]});let L=[];
+ for(let r=0;r<12;r++){const rot=p=>p.map((_,i)=>p[(i-r+12)%12]);L.push({r,m:'M',v:anaCor(s,rot(KM))});L.push({r,m:'m',v:anaCor(s,rot(Km))})}
+ L.sort((a,b)=>b.v-a.v);const a=L[0],b=L[1];return{r:a.r,m:a.m,conf:Math.max(0,Math.min(1,(a.v-.35)/.4*.6+(a.v-b.v)/.08*.4)),alt:L.slice(1,3)}}
+function anaChords(an,key,bpm){const fr=an.fr;if(!fr.length)return[];const dia=new Set(),sc=key.m==='M'?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10],q=key.m==='M'?['M','m','m','M','M','m','d']:['m','d','M','m','m','M','M'];
+ sc.forEach((d,i)=>{if(q[i]!=='d')dia.add(((key.r+d)%12)+q[i])});
+ const T=[];for(let r=0;r<12;r++)for(const m of['M','m']){const t=new Float32Array(12);t[r]=1;t[(r+(m==='M'?4:3))%12]=.85;t[(r+7)%12]=.9;T.push({r,m,t})}
+ const span=Math.max(1.2,(bpm?2*60/bpm:2)),out=[];let acc=new Float32Array(12),n=0,t0=fr[0].t;
+ const flush=t1=>{if(n){let b=null,bs=-1,sec=-1;for(const x of T){let d=0,na=0,nb=0;for(let i=0;i<12;i++){d+=acc[i]*x.t[i];na+=acc[i]*acc[i];nb+=x.t[i]*x.t[i]}let v=na?d/Math.sqrt(na*nb):0;if(dia.has(x.r+x.m))v*=1.06;if(v>bs){sec=bs;bs=v;b=x}else if(v>sec)sec=v}
+   out.push({t:t0,name:(key.fl?F:N)[b.r]+(b.m==='m'?'m':''),conf:Math.max(0,Math.min(1,(bs-.55)/.3)),silent:false})}else out.push({t:t0,name:'—',conf:0,silent:true});acc=new Float32Array(12);n=0;t0=t1};
+ fr.forEach(f=>{if(f.t-t0>=span)flush(f.t);if(f.en){n++;for(let i=0;i<12;i++)acc[i]+=f.c[i]}});flush(fr[fr.length-1].t);
+ const m=[];out.forEach(c=>{const l=m[m.length-1];if(l&&l.name===c.name){l.conf=(l.conf+c.conf)/2}else m.push({...c})});return m}
+async function anaPitch(y,R,prog){const W=512,TMAX=Math.floor(R/80),TMIN=Math.floor(R/800),H=512,nf=Math.min(Math.floor((y.length-W-TMAX)/H),Math.floor(R*90/H));if(nf<8)return null;const m=[];let voiced=0;
+ for(let f=0;f<nf;f++){const o=f*H;let rms=0;for(let i=0;i<W;i+=2)rms+=y[o+i]*y[o+i];rms=Math.sqrt(rms/(W/2));let mid=0;
+  if(rms>.01){const d=new Float32Array(TMAX+1);for(let t=TMIN;t<=TMAX;t++){let s=0;for(let i=0;i<W;i+=2){const x=y[o+i]-y[o+i+t];s+=x*x}d[t]=s}
+   let run=0;const cm=new Float32Array(TMAX+1);for(let t=1;t<=TMAX;t++){run+=d[t];cm[t]=run?d[t]*t/run:1}
+   let tau=0;for(let t=TMIN;t<TMAX;t++){if(cm[t]<.15){while(t+1<TMAX&&cm[t+1]<cm[t])t++;tau=t;break}}
+   if(tau){const a=cm[tau-1]||cm[tau],b=cm[tau],c=cm[tau+1]||cm[tau],dd=a-2*b+c,ft=dd?tau+.5*(a-c)/dd:tau,hz=R/ft;mid=Math.round(69+12*Math.log2(hz/440));voiced++}}
+  m.push(mid);if(f%60===0){prog&&prog(f/nf);await anaWait()}}
+ const sm=m.map((v,i)=>{const w=[m[i-1]||0,v,m[i+1]||0].sort((a,b)=>a-b);return w[1]}),nt=[];let cur=0,st=0;
+ const push=(a,b,v)=>{if(v&&b-a>=3)nt.push({t:a*H/R,d:(b-a)*H/R,midi:v})};
+ sm.forEach((v,i)=>{if(v!==cur){push(st,i,cur);cur=v;st=i}});push(st,sm.length,cur);
+ return{notes:nt,voiced:voiced/nf}}
+const anaNm=m=>N[m%12]+(Math.floor(m/12)-1);
+async function anaRun(s,vozOnly,prog){
+ const mix=anaMono(s,null);if(!mix)throw new Error('sem áudio');const out={};
+ prog('Andamento…',.05);out.rit=anaBpm(mix.y,mix.R);
+ const ch=await anaChroma(mix.y,mix.R,v=>prog('Tom e acordes…',.1+v*.55));
+ if(ch){const k=anaKey(ch.fr);k.fl=flatKey(k.r,k.m==='M');out.key=k;out.chords=anaChords(ch,k,out.rit&&out.rit.bpm)}
+ const voz=anaMono(s,a=>instOf(a)==='voz')||(vozOnly?null:mix);
+ if(voz){const p=await anaPitch(voz.y,voz.R,v=>prog('Melodia…',.7+v*.28));out.mel=p;out.melSrc=voz===mix?'mix':'voz'}
+ out.dur=mix.y.length/mix.R;prog('Pronto',1);return out}
+const anaLvl=c=>c>=.7?'alta':c>=.4?'média':'baixa';
+function anaOpen(){const d=daw,s=d&&d.s;if(!s)return;if(d.recording)return toast('Pare a gravação antes de analisar.');if(!s.audios.some(a=>mx.buf[a.id]))return toast('Grave ou importe uma faixa para analisar.');mixStop();
+ const sh=document.createElement('div');sh.id='anasheet';sh.className='sheet';sh.style.zIndex=70;
+ sh.innerHTML=`<div class="shin"><div class="row"><h2 style="flex:1;margin:0;font-size:20px">${IC.wand} Analisar música</h2><button id="anx" style="flex:0 0 auto">✕ Fechar</button></div>
+ <p class="hint">Analisa as faixas aqui no aparelho, sem internet. É uma estimativa: confira de ouvido e corrija o que errar.</p><div id="anab"></div></div>`;document.body.appendChild(sh);
+ const close=()=>sh.remove();$('#anx').onclick=close;const bx=$('#anab');
+ bx.innerHTML='<div class="anap"><div class="anapb"><i id="anai"></i></div><p id="anat" class="hint">Preparando…</p></div>';
+ anaRun(s,false,(t,v)=>{const i=$('#anai'),x=$('#anat');if(i)i.style.width=Math.round(v*100)+'%';if(x)x.textContent=t}).then(r=>{if(!$('#anab'))return;s.ana={...r,at:Date.now()};anaShow(s,r,close)}).catch(()=>{if($('#anab'))bx.innerHTML='<p class="hint">Não consegui analisar este áudio. Confira se a faixa tem som e tente de novo.</p>'})}
+function anaShow(s,r,close){const bx=$('#anab');if(!bx)return;const k=r.key,nm=k&&(k.fl?F:N)[k.r],kt=k?nm+(k.m==='m'?'m':''):'';
+ const ch=(r.chords||[]).filter(c=>!c.silent),notes=(r.mel&&r.mel.notes)||[];
+ bx.innerHTML=`<div class="anag"><div class="anac"><small>Andamento</small><b>${r.rit?r.rit.bpm+' BPM':'—'}</b><em>${r.rit?'confiança '+anaLvl(r.rit.conf):'não achei ritmo marcado'}</em></div>
+ <div class="anac"><small>Tom</small><b>${kt||'—'}</b><em>${k?'confiança '+anaLvl(k.conf)+(k.conf<.4?' — confira':''):''}</em></div></div>
+ ${k&&k.alt?`<p class="hint">Se não for esse, pode ser ${k.alt.map(a=>(k.fl?F:N)[a.r]+(a.m==='m'?'m':'')).join(' ou ')}.</p>`:''}
+ <h3 class="anah">Acordes prováveis</h3>${ch.length?`<div class="anach">${ch.map(c=>`<span class="${c.conf<.4?'lo':''}" title="confiança ${anaLvl(c.conf)}">${c.name}</span>`).join('')}</div><p class="hint">Os acordes em cinza têm pouca confiança. Acordes com sétima ou extensões aparecem como o acorde simples mais próximo.</p>`:'<p class="hint">Não consegui identificar acordes com segurança.</p>'}
+ <h3 class="anah">Melodia ${r.melSrc==='mix'?'(da mixagem, sem pista de voz)':'(da pista de voz)'}</h3>${notes.length>=3?`<div class="anach">${notes.slice(0,48).map(n=>`<span>${anaNm(n.midi)}</span>`).join('')}</div><p class="hint">${notes.length} notas. Cantarolar uma linha só (sem violão por cima) dá resultado melhor.${r.mel.voiced<.3?' Pouca voz detectada: confiança baixa.':''}</p>`:'<p class="hint">Não achei uma melodia clara. Grave a voz sozinha, perto do microfone.</p>'}
+ <div class="stack"><button class="pri" id="anaa" ${r.rit||k?'':'disabled'}>Usar andamento e tom na música</button>
+ <button id="anac2" ${ch.length?'':'disabled'}>Adicionar acordes à cifra</button>
+ <button id="anan" ${notes.length>=3?'':'disabled'}>Adicionar melodia às notas</button></div>`;
+ $('#anaa').onclick=()=>{if(r.rit)s.bpm=r.rit.bpm;if(k){s.key=nm;s.mode=k.m}s.upd=Date.now();save(s);put(s);const bp=$('#dbpm');if(bp)bp.value=s.bpm;toast('Andamento e tom aplicados. Dá para mudar quando quiser.')};
+ $('#anac2').onclick=()=>{const line='[Acordes sugeridos pela análise — confira]\n'+ch.map(c=>c.name).join('  ');s.cifra=(s.cifra?s.cifra.replace(/\s+$/,'')+'\n\n':'')+line;s.upd=Date.now();save(s);put(s);toast('Acordes adicionados no fim da cifra. Nada foi apagado.')};
+ $('#anan').onclick=()=>{const line='Melodia (análise): '+notes.slice(0,48).map(n=>anaNm(n.midi)).join(' ');s.notas=(s.notas?s.notas.replace(/\s+$/,'')+'\n\n':'')+line;s.upd=Date.now();save(s);put(s);toast('Melodia adicionada nas notas.')}}
 async function dawNoise(){const d=daw,s=d.s,a=s.audios.find(x=>x.id===d.sel),b=a&&mx.buf[a.id];if(!b)return;const bt=$('#dsn');if(bt){bt.disabled=true;bt.textContent='Limpando…'}mixStop();
  try{const ac=AC(),nb=ac.createBuffer(b.numberOfChannels,b.length,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++){const out=await denoise(b.getChannelData(c),.6,v=>{if(bt&&daw===d)bt.textContent='Limpando '+Math.round((c+v)/b.numberOfChannels*100)+'%'});nb.copyToChannel(out,c)}
   dawSnap();const n={...a,id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'limpo',name:a.name+' (sem ruído)',blob:wav(nb)};delete n._p;s.audios.splice(s.audios.indexOf(a)+1,0,n);d.sel=n.id;save(s);put(s);await loadBufs(s);dawRender();toast('Faixa sem ruído criada. A original foi mantida.')}
@@ -699,7 +780,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  const e=document.createElement('div');e.id='daw';e.className='sheet daw';
  e.innerHTML=`<div class="dh"><button id="dx" class="rb sm" aria-label="Fechar o estúdio">${IC.x}</button><div class="dti"><b>${esc(s.title||'Sem título')}</b><small id="dtm">0:00.0 / 0:00.0</small></div><div class="lvl" id="dvu" aria-label="Nível do microfone"><i></i></div></div>
  <div class="dt"><div class="tr"><button id="dhome" class="rb" aria-label="Voltar ao início">${IC.rew}</button><button id="dplay" class="rb pl" aria-label="Tocar">${IC.play}</button><button id="drecb" class="rcb">${IC.rec} Gravar</button></div>
- <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
+ <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dana">${IC.wand} Analisar</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
  <details class="dly" id="dly" ${(s.letra||s.ouvido||'').trim()?'open':''}><summary>${IC.notes} Letra <button id="dlye" class="mini" type="button">Editar</button></summary><div id="dlyv" class="dlyv"></div><div id="dlvi" class="dlvi" aria-live="polite"></div><textarea id="dlyt" class="dlyt" hidden placeholder="Cole ou escreva a letra aqui"></textarea></details>
  <div class="dbody" id="dbody"><div class="dleft" id="dleft"></div><div class="dright" id="dscr"><div class="dinner" id="dinner"></div></div></div>
  <div class="dsel" id="dsel"></div>`;
@@ -713,7 +794,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  $('#dbl').onclick=async()=>{const fl=s.audios.filter(x=>x.blob&&x.blob.size).map(x=>{const t=x.blob.type||'audio/webm',ex=/wav/.test(t)?'wav':/mp4|aac|m4a/.test(t)?'m4a':/mpeg|mp3/.test(t)?'mp3':/ogg/.test(t)?'ogg':'webm';return new File([x.blob],((s.title||'musica')+' - '+(x.name||'faixa')).replace(/[^\w\- ]+/g,'').trim().slice(0,60)+'.'+ex,{type:t})});if(!fl.length)return toast('Grave ou importe uma faixa primeiro.');
   if(navigator.canShare&&navigator.canShare({files:fl})){try{await navigator.share({files:fl,title:s.title||'Música'});toast('Escolha o BandLab na lista de apps.')}catch(x){}}
   else{fl.forEach((f,i)=>setTimeout(()=>{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)},i*500));toast('Arquivos baixados. No BandLab, importe-os no estúdio.');openExt('https://www.bandlab.com/')}};
- $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
+ $('#dana').onclick=anaOpen; $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
  $('#dzo').onclick=()=>zoom(.7);$('#dzi').onclick=()=>zoom(1.4);
  const lyrOf=()=>(s.letra||'').trim()?s.letra:(s.ouvido||'');
  daw.lyr=null;const lyrDraw=()=>{const v=$('#dlyv');if(!v)return;const L=lyrOf(s).split('\n');let n=0;daw.lyr=L.map(t=>{const x=t.trim(),h=/^\[.*\]$/.test(x)||/^(intro|verso|pr[eé]-refr[aã]o|refr[aã]o|ponte|final)\s*\d*:?$/i.test(x),on=!!x&&!h;return {t:x,h,on,i:on?n++:-1}});daw.nl=n;daw.cl=-2;

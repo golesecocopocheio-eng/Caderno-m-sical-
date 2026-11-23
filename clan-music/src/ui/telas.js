@@ -8,9 +8,9 @@ const NOTAS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 // As 10 áreas do plano. "etapa" diz quando cada uma chega; só o que está pronto abre.
 export const AREAS = [
   { id: 'gravar', n: 'Gravar voz', d: 'Cantar e cantarolar', etapa: 3, rota: '/gravar' },
-  { id: 'compor', n: 'Compositor', d: 'Ideias e versões da letra', etapa: 7 },
+  { id: 'compor', n: 'Compositor', d: 'Ideias e versões da letra', etapa: 7, rota: '/compor' },
   { id: 'analise', n: 'Notas, acordes e BPM', d: 'Descobrir o que você tocou', etapa: 4, rota: '/analise' },
-  { id: 'letras', n: 'Letras e sugestões', d: 'Rimas e caminhos', etapa: 7 },
+  { id: 'letras', n: 'Letras e sugestões', d: 'Rimas e caminhos', etapa: 7, rota: '/compor' },
   { id: 'banda', n: 'Minha Banda IA', d: 'Baixo, bateria, guitarra, violão e teclado', etapa: 6, rota: '/banda' },
   { id: 'arranjo', n: 'Arranjador', d: 'Estrutura da música', etapa: 6, rota: '/banda' },
   { id: 'estudio', n: 'Estúdio', d: 'Várias pistas juntas', etapa: 5, rota: '/estudio' },
@@ -51,6 +51,7 @@ export async function projeto(id) {
   ${p.ouvido ? `<label class="campo"><span>Rascunho (o que foi ouvido ao gravar)</span><textarea id="ou" rows="4">${esc(p.ouvido)}</textarea></label>` : ''}
   <div class="duas" style="margin-top:6px"><button class="ouro" id="gnp">Gravar</button><button id="anp">Analisar</button></div>
   <div class="duas" style="margin-top:8px"><button id="esp">Abrir no estúdio</button><button id="bdp">Minha banda</button></div>
+  <button id="cpp" style="width:100%;margin-top:8px">Compositor</button>
   ${(p.faixas || []).length ? `<h2>Faixas (${p.faixas.length})</h2><div class="lista">${p.faixas.map((f) => `<div class="item"><span class="t"><b>${esc(f.name || f.nome || 'Faixa')}</b><small>${esc(f.inst || f.tipo || '')}</small><audio data-m="${esc(f.midiaId || '')}" controls preload="none" style="width:100%;margin-top:6px"></audio></span></div>`).join('')}</div>` : ''}
   <label class="campo"><span>Notas</span><textarea id="no" rows="4" placeholder="Ideias, acordes, referências">${esc(p.notas)}</textarea></label>
   <p class="mute peq" id="st">Tudo é salvo sozinho neste celular.</p>
@@ -90,6 +91,7 @@ export function ligar(tela, ctx) {
     const p = ctx.p; const st = $('#st');
     const gravar = debounce(async () => { p.titulo = $('#ti').value.trim() || 'Sem título'; p.bpm = Math.max(40, Math.min(220, +$('#bp').value || 90)); p.tom = $('#to').value; p.modo = $('#mo').value; p.artista = $('#ar').value.trim(); p.letra = $('#le').value; p.cifra = $('#ci').value; if ($('#ou')) p.ouvido = $('#ou').value; p.notas = $('#no').value; await salvar(p); st.textContent = 'Salvo.'; }, 600);
     ['#ti', '#bp', '#to', '#mo', '#ar', '#le', '#ci', '#ou', '#no'].filter((x) => $(x)).forEach((s) => { const e = $(s); e.oninput = e.onchange = () => { st.textContent = 'Salvando…'; gravar(); }; });
+    $('#cpp').onclick = () => { gravar.agora(); setTimeout(() => ir('/compor/' + p.id), 80); };
     $('#bdp').onclick = () => { gravar.agora(); setTimeout(() => ir('/banda/' + p.id), 80); };
     $('#esp').onclick = () => { gravar.agora(); setTimeout(() => ir('/estudio/' + p.id), 80); };
     $('#anp').onclick = () => { gravar.agora(); setTimeout(() => ir('/analise/' + p.id), 80); };

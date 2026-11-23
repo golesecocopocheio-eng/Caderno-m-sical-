@@ -8,7 +8,7 @@ let mal = 0; const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALHA ') + m); i
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true }); const pg = await ctx.newPage(); const erros = []; pg.on('pageerror', (e) => erros.push(e.message));
   await pg.goto('http://localhost:8150/'); await pg.waitForSelector('#novo');
   ok((await pg.locator('.area').count()) === 10, '10 áreas do estúdio na tela inicial');
-  await pg.click('[data-area=compor]', { force: true }); ok(/etapa 7/.test(await pg.textContent('#aviso')), 'áreas futuras avisam em qual etapa chegam');
+  await pg.evaluate(() => document.querySelector('[data-area=separar]').click()); ok(/etapa 8/.test(await pg.textContent('#aviso')), 'áreas futuras avisam em qual etapa chegam');
   await pg.click('#novo'); await pg.waitForSelector('#ti');
   await pg.fill('#ti', 'Minha primeira'); await pg.fill('#bp', '110'); await pg.selectOption('#to', 'G'); await pg.fill('#le', 'Quando o sol nasce\nEu canto'); await pg.waitForFunction(() => /Salvo/.test(document.querySelector('#st').textContent));
   await pg.reload(); await pg.waitForSelector('#ti');

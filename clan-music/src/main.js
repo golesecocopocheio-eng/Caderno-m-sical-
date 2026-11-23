@@ -6,6 +6,7 @@ import * as an from './ui/analise.js';
 import * as es from './ui/estudio.js';
 import * as bd from './ui/banda.js';
 import * as dg from './ui/diagnostico.js';
+import * as cp from './ui/compor.js';
 
 const IC = {
   inicio: '<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -29,6 +30,7 @@ async function desenhar() {
     else if (nome === 'estudio') { aba = 'inicio'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await es.telaEstudio(rota[1]); } else html = await es.telaEscolher(); }
     else if (nome === 'banda') { aba = 'inicio'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await bd.telaBanda(rota[1]); } else html = await bd.telaEscolher(); }
     else if (nome === 'teste-audio') { aba = 'ajustes'; html = await dg.tela(); }
+    else if (nome === 'compor') { aba = 'inicio'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await cp.telaCompor(rota[1]); } else html = await cp.telaEscolher(); }
     else if (nome === 'ajustes') html = await ajustes();
     else { html = await inicio(); aba = 'inicio'; }
   } catch (e) {
@@ -41,6 +43,7 @@ async function desenhar() {
   else if (nome === 'estudio') { if (rota[1] && ctx.p) es.ligarEstudio(ctx, ctx.p); else if (!rota[1]) es.ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/inicio'); } }
   else if (nome === 'banda') { if (rota[1] && ctx.p) bd.ligarBanda(ctx, ctx.p); else if (!rota[1]) bd.ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/inicio'); } }
   else if (nome === 'teste-audio') dg.ligar(ctx);
+  else if (nome === 'compor') { if (rota[1] && ctx.p) cp.ligarCompor(ctx, ctx.p); else if (!rota[1]) cp.ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/inicio'); } }
   else ligar(nome === 'projeto' ? 'projeto' : nome, ctx);
   window.scrollTo(0, 0);
 }

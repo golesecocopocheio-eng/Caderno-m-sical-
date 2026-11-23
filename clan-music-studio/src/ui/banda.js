@@ -35,7 +35,8 @@ export async function ligarBanda(ctx, p) {
     <label class="linha" style="margin-top:10px"><span>Andamento</span><input type="number" id="bp" min="50" max="220" value="${bpm}" style="width:90px" aria-label="Andamento em BPM"><span class="mute">BPM</span></label>
     <h2>Instrumentos</h2><div class="lista">${INSTR.map(([k, n]) => `<label class="item linha"><input type="checkbox" data-i="${k}" ${A.instr[k] ? 'checked' : ''} style="width:24px;min-height:24px"> <span>${n}</span></label>`).join('')}</div>
     <h2>Estrutura da música</h2><div class="lista" id="sc">${A.secoes.map((s, i) => `<div class="item" style="flex-direction:column;align-items:stretch;gap:8px" data-s="${i}"><div style="display:flex;gap:8px"><input data-n value="${esc(s.nome)}" aria-label="Nome da seção" style="flex:1"><button data-x aria-label="Remover seção">✕</button></div>
-      <div style="display:flex;gap:8px;align-items:center"><input type="number" data-c min="1" max="32" value="${s.compassos}" style="width:70px" aria-label="Compassos"><span class="mute">compassos</span><select data-en aria-label="Energia" style="margin-left:auto">${ENERGIAS.map((n, k) => `<option value="${k}" ${s.energia === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>`).join('')}</div>
+      <div style="display:flex;gap:8px;align-items:center"><input type="number" data-c min="1" max="32" value="${s.compassos}" style="width:70px" aria-label="Compassos"><span class="mute">compassos</span><select data-en aria-label="Energia" style="margin-left:auto">${ENERGIAS.map((n, k) => `<option value="${k}" ${s.energia === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <input data-sp value="${esc(s.prog || '')}" placeholder="Acordes só desta seção (opcional)" aria-label="Acordes só desta seção" autocapitalize="characters"></div>`).join('')}</div>
     <button id="ns" style="margin-top:8px">+ Adicionar seção</button><p class="mute peq" id="tt">${c} compassos</p>
     <button class="ouro cta" id="ger" style="margin-top:12px">Gerar a banda</button><div id="gr"></div>`;
     liga();
@@ -51,6 +52,7 @@ export async function ligarBanda(ctx, p) {
     document.querySelectorAll('[data-s]').forEach((el) => { const s = A.secoes[+el.dataset.s];
       el.querySelector('[data-n]').oninput = (e) => { s.nome = e.target.value; grava(); };
       el.querySelector('[data-c]').oninput = (e) => { s.compassos = Math.max(1, Math.min(32, +e.target.value || 1)); atualizaTt(); grava(); };
+      el.querySelector('[data-sp]').oninput = (e) => { s.prog = e.target.value; grava(); };
       el.querySelector('[data-en]').onchange = (e) => { s.energia = +e.target.value; grava(); };
       el.querySelector('[data-x]').onclick = () => { if (A.secoes.length < 2) return aviso('Deixe ao menos uma seção.'); A.secoes.splice(+el.dataset.s, 1); grava(); desenha(); }; });
     $('#ns').onclick = () => { A.secoes.push({ nome: 'Seção ' + (A.secoes.length + 1), compassos: 4, energia: 1 }); grava(); desenha(); };
@@ -60,7 +62,7 @@ export async function ligarBanda(ctx, p) {
     if (ocupado) return; const ac = lerAcordes(A.prog); if (!ac.ok.length) return aviso('Escreva ao menos um acorde.'); if (!Object.values(A.instr).some(Boolean)) return aviso('Marque ao menos um instrumento.');
     ocupado = true; grava.agora(); const b = $('#ger'); b.disabled = true; b.textContent = 'Gerando…'; const gr = $('#gr'); gr.innerHTML = '<div class="barra"><i id="bi"></i></div><p class="mute peq" id="bt"></p>';
     try {
-      const r = await gerar({ prog: ac.barras, secoes: A.secoes, estilo: A.estilo, bpm, instr: A.instr }, (t, v) => { const i = $('#bi'), x = $('#bt'); if (i) i.style.width = Math.round(v * 100) + '%'; if (x) x.textContent = t; });
+      const r = await gerar({ prog: ac.barras, secoes: A.secoes.map((s) => { const b = s.prog ? lerAcordes(s.prog).barras : []; return { ...s, barras: b.length ? b : null }; }), estilo: A.estilo, bpm, instr: A.instr }, (t, v) => { const i = $('#bi'), x = $('#bt'); if (i) i.style.width = Math.round(v * 100) + '%'; if (x) x.textContent = t; });
       const q = await obter(p.id), velhas = (q.faixas || []).filter((f) => f.tipo === 'banda' && A.instr[f.inst]);
       for (const f of velhas) await removerFaixa(p.id, f.id);
       for (const [k, v] of Object.entries(r.faixas)) await adicionarFaixa(p.id, paraWav(v.buf), { nome: INSTR.find((x) => x[0] === k)[1] + ' (banda ' + ESTILOS[A.estilo].nome + ')', inst: k, tipo: 'banda', vol: MIX[k].vol, pan: MIX[k].pan });

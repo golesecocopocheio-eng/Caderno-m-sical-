@@ -20,14 +20,14 @@ export function bpm(y, R) {
   const fps = R / H, maxl = Math.min(n - 2, Math.ceil(fps * 60 / 60 * 4) + 2), ac = new Float32Array(maxl + 2);
   for (let l = 1; l <= maxl + 1; l++) { let t = 0; for (let i = l; i < n; i++) t += fl[i] * fl[i - l]; ac[l] = t / a0 * (n / (n - l)); }
   const at = (l) => { if (l < 1 || l > maxl) return 0; const a = Math.floor(l), f = l - a; return ac[a] * (1 - f) + ac[Math.min(a + 1, maxl + 1)] * f; };
-  const L = (b) => 60 * fps / b; let best = -1, bb = 0;
+  const L = (b) => 60 * fps / b; let best = -1, bb = 0, cru = 0;
   for (let b = 66; b <= 185; b += 0.5) {
     const l = L(b), s = at(l) + 0.6 * at(2 * l) + 0.4 * at(4 * l) + 0.5 * at(l / 2), w = Math.exp(-0.5 * Math.pow(Math.log2(b / 120) / 1.1, 2));
-    if (s * w > best) { best = s * w; bb = b; }
+    if (s * w > best) { best = s * w; bb = b; cru = s; }
   }
   // refina pelo pico de 4 pulsos (a precisão de um lag inteiro melhora 4 vezes)
   const pico = (l0) => { let pk = Math.round(l0), pv = -1; for (let l = Math.floor(l0 * 0.97); l <= Math.ceil(l0 * 1.03); l++) if (l >= 2 && l <= maxl && ac[l] > pv) { pv = ac[l]; pk = l; } const a = ac[pk - 1], b0 = ac[pk], c = ac[pk + 1], d = a - 2 * b0 + c; return { l: d < 0 ? pk + Math.max(-1, Math.min(1, 0.5 * (a - c) / d)) : pk, v: pv }; };
-  const p1 = pico(L(bb)), p4 = 4 * L(bb) <= maxl ? pico(4 * L(bb)) : null, fr = p4 && p4.v > 0.3 * p1.v ? p4.l / 4 : p1.l, pv = p1.v, conf = Math.max(0, Math.min(1, pv / 0.35));
+  const p1 = pico(L(bb)), p4 = 4 * L(bb) <= maxl ? pico(4 * L(bb)) : null, fr = p4 && p4.v > 0.3 * p1.v ? p4.l / 4 : p1.l, pv = p1.v, conf = Math.max(0, Math.min(1, Math.max(pv, cru / 2.5) / 0.35)); // padrões que se repetem a cada 2 tempos (samba) não têm pico no 1º tempo: vale também a pontuação conjunta
   if (conf < 0.05) return null; // sem pulso claro: melhor não chutar
   let v = 60 * fps / fr; while (v < 60) v *= 2; while (v > 200) v /= 2;
   return { bpm: Math.round(v), conf };

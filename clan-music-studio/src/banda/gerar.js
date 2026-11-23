@@ -1,7 +1,7 @@
 // Minha Banda IA: gera baixo, bateria, violão, guitarra e teclado a partir dos acordes, do estilo e da estrutura.
 // Tudo é sintetizado aqui no aparelho (sem internet, sem biblioteca de sons). Soa como instrumento eletrônico, não como músico de estúdio.
 export const SR = 32000;
-export const ESTILOS = { pop: { nome: 'Pop', bpm: 100 }, balada: { nome: 'Balada', bpm: 70 }, rock: { nome: 'Rock', bpm: 120 }, reggae: { nome: 'Reggae', bpm: 76 } };
+export const ESTILOS = { pop: { nome: 'Pop', bpm: 100 }, balada: { nome: 'Balada', bpm: 70 }, rock: { nome: 'Rock', bpm: 120 }, reggae: { nome: 'Reggae roots', bpm: 76 }, afrobeat: { nome: 'Afrobeat', bpm: 108 }, samba: { nome: 'Samba', bpm: 98 }, mpb: { nome: 'MPB', bpm: 88 } };
 export const INSTR = [['bateria', 'Bateria'], ['baixo', 'Baixo'], ['violao', 'Violão'], ['guitarra', 'Guitarra'], ['teclado', 'Teclado']];
 export const MIX = { bateria: { vol: 0.85, pan: 0 }, baixo: { vol: 0.9, pan: 0 }, violao: { vol: 0.6, pan: 0.3 }, guitarra: { vol: 0.5, pan: -0.4 }, teclado: { vol: 0.45, pan: 0.4 } };
 export const ENERGIAS = ['Suave', 'Normal', 'Forte'];
@@ -51,7 +51,7 @@ const extras = (a) => ({ '7': [10], maj7: [11], M7: [11], '6': [9], '9': [10, 14
 // Cada item é um pedaço de compasso: um acorde tocando dos passos s0 a s1 (de 16). Compasso com 1 acorde = 1 pedaço.
 export function plano(barras, secoes) {
   const L = barras.length ? barras : [[acorde('C')]], out = []; let nb = 0;
-  secoes.forEach((s) => { const n = Math.max(1, Math.min(32, s.compassos | 0)); for (let i = 0; i < n; i++, nb++) { const cs = L[i % L.length], k = cs.length; for (let j = 0; j < k; j++) out.push({ a: cs[j], s0: Math.round(j * 16 / k), s1: Math.round((j + 1) * 16 / k), bar: nb, en: s.energia == null ? 1 : s.energia, ini: i === 0 && j === 0, fim: i === n - 1 && j === k - 1, sec: s.nome }); } });
+  secoes.forEach((s) => { const n = Math.max(1, Math.min(32, s.compassos | 0)), Ls = s.barras && s.barras.length ? s.barras : L; for (let i = 0; i < n; i++, nb++) { const cs = Ls[i % Ls.length], k = cs.length; for (let j = 0; j < k; j++) out.push({ a: cs[j], s0: Math.round(j * 16 / k), s1: Math.round((j + 1) * 16 / k), bar: nb, en: s.energia == null ? 1 : s.energia, ini: i === 0 && j === 0, fim: i === n - 1 && j === k - 1, sec: s.nome }); } });
   return out.filter((x) => x.bar < 96);
 }
 
@@ -81,6 +81,9 @@ const P = {
   pop: { K: 'x.......x.x.....', S: '....x.......x...', H: 'x.x.x.x.x.x.x.x.', bx: [[0, 'r', 3], [6, 'r', 2], [8, 'f', 2], [10, 'r', 2], [14, 'o', 2]], vi: [[0, 'd'], [4, 'd', 0.6], [6, 'u', 0.7], [10, 'u', 0.7], [12, 'd']], gi: 'ac8', te: 'pad' },
   balada: { K: 'x.........x.....', S: '........x.......', H: 'x...x...x...x...', bx: [[0, 'r', 8], [8, 'f', 6]], vi: 'arp', gi: 'pad', te: 'pad' },
   rock: { K: 'x.......x.x.....', S: '....x.......x...', H: 'x.x.x.x.x.x.x.x.', bx: [0, 2, 4, 6, 8, 10, 12, 14].map((s) => [s, 'r', 2]), vi: [[0, 'd'], [2, 'd', 0.7], [4, 'd'], [6, 'u', 0.7], [8, 'd'], [10, 'd', 0.7], [12, 'd'], [14, 'u', 0.7]], gi: 'pot', te: 'pad' },
+  afrobeat: { K: 'x.....x...x.x...', S: '....x.......x...', H: 'xoxoxoxoxoxoxoxo', bx: [[0, 'r', 2], [3, 'r', 1], [6, 'f', 2], [8, 'r', 2], [11, 'o', 1], [14, 'f', 2]], vi: [[0, 'd', 0.8], [3, 'u', 0.6], [4, 'd', 0.8], [7, 'u', 0.6], [8, 'd', 0.8], [11, 'u', 0.6], [12, 'd', 0.8], [15, 'u', 0.6]], gi: 'ska', te: 'bol' },
+  samba: { K: 'x...x...x...x...', R: '..x..x..x..x..x.', H: 'xoxoxoxoxoxoxoxo', bx: [[0, 'r', 5], [6, 'f', 2], [8, 'r', 5], [14, 'f', 2]], vi: [[0, 'd', 0.9], [3, 'u', 0.6], [6, 'd', 0.8], [8, 'd', 0.9], [11, 'u', 0.6], [14, 'd', 0.8]], gi: 'pad', te: 'pad' },
+  mpb: { K: 'x.....x.x.......', R: 'x..x..x...x.x...', H: 'o.o.o.o.o.o.o.o.', bx: [[0, 'r', 5], [6, 'f', 3], [8, 'r', 5], [14, 'f', 2]], vi: [[0, 'd', 0.8], [3, 'd', 0.6], [6, 'd', 0.7], [10, 'd', 0.6], [12, 'd', 0.7]], gi: 'pad', te: 'pad' },
   reggae: { K: '........x.......', R: '........x.......', H: 'x.x.x.x.x.x.x.x.', bx: [[0, 'r', 3], [6, 'f', 2], [8, 'r', 4], [14, 'r', 2]], vi: [[2, 'u', 0.9], [6, 'u', 0.9], [10, 'u', 0.9], [14, 'u', 0.9]], gi: 'ska', te: 'bol' },
 };
 
@@ -99,7 +102,7 @@ function bateria(ac, pl, st, sp, rng) {
       if (b.en > 0 && !enchim && p.S && p.S[s] === 'x') snare(t, v, false);
       if (b.en > 0 && p.R && p.R[s] === 'x') snare(t, v, true);
       if (enchim) snare(t, v * (0.6 + (s - 12) * 0.12), false);
-      if (p.H[s] === 'x') hat(t, v * (st === 'reggae' && s % 4 === 2 ? 1.1 : 0.8) * (b.en === 0 ? 0.7 : 1), s % 8 === 6 && b.en === 2 ? 0.12 : 0.04);
+      if (p.H[s] === 'x' || p.H[s] === 'o') hat(t, v * (st === 'reggae' && s % 4 === 2 ? 1.1 : 0.8) * (p.H[s] === 'o' ? 0.55 : 1) * (b.en === 0 ? 0.7 : 1), s % 8 === 6 && b.en === 2 ? 0.12 : 0.04);
     }
     if (b.ini && b.en === 2 && b.bar > 0) crash(t0, escala[2]);
   });

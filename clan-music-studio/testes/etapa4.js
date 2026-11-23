@@ -22,7 +22,7 @@ let mal = 0; const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALHA ') + m); i
   ok(/TomC/.test(t.replace(/\s/g,'')), 'tom C');
   const ac = await pg.evaluate(() => [...document.querySelectorAll('.notas')][0].textContent); console.log('acordes:', ac);
   ok(['C', 'Am', 'F', 'G'].every((x) => new RegExp('(^|[^A-Za-z#])' + x + '(?![a-z#])').test(ac) || ac.includes(x)), 'acordes C Am F G presentes');
-  const antes = await pg.evaluate(() => 0);
+  await pg.click('#bm'); ok(/60 BPM/.test(await pg.textContent('#bv')), 'botão ÷2 corrige andamento dobrado: ' + await pg.textContent('#bv')); await pg.click('#bd'); ok(/120 BPM/.test(await pg.textContent('#bv')), 'botão ×2 volta'); await pg.click('#bm');
   await pg.click('#ap1'); await pg.waitForTimeout(400); await pg.click('#ap2'); await pg.waitForTimeout(400); if (await pg.locator('#ap3:not([disabled])').count()) { await pg.click('#ap3'); await pg.waitForTimeout(400); }
   await pg.goto('http://localhost:8155/#/projeto/' + id); await pg.waitForSelector('#gnp');
   const p = await pg.evaluate(async (id) => { const db = await new Promise((r) => { const q = indexedDB.open('clan-music-studio'); q.onsuccess = () => r(q.result); }); return new Promise((r) => { const q = db.transaction('projetos').objectStore('projetos').get(id); q.onsuccess = () => r(q.result); }); }, id);

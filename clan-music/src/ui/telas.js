@@ -69,6 +69,7 @@ export async function ajustes() {
   <input type="file" id="aarqi" hidden><div id="aprev"></div>
   <h2>Armazenamento</h2><p class="mute" id="uso">${esc(uso) || 'Sem informação de espaço neste aparelho.'}</p>
   <button id="per">Proteger contra limpeza automática</button>
+  <h2>Áudio</h2><button id="tau">Testar o áudio deste aparelho</button>
   <h2>Instalar</h2><p class="mute" id="inst">${window.matchMedia('(display-mode: standalone)').matches ? 'Já está instalado.' : 'No Chrome: menu ⋮ e Instalar app.'}</p>
   <button id="ibt" hidden>Instalar o app</button>
   <h2>Sobre</h2><p class="mute">Clan Music Studio · versão de base (etapa 1). Funciona sem internet.</p></main>`;
@@ -113,6 +114,7 @@ export function ligar(tela, ctx) {
     bancoAntigoExiste().then((ex) => { if (ex) { const b = $('#aold'); b.hidden = false; b.onclick = async () => { try { prev(await lerBancoAntigo()); } catch (e) { aviso('Não consegui ler o app antigo.'); } }; } });
     $('#aarq').onclick = () => $('#aarqi').click();
     $('#aarqi').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { prev(await lerCmbk(f)); } catch (x) { aviso('Esse arquivo não é uma cópia do Clan music antigo.'); } };
+    $('#tau').onclick = () => ir('/teste-audio');
     $('#per').onclick = async () => { try { const ok = navigator.storage && (await navigator.storage.persist()); aviso(ok ? 'Armazenamento protegido.' : 'O aparelho não permitiu agora.'); } catch (e) { aviso('Não deu para pedir proteção.'); } };
     if (ctx.instalar) { const b = $('#ibt'); b.hidden = false; b.onclick = async () => { ctx.instalar.prompt(); await ctx.instalar.userChoice; ctx.instalar = null; b.hidden = true; }; }
   }

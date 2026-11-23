@@ -6,23 +6,31 @@ export const nomeNota = (m) => N[m % 12] + (Math.floor(m / 12) - 1);
 export const nivel = (c) => (c >= 0.7 ? 'alta' : c >= 0.4 ? 'média' : 'baixa');
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-// ---- andamento (BPM): fluxo de energia + autocorrelação
+// ---- andamento (BPM): ataques (sem o grave) + autocorrelação com pontuação por múltiplos do pulso
+// O baixo sincopado fazia o 120 virar 80; olhar também os submúltiplos (colcheias) e o dobro do pulso resolve.
 export function bpm(y, R) {
   const H = 256, W = 1024, n = Math.floor((y.length - W) / H); if (n < 96) return null;
+  // ênfase nos ataques (tira o grave, que é o que confunde o ritmo): filtro de pré-ênfase
   const e = new Float32Array(n);
-  for (let i = 0; i < n; i++) { let t = 0; for (let k = 0; k < W; k += 2) { const v = y[i * H + k]; t += v * v; } e[i] = Math.sqrt(t / (W / 2)); }
+  for (let i = 0; i < n; i++) { let t = 0; for (let k = 1; k < W; k += 2) { const v = y[i * H + k] - 0.95 * y[i * H + k - 1]; t += v * v; } e[i] = Math.sqrt(t / (W / 2)); }
   const fl = new Float32Array(n); let mu = 0;
   for (let i = 1; i < n; i++) { fl[i] = Math.sqrt(Math.max(0, e[i] - e[i - 1])); mu += fl[i]; } mu /= n;
   for (let i = 0; i < n; i++) fl[i] = Math.max(0, fl[i] - mu);
   let a0 = 0; for (let i = 0; i < n; i++) a0 += fl[i] * fl[i]; if (a0 < 1e-9) return null;
-  const fps = R / H, lo = Math.floor(fps * 60 / 200), hi = Math.ceil(fps * 60 / 60), ac = new Float32Array(hi + 2);
-  for (let l = lo - 1; l <= hi + 1; l++) { let t = 0; for (let i = l; i < n; i++) t += fl[i] * fl[i - l]; ac[l] = t / a0 * (n / (n - l)); }
-  let best = -1, bl = 0;
-  for (let l = lo; l <= hi; l++) { const b = 60 * fps / l, w = Math.exp(-0.5 * Math.pow(Math.log2(b / 110) / 0.9, 2)), v = ac[l] * w; if (ac[l] >= ac[l - 1] && ac[l] >= ac[l + 1] && v > best) { best = v; bl = l; } }
-  if (!bl) return null;
-  const a = ac[bl - 1], b = ac[bl], c = ac[bl + 1], d = a - 2 * b + c, fr = d ? bl + 0.5 * (a - c) / d : bl; let v = 60 * fps / fr;
-  while (v < 70) v *= 2; while (v > 180) v /= 2;
-  return { bpm: Math.round(v), conf: Math.max(0, Math.min(1, ac[bl] / 0.35)) };
+  const fps = R / H, maxl = Math.min(n - 2, Math.ceil(fps * 60 / 60 * 4) + 2), ac = new Float32Array(maxl + 2);
+  for (let l = 1; l <= maxl + 1; l++) { let t = 0; for (let i = l; i < n; i++) t += fl[i] * fl[i - l]; ac[l] = t / a0 * (n / (n - l)); }
+  const at = (l) => { if (l < 1 || l > maxl) return 0; const a = Math.floor(l), f = l - a; return ac[a] * (1 - f) + ac[Math.min(a + 1, maxl + 1)] * f; };
+  const L = (b) => 60 * fps / b; let best = -1, bb = 0;
+  for (let b = 66; b <= 185; b += 0.5) {
+    const l = L(b), s = at(l) + 0.6 * at(2 * l) + 0.4 * at(4 * l) + 0.5 * at(l / 2), w = Math.exp(-0.5 * Math.pow(Math.log2(b / 120) / 1.1, 2));
+    if (s * w > best) { best = s * w; bb = b; }
+  }
+  // refina pelo pico de 4 pulsos (a precisão de um lag inteiro melhora 4 vezes)
+  const pico = (l0) => { let pk = Math.round(l0), pv = -1; for (let l = Math.floor(l0 * 0.97); l <= Math.ceil(l0 * 1.03); l++) if (l >= 2 && l <= maxl && ac[l] > pv) { pv = ac[l]; pk = l; } const a = ac[pk - 1], b0 = ac[pk], c = ac[pk + 1], d = a - 2 * b0 + c; return { l: d < 0 ? pk + Math.max(-1, Math.min(1, 0.5 * (a - c) / d)) : pk, v: pv }; };
+  const p1 = pico(L(bb)), p4 = 4 * L(bb) <= maxl ? pico(4 * L(bb)) : null, fr = p4 && p4.v > 0.3 * p1.v ? p4.l / 4 : p1.l, pv = p1.v, conf = Math.max(0, Math.min(1, pv / 0.35));
+  if (conf < 0.05) return null; // sem pulso claro: melhor não chutar
+  let v = 60 * fps / fr; while (v < 60) v *= 2; while (v > 200) v /= 2;
+  return { bpm: Math.round(v), conf };
 }
 
 // ---- cromagrama (energia de cada nota C..B ao longo do tempo)
@@ -61,7 +69,7 @@ export function acordes(an, k, andamento) {
   const dia = new Set(), esc = k.modo === 'M' ? [0, 2, 4, 5, 7, 9, 11] : [0, 2, 3, 5, 7, 8, 10], q = k.modo === 'M' ? ['M', 'm', 'm', 'M', 'M', 'm', 'd'] : ['m', 'd', 'M', 'm', 'm', 'M', 'M'];
   esc.forEach((d, i) => { if (q[i] !== 'd') dia.add(((k.r + d) % 12) + q[i]); });
   const T = []; for (let r = 0; r < 12; r++) for (const m of ['M', 'm']) { const t = new Float32Array(12); t[r] = 1; t[(r + (m === 'M' ? 4 : 3)) % 12] = 0.85; t[(r + 7) % 12] = 0.9; T.push({ r, m, t }); }
-  const span = Math.max(1.2, andamento ? 2 * 60 / andamento : 2), out = []; let acc = new Float32Array(12), n = 0, t0 = fr[0].t;
+  const span = Math.max(0.8, andamento ? 2 * 60 / andamento : 2), out = []; let acc = new Float32Array(12), n = 0, t0 = fr[0].t;
   const nomes = k.bemol ? F : N;
   const fecha = (t1) => {
     if (n) { let b = null, bs = -1; for (const x of T) { let d = 0, na = 0, nb = 0; for (let i = 0; i < 12; i++) { d += acc[i] * x.t[i]; na += acc[i] * acc[i]; nb += x.t[i] * x.t[i]; } let v = na ? d / Math.sqrt(na * nb) : 0; if (dia.has(x.r + x.m)) v *= 1.06; if (v > bs) { bs = v; b = x; } }

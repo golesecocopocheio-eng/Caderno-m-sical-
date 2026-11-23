@@ -56,3 +56,6 @@ button.grande span{display:block;width:60px;height:60px;border-radius:50%;backgr
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:2px}.grande2{font-size:28px}
 .notas{display:flex;flex-wrap:wrap;gap:6px}.notas span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700;min-width:44px;text-align:center}.notas span.fraco{opacity:.45}
 .barra{height:10px;border-radius:6px;background:var(--card2);overflow:hidden;margin-top:18px}.barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--roxo),var(--ouro));transition:width .2s}
+/* estúdio */
+.linha input[type=range]{flex:1;min-width:120px}
+button[aria-pressed=true]{background:var(--ouro);color:#111;border-color:var(--ouro)}

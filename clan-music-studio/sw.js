@@ -1,10 +1,10 @@
 // Funciona offline: usa a rede quando há internet e a cópia salva quando não há.
-const VERSAO = 'clan-studio-v5';
+const VERSAO = 'clan-studio-v6';
 const ARQUIVOS = [
   './', './index.html', './manifest.webmanifest', './icon.svg',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png',
   './fonts/bricolage-grotesque-latin-wght-normal.woff2', './fonts/jetbrains-mono-latin-400-normal.woff2', './fonts/jetbrains-mono-latin-700-normal.woff2',
-  './src/ui/tema.css', './src/main.js', './src/ui/telas.js', './src/dados/banco.js', './src/dados/backup.js', './src/dados/importar-antigo.js', './src/ui/util.js', './src/ui/gravar.js', './src/audio/gravador.js', './src/audio/wav.js', './src/ui/analise.js', './src/ui/estudio.js', './src/audio/mix.js', './src/dados/entregar.js', './src/analise/dsp.js', './src/analise/analisar.js', './src/analise/worker.js',
+  './src/ui/tema.css', './src/main.js', './src/ui/telas.js', './src/dados/banco.js', './src/dados/backup.js', './src/dados/importar-antigo.js', './src/ui/util.js', './src/ui/gravar.js', './src/audio/gravador.js', './src/audio/wav.js', './src/ui/analise.js', './src/ui/estudio.js', './src/ui/banda.js', './src/banda/gerar.js', './src/audio/mix.js', './src/dados/entregar.js', './src/analise/dsp.js', './src/analise/analisar.js', './src/analise/worker.js',
 ];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {

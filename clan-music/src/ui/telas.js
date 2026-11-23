@@ -7,7 +7,7 @@ const NOTAS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // As 10 áreas do plano. "etapa" diz quando cada uma chega; só o que está pronto abre.
 export const AREAS = [
-  { id: 'gravar', n: 'Gravar voz', d: 'Cantar e cantarolar', etapa: 3 },
+  { id: 'gravar', n: 'Gravar voz', d: 'Cantar e cantarolar', etapa: 3, rota: '/gravar' },
   { id: 'compor', n: 'Compositor', d: 'Ideias e versões da letra', etapa: 7 },
   { id: 'analise', n: 'Notas, acordes e BPM', d: 'Descobrir o que você tocou', etapa: 4 },
   { id: 'letras', n: 'Letras e sugestões', d: 'Rimas e caminhos', etapa: 7 },
@@ -16,17 +16,17 @@ export const AREAS = [
   { id: 'estudio', n: 'Estúdio', d: 'Várias pistas juntas', etapa: 5 },
   { id: 'separar', n: 'Separar instrumentos', d: 'Voz e acompanhamento', etapa: 8 },
   { id: 'mix', n: 'Mixagem e exportar', d: 'Fechar e compartilhar', etapa: 5 },
-  { id: 'biblioteca', n: 'Biblioteca', d: 'Seus projetos', etapa: 1 },
+  { id: 'biblioteca', n: 'Biblioteca', d: 'Seus projetos', etapa: 1, rota: '/biblioteca' },
 ];
 
 export async function inicio() {
   const l = await listar();
   return `<header class="topo"><div class="tela"><div class="marca"><i></i>Clan Music Studio</div>
     <p class="mute">Seu estúdio no celular. ${l.length ? `${l.length} projeto${l.length > 1 ? 's' : ''} salvo${l.length > 1 ? 's' : ''} aqui.` : 'Comece criando o primeiro projeto.'}</p>
-    <button class="ouro cta" id="novo">Novo projeto</button>
-    <p class="mute peq" style="margin-top:10px">Gravar a voz chega na próxima etapa. Por enquanto dá para criar projetos, escrever a letra e guardar tudo no celular.</p></div></header>
+    <button class="ouro cta" id="cantar">CANTAR UMA IDEIA</button>
+    <button id="novo" style="width:100%;margin-top:10px">Novo projeto em branco</button></div></header>
   <main class="tela"><h2 style="margin-top:4px">Áreas do estúdio</h2><div class="grade">
-  ${AREAS.map((a) => { const pronto = a.etapa <= 1; return `<button class="area" data-area="${a.id}" ${pronto ? '' : 'aria-disabled="true"'}><span class="chip ${pronto ? 'ok' : ''}">${pronto ? 'Pronto' : 'Etapa ' + a.etapa}</span><b>${esc(a.n)}</b><small>${esc(a.d)}</small></button>`; }).join('')}
+  ${AREAS.map((a) => { const pronto = !!a.rota; return `<button class="area" data-area="${a.id}" ${pronto ? '' : 'aria-disabled="true"'}><span class="chip ${pronto ? 'ok' : ''}">${pronto ? 'Pronto' : 'Etapa ' + a.etapa}</span><b>${esc(a.n)}</b><small>${esc(a.d)}</small></button>`; }).join('')}
   </div></main>`;
 }
 
@@ -49,6 +49,7 @@ export async function projeto(id) {
   <label class="campo"><span>Letra</span><textarea id="le" rows="10" placeholder="Escreva ou cole a letra aqui">${esc(p.letra)}</textarea></label>
   <label class="campo"><span>Cifra</span><textarea id="ci" rows="8" placeholder="Letra com acordes" style="font-family:JBMono,monospace;font-size:14px">${esc(p.cifra || '')}</textarea></label>
   ${p.ouvido ? `<label class="campo"><span>Rascunho (o que foi ouvido ao gravar)</span><textarea id="ou" rows="4">${esc(p.ouvido)}</textarea></label>` : ''}
+  <button class="ouro" id="gnp" style="width:100%;margin-top:6px">Gravar neste projeto</button>
   ${(p.faixas || []).length ? `<h2>Faixas (${p.faixas.length})</h2><div class="lista">${p.faixas.map((f) => `<div class="item"><span class="t"><b>${esc(f.name || f.nome || 'Faixa')}</b><small>${esc(f.inst || f.tipo || '')}</small><audio data-m="${esc(f.midiaId || '')}" controls preload="none" style="width:100%;margin-top:6px"></audio></span></div>`).join('')}</div>` : ''}
   <label class="campo"><span>Notas</span><textarea id="no" rows="4" placeholder="Ideias, acordes, referências">${esc(p.notas)}</textarea></label>
   <p class="mute peq" id="st">Tudo é salvo sozinho neste celular.</p>
@@ -74,11 +75,12 @@ export async function ajustes() {
 
 export function ligar(tela, ctx) {
   const ir = ctx.ir;
+  const cantar = $('#cantar'); if (cantar) cantar.onclick = () => ir('/gravar');
   const novo = $('#novo'); if (novo) novo.onclick = async () => { const p = await salvar(novoProjeto()); ir('/projeto/' + p.id); };
   document.querySelectorAll('[data-abrir]').forEach((b) => (b.onclick = () => ir('/projeto/' + b.dataset.abrir)));
   document.querySelectorAll('[data-area]').forEach((b) => (b.onclick = () => {
     const a = AREAS.find((x) => x.id === b.dataset.area);
-    if (a.id === 'biblioteca') return ir('/biblioteca');
+    if (a.rota) return ir(a.rota);
     aviso(`${a.n} chega na etapa ${a.etapa} da reconstrução.`);
   }));
   const vo = $('#voltar'); if (vo) vo.onclick = () => ir('/biblioteca');
@@ -86,6 +88,7 @@ export function ligar(tela, ctx) {
     const p = ctx.p; const st = $('#st');
     const gravar = debounce(async () => { p.titulo = $('#ti').value.trim() || 'Sem título'; p.bpm = Math.max(40, Math.min(220, +$('#bp').value || 90)); p.tom = $('#to').value; p.modo = $('#mo').value; p.artista = $('#ar').value.trim(); p.letra = $('#le').value; p.cifra = $('#ci').value; if ($('#ou')) p.ouvido = $('#ou').value; p.notas = $('#no').value; await salvar(p); st.textContent = 'Salvo.'; }, 600);
     ['#ti', '#bp', '#to', '#mo', '#ar', '#le', '#ci', '#ou', '#no'].filter((x) => $(x)).forEach((s) => { const e = $(s); e.oninput = e.onchange = () => { st.textContent = 'Salvando…'; gravar(); }; });
+    $('#gnp').onclick = () => { gravar.agora(); setTimeout(() => ir('/gravar/' + p.id), 80); };
     document.querySelectorAll('audio[data-m]').forEach(async (a) => { const m = a.dataset.m && (await obterMidia(a.dataset.m)); if (m && m.blob) a.src = URL.createObjectURL(m.blob); else a.replaceWith(Object.assign(document.createElement('small'), { textContent: 'Áudio não encontrado.' })); });
     window.addEventListener('pagehide', () => gravar.agora(), { once: true });
     $('#voltar').onclick = async () => { gravar.agora(); setTimeout(() => ir('/biblioteca'), 80); };

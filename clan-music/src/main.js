@@ -3,6 +3,7 @@ import { inicio, biblioteca, projeto, ajustes, ligar } from './ui/telas.js';
 import { obter } from './dados/banco.js';
 import { telaEscolher, ligarEscolher, telaGravar, ligarGravar, sair as sairGravacao } from './ui/gravar.js';
 import * as an from './ui/analise.js';
+import * as es from './ui/estudio.js';
 
 const IC = {
   inicio: '<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -14,7 +15,7 @@ const ctx = { ir: (r) => { location.hash = '#' + r; }, p: null, instalar: null }
 if (window.Capacitor) document.documentElement.style.setProperty('--satmin', '30px');
 
 async function desenhar() {
-  await sairGravacao();
+  await sairGravacao(); es.sair();
   const rota = (location.hash || '#/inicio').slice(1).split('/').filter(Boolean);
   const nome = rota[0] || 'inicio';
   let html, aba = nome;
@@ -23,6 +24,7 @@ async function desenhar() {
     else if (nome === 'projeto') { ctx.p = await obter(rota[1]); html = await projeto(rota[1]); aba = 'biblioteca'; }
     else if (nome === 'gravar') { aba = 'gravar'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await telaGravar(rota[1]); } else html = await telaEscolher(); }
     else if (nome === 'analise') { aba = 'inicio'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await an.telaAnalise(rota[1]); } else html = await an.telaEscolher(); }
+    else if (nome === 'estudio') { aba = 'inicio'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await es.telaEstudio(rota[1]); } else html = await es.telaEscolher(); }
     else if (nome === 'ajustes') html = await ajustes();
     else { html = await inicio(); aba = 'inicio'; }
   } catch (e) {
@@ -32,11 +34,12 @@ async function desenhar() {
   document.querySelectorAll('[data-nav]').forEach((b) => (b.onclick = () => ctx.ir('/' + b.dataset.nav)));
   if (nome === 'gravar') { if (rota[1] && ctx.p) ligarGravar(ctx, ctx.p); else if (!rota[1]) ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/gravar'); } }
   else if (nome === 'analise') { if (rota[1] && ctx.p) an.ligarAnalise(ctx, ctx.p); else if (!rota[1]) an.ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/inicio'); } }
+  else if (nome === 'estudio') { if (rota[1] && ctx.p) es.ligarEstudio(ctx, ctx.p); else if (!rota[1]) es.ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/inicio'); } }
   else ligar(nome === 'projeto' ? 'projeto' : nome, ctx);
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', desenhar);
-window.addEventListener('pagehide', () => { sairGravacao(); });
+window.addEventListener('pagehide', () => { sairGravacao(); es.sair(); });
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); ctx.instalar = e; if (location.hash === '#/ajustes') desenhar(); });
 desenhar();
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

@@ -1,3 +1,4 @@
+import { entregar } from './entregar.js';
 // Cópia de segurança (.clanstudio): arquivo único com os projetos E os áudios.
 // Formato: "CSTD" + tamanho do manifesto (4 bytes) + manifesto JSON + bytes dos áudios, um depois do outro.
 // Restaurar só junta: nunca apaga nem troca o que é mais novo (o texto anterior vai para as versões).
@@ -21,13 +22,8 @@ export async function montar() {
 export async function exportar() {
   const { blob, n, faixas } = await montar();
   const nome = 'clan-music-studio-' + new Date().toISOString().slice(0, 10) + '.clanstudio';
-  const file = new File([blob], nome, { type: 'application/octet-stream' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Cópia do Clan Music Studio' }); return { nome, n, faixas, via: 'compartilhar' }; } catch (e) { if (e && e.name === 'AbortError') return { nome, n, faixas, via: 'cancelado' }; }
-  }
-  const u = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = u; a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
-  return { nome, n, faixas, via: 'baixar' };
+  const via = await entregar(blob, nome, 'Cópia do Clan Music Studio');
+  return { nome, n, faixas, via };
 }
 
 async function ler(file) {

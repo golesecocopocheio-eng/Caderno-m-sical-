@@ -13,9 +13,9 @@ export const AREAS = [
   { id: 'letras', n: 'Letras e sugestões', d: 'Rimas e caminhos', etapa: 7 },
   { id: 'banda', n: 'Minha Banda IA', d: 'Baixo, bateria, guitarra, violão e teclado', etapa: 6 },
   { id: 'arranjo', n: 'Arranjador', d: 'Estrutura da música', etapa: 6 },
-  { id: 'estudio', n: 'Estúdio', d: 'Várias pistas juntas', etapa: 5 },
+  { id: 'estudio', n: 'Estúdio', d: 'Várias pistas juntas', etapa: 5, rota: '/estudio' },
   { id: 'separar', n: 'Separar instrumentos', d: 'Voz e acompanhamento', etapa: 8 },
-  { id: 'mix', n: 'Mixagem e exportar', d: 'Fechar e compartilhar', etapa: 5 },
+  { id: 'mix', n: 'Mixagem e exportar', d: 'Fechar e compartilhar', etapa: 5, rota: '/estudio' },
   { id: 'biblioteca', n: 'Biblioteca', d: 'Seus projetos', etapa: 1, rota: '/biblioteca' },
 ];
 
@@ -50,6 +50,7 @@ export async function projeto(id) {
   <label class="campo"><span>Cifra</span><textarea id="ci" rows="8" placeholder="Letra com acordes" style="font-family:JBMono,monospace;font-size:14px">${esc(p.cifra || '')}</textarea></label>
   ${p.ouvido ? `<label class="campo"><span>Rascunho (o que foi ouvido ao gravar)</span><textarea id="ou" rows="4">${esc(p.ouvido)}</textarea></label>` : ''}
   <div class="duas" style="margin-top:6px"><button class="ouro" id="gnp">Gravar</button><button id="anp">Analisar</button></div>
+  <button id="esp" style="width:100%;margin-top:8px">Abrir no estúdio</button>
   ${(p.faixas || []).length ? `<h2>Faixas (${p.faixas.length})</h2><div class="lista">${p.faixas.map((f) => `<div class="item"><span class="t"><b>${esc(f.name || f.nome || 'Faixa')}</b><small>${esc(f.inst || f.tipo || '')}</small><audio data-m="${esc(f.midiaId || '')}" controls preload="none" style="width:100%;margin-top:6px"></audio></span></div>`).join('')}</div>` : ''}
   <label class="campo"><span>Notas</span><textarea id="no" rows="4" placeholder="Ideias, acordes, referências">${esc(p.notas)}</textarea></label>
   <p class="mute peq" id="st">Tudo é salvo sozinho neste celular.</p>
@@ -88,6 +89,7 @@ export function ligar(tela, ctx) {
     const p = ctx.p; const st = $('#st');
     const gravar = debounce(async () => { p.titulo = $('#ti').value.trim() || 'Sem título'; p.bpm = Math.max(40, Math.min(220, +$('#bp').value || 90)); p.tom = $('#to').value; p.modo = $('#mo').value; p.artista = $('#ar').value.trim(); p.letra = $('#le').value; p.cifra = $('#ci').value; if ($('#ou')) p.ouvido = $('#ou').value; p.notas = $('#no').value; await salvar(p); st.textContent = 'Salvo.'; }, 600);
     ['#ti', '#bp', '#to', '#mo', '#ar', '#le', '#ci', '#ou', '#no'].filter((x) => $(x)).forEach((s) => { const e = $(s); e.oninput = e.onchange = () => { st.textContent = 'Salvando…'; gravar(); }; });
+    $('#esp').onclick = () => { gravar.agora(); setTimeout(() => ir('/estudio/' + p.id), 80); };
     $('#anp').onclick = () => { gravar.agora(); setTimeout(() => ir('/analise/' + p.id), 80); };
     $('#gnp').onclick = () => { gravar.agora(); setTimeout(() => ir('/gravar/' + p.id), 80); };
     document.querySelectorAll('audio[data-m]').forEach(async (a) => { const m = a.dataset.m && (await obterMidia(a.dataset.m)); if (m && m.blob) a.src = URL.createObjectURL(m.blob); else a.replaceWith(Object.assign(document.createElement('small'), { textContent: 'Áudio não encontrado.' })); });

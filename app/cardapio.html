@@ -98,6 +98,16 @@ body.venda{background:var(--bg)}
 .prod .pc .qt,.prod .pc.auto .qt{position:static;order:-1;background:var(--ac);color:#fff;min-width:24px;height:24px;font-size:12.5px;box-shadow:none;margin-right:-4px}
 .cats button.cc{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--bd)}
 .cats button.cc.on{color:var(--bg);background:var(--tx);box-shadow:none}
+/* ➕ valor avulso */
+.avb{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 10px;padding:12px;font-weight:800;border:1.5px dashed var(--ac);color:var(--ac);background:color-mix(in srgb,var(--ac) 6%,var(--card))}
+.avb small{font-weight:500;color:var(--mut);font-size:12.5px}
+.avc{border:2px solid var(--ac)}
+.avg{display:flex;align-items:center;gap:8px;margin-top:10px;border:2px solid var(--bd);border-radius:14px;padding:4px 14px;background:var(--bg)}
+.avg span{font-size:22px;font-weight:800;color:var(--mut)}
+.avg input{border:0;background:none;font-size:32px;font-weight:800;padding:8px 0;width:100%;outline:none;color:var(--tx)}
+.avg:focus-within{border-color:var(--ac)}
+.avq{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.avq button{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:10px 4px;font-weight:700;font-size:15px}
 .mpd{border:1px solid var(--bd);border-radius:14px;padding:10px 12px;margin:8px 0;background:var(--card)}
 .mpd.on{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
 .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
@@ -383,7 +393,10 @@ function fotoPequena(arq,max=420){return new Promise((ok,er)=>{const u=URL.creat
   // recorte quadrado no centro (fica bonito na lista e no cardápio)
   const q=Math.round(Math.min(max,lado));c.width=q;c.height=q;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(im,(im.width-lado)/2,(im.height-lado)/2,lado,lado,0,0,q,q);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.8))};im.onerror=()=>{URL.revokeObjectURL(u);er(new Error('foto inválida'))};im.src=u})}
 const porOrdem=(x,y)=>(x.o??1e9)-(y.o??1e9)||x.n.localeCompare(y.n,'pt');
-const totalCarrinho=()=>Object.entries(carrinho).reduce((s,[id,q])=>{const i=itens.find(x=>x.id===id);return s+(i?i.p*q:0)},0);
+// valor avulso (ex.: R$ 5 de gelo, R$ 2 de copo): entra no carrinho como um item solto
+let avulsos={},avAberto=false;
+const itemDe=id=>itens.find(x=>x.id===id)||avulsos[id];
+const totalCarrinho=()=>Object.entries(carrinho).reduce((s,[id,q])=>{const i=itemDe(id);return s+(i?i.p*q:0)},0);
 const qtdCarrinho=()=>Object.values(carrinho).reduce((a,b)=>a+b,0);
 const daNoite=()=>vendas.filter(v=>v.noite===ver).sort((a,b)=>b.t-a.t);
 function resumo(lista){
@@ -471,10 +484,19 @@ function draw(){document.body.classList.toggle('venda',aba==='vender'||aba==='ca
   $('#app').innerHTML=h;
   desenharCarrinho();
 }
+function painelAvulso(){
+  if(editar)return '';
+  if(!avAberto)return `<button class="btn sec avb" id="avBtn">➕ Valor avulso <small>digitar um valor (ex.: R$ 5,00)</small></button>`;
+  return `<div class="card avc"><div class="row" style="justify-content:space-between"><b>➕ Valor avulso</b><button class="x" id="avBtn" aria-label="Fechar">✕</button></div>
+    <div class="avg"><span>R$</span><input id="avV" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+    <div class="avq">${[2,5,10,15,20,50].map(v=>`<button data-avq="${v}">${R(v)}</button>`).join('')}</div>
+    <input id="avN" placeholder="O que é? (opcional — ex.: gelo, copo, taxa)" autocomplete="off" style="margin-top:8px">
+    <button class="btn ok" id="avOk" style="margin-top:10px">Adicionar ao carrinho</button>
+    <p class="sub" style="margin:6px 0 0;font-size:12.5px">Depois é só tocar em Cobrar e escolher Pix, Dinheiro ou Cartão, como nas outras vendas.</p></div>`}
 function telaVender(){
-  const A=editar?itens:ativos();if(!A.length)return fotoCard()+`<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Tire a foto do cardápio acima ou adicione os itens à mão.</p><button class="btn sec" id="editarBtn">✍️ Adicionar itens à mão</button></div>`;
+  const A=editar?itens:ativos();if(!A.length)return painelAvulso()+fotoCard()+`<div class="card"><p class="sub" style="margin:0">O cardápio está vazio. Tire a foto do cardápio acima ou adicione os itens à mão.</p><button class="btn sec" id="editarBtn">✍️ Adicionar itens à mão</button></div>`;
   const C=categorias().filter(c=>A.some(i=>(i.c||'Outros')===c));if(cat&&!C.includes(cat))cat='';
-  let h=aviso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="cc ${cat===c?'on':''}" style="--gc:${corCat(c)}">${iconeCat(c)} ${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
+  let h=aviso()+painelAvulso()+`<div class="row" style="margin-bottom:6px"><div class="cats" style="flex:1;margin:0"><button data-cat="" class="${!cat?'on':''}">Tudo</button>${C.map(c=>`<button data-cat="${esc(c)}" class="cc ${cat===c?'on':''}" style="--gc:${corCat(c)}">${iconeCat(c)} ${esc(c)}</button>`).join('')}</div><button class="btn sec" data-foto="cam" title="Foto do cardápio" style="width:auto;margin:0 0 6px;padding:8px 10px;font-size:14px">📷</button><button class="btn ${editar?'ok':'sec'}" id="editarBtn" style="width:auto;margin:0 0 6px;padding:8px 12px;font-size:14px">${editar?'✅ Pronto':'✏️ Editar'}</button></div>`;
   if(editar){
     h+=`<div class="card"><p class="sub" style="margin:0 0 6px">Mude nome, preço, descrição e <b>grupo</b> direto aqui (ex.: passar um drink para <b>Drinks Autorais</b>). Mudar o nome do grupo muda para todos os itens dele. 👁️ esconde da venda, ✕ apaga.</p><button class="btn sec" id="fotosNet" style="margin:0 0 8px">🔎 Buscar fotos na internet para os itens sem foto</button><div style="display:grid;grid-template-columns:1fr 92px;gap:6px"><input data-k="nn" id="nn" placeholder="Novo item"><input data-k="np" id="np" inputmode="decimal" placeholder="Preço" style="text-align:right"><input data-k="nc" id="nc" list="catsL" placeholder="Categoria" value="${esc(cat||'')}" style="grid-column:1/3"></div><datalist id="catsL">${categorias().map(c=>`<option value="${esc(c)}">`).join('')}</datalist><button class="btn" id="novoOk">+ Adicionar item</button></div>`;
     (cat?[cat]:C).forEach(c=>{const l=A.filter(i=>(i.c||'Outros')===c).sort(porOrdem);if(!l.length)return;
@@ -490,7 +512,7 @@ function desenharCarrinho(){
   const el=$('#carrinho');const n=qtdCarrinho();
   if(aba!=='vender'||!n){el.hidden=true;return}
   el.hidden=false;
-  const linhas=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?`<div class="it"><span>${esc(i.n)}<small>${R(i.p)} cada</small></span><span class="q"><button data-menos="${id}">−</button><b>${q}</b><button data-mais="${id}">+</button></span><b style="min-width:76px;text-align:right">${R(i.p*q)}</b></div>`:''}).join('');
+  const linhas=Object.entries(carrinho).map(([id,q])=>{const i=itemDe(id);return i?`<div class="it"><span>${esc(i.n)}<small>${R(i.p)} cada</small></span><span class="q"><button data-menos="${id}">−</button><b>${q}</b><button data-mais="${id}">+</button></span><b style="min-width:76px;text-align:right">${R(i.p*q)}</b></div>`:''}).join('');
   el.innerHTML=`<div class="in"><details id="carDet"${carAberto?' open':''}><summary class="row" style="justify-content:space-between;list-style:none;cursor:pointer"><span>🛒 <b>${n}</b> ${n>1?'itens':'item'} · <span class="link">ver</span></span><span class="big">${R(totalCarrinho())}</span></summary><div style="max-height:34vh;overflow:auto;margin-top:6px">${linhas}</div><button class="btn sec" id="limpar" style="margin-top:6px">Limpar</button></details><button class="btn ok" id="cobrar">Cobrar ${R(totalCarrinho())}</button></div>`;
 }
 function fotoCard(){const lendo=leitura&&leitura.lendo;return `<div class="card"><h2>📷 Digitalizar o cardápio pela foto</h2><p class="sub">Aponte para o cardápio impresso (bem reto e com luz). O app <b>escaneia</b> nomes, preços e categorias e <b>monta o cardápio de venda</b> na hora. Os valores você ajusta depois em <b>🛒 Vender → ✏️ Editar</b>.</p>
@@ -674,12 +696,12 @@ function desenharFolha(){
 }
 async function confirmarVenda(extra){
   const total=totalCarrinho();if(!total||!folha||!folha.pg)return;
-  const lista=Object.entries(carrinho).map(([id,q])=>{const i=itens.find(x=>x.id===id);return i?{i:id,n:i.n,p:i.p,q}:null}).filter(Boolean);
+  const lista=Object.entries(carrinho).map(([id,q])=>{const i=itemDe(id);return i?(i.av?{n:i.n,p:i.p,q,av:1}:{i:id,n:i.n,p:i.p,q}):null}).filter(Boolean);
   const t=Date.now(),v={itens:lista,total:Math.round(total*100)/100,pg:folha.pg,noite:noiteDe(t),t,quem:(localStorage.getItem('bar-nome')||'').trim()};
   if(folha.via)v.via=folha.via;
   if(extra&&extra.mp)v.mp=extra.mp;
   if(folha.pg==='dinheiro'&&nv(folha.recebido)){v.recebido=nv(folha.recebido);v.troco=Math.round((v.recebido-total)*100)/100}
-  try{await db.collection('vendas').add(v);carrinho={};folha=null;mpCob=null;desenharFolha();ver=noiteDe(Date.now());toast('✅ Venda de '+R(v.total)+' registrada'+(v.troco?' · troco '+R(v.troco):''));draw()}
+  try{await db.collection('vendas').add(v);carrinho={};avulsos={};folha=null;mpCob=null;desenharFolha();ver=noiteDe(Date.now());toast('✅ Venda de '+R(v.total)+' registrada'+(v.troco?' · troco '+R(v.troco):''));draw()}
   catch(e){toast('Não consegui salvar a venda: '+(e.message||e))}
 }
 
@@ -863,7 +885,11 @@ document.addEventListener('click',async ev=>{
   if(d.add){carrinho[d.add]=(carrinho[d.add]||0)+1;if(navigator.vibrate)navigator.vibrate(15);draw();return}
   if(d.mais){carrinho[d.mais]++;desenharCarrinho();draw();return}
   if(d.menos){if(--carrinho[d.menos]<=0)delete carrinho[d.menos];draw();return}
-  if(b.id==='limpar'){carrinho={};draw();return}
+  if(b.id==='limpar'){carrinho={};avulsos={};draw();return}
+  if(b.id==='avBtn'){avAberto=!avAberto;draw();if(avAberto)setTimeout(()=>{const e=$('#avV');if(e)e.focus()},50);return}
+  if(d.avq){const e=$('#avV');if(e){e.value=d.avq;e.focus()}return}
+  if(b.id==='avOk'){const p=nv($('#avV').value),n=($('#avN').value||'').trim().slice(0,40)||'Avulso';if(!(p>0)){toast('Digite o valor');$('#avV').focus();return}
+    const id='av_'+Date.now().toString(36);avulsos[id]={id,n,p,av:1};carrinho[id]=1;avAberto=false;if(navigator.vibrate)navigator.vibrate(15);toast('➕ '+n+' '+R(p)+' no carrinho');draw();return}
   if(b.id==='cobrar'){abrirCobranca();return}
   if(b.id==='fFechar'){if(mpCob&&(mpCob.estado==='OPEN'||mpCob.estado==='enviando')){toast('Cancele a cobrança na maquininha antes de fechar');return}folha=null;mpCob=null;desenharFolha();return}
   if(b.id==='mpEnviar'){mpCobrar();return}

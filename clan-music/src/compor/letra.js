@@ -1,6 +1,6 @@
 // Sugestões de letra por regras (offline, grátis). Não é IA de linguagem: combina modelos de verso, rimas e o vocabulário do tema.
 // Tudo é sugestão: nada entra na letra sem o usuário pedir.
-import { SM, SF, INF, ADJ, TEMAS, MOD, IMAGENS } from './dic.js';
+import { SM, SF, INF, ADJ, TEMAS, MOD, IMAGENS, NEG, POS } from './dic.js';
 import { chave, silabas, rimam, ultimaPalavra, palavrasDeTexto } from './rimas.js';
 
 export const ESQUEMAS = { AABB: 'AABB (pares)', ABAB: 'ABAB (alternado)', ABCB: 'ABCB (só 2º e 4º rimam)' };
@@ -12,9 +12,11 @@ const ucf = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const art = (w, g) => ({ o: (g === 'f' ? 'a ' : 'o ') + w, em: (g === 'f' ? 'na ' : 'no ') + w, de: (g === 'f' ? 'da ' : 'do ') + w, com: (g === 'f' ? 'com a ' : 'com o ') + w });
 const ENTR = [...SM.map((p) => ({ p, t: 'n', g: 'm' })), ...SF.filter((p) => !SM.includes(p)).map((p) => ({ p, t: 'n', g: 'f' })), ...INF.map((p) => ({ p, t: 'v' })), ...ADJ.map((p) => ({ p, t: 'a' }))];
 function linhaCom(e, r, usados) {
-  const ms = e.t === 'n' ? MOD.n : MOD[e.t], ord = emb(ms.map((_, i) => i), r);
-  for (const i of ord) { if (usados.has(e.t + i) && ord.length > 2 && usados.size < ms.length) continue; usados.add(e.t + i); const t = ms[i]; const s = ucf(e.t === 'n' ? (() => { const a = art(e.p, e.g), f = t.toString(); const out = t(a); return out; })() : t(e.p)); return s; }
-  return ucf(ms[0](e.t === 'n' ? art(e.p, e.g) : e.p));
+  const ms = MOD[e.t], tipo = e.t, pesada = NEG.has(e.p);
+  let ord = emb(ms.map((_, i) => i), r).filter((i) => !(pesada && POS[tipo] && POS[tipo].includes(i)));
+  if (!ord.length) ord = ms.map((_, i) => i).filter((i) => !(POS[tipo] || []).includes(i));
+  const livre = ord.filter((i) => !usados.has(tipo + i)), i = (livre.length ? livre : ord)[0] ?? 0; usados.add(tipo + i);
+  return ucf(tipo === 'n' ? ms[i](art(e.p, e.g)) : ms[i](e.p));
 }
 const peso = (e, tema) => (TEMAS[tema] && TEMAS[tema].p.includes(e.p) ? 5 : 1);
 function grupoRima(tema, r, fora = new Set()) {

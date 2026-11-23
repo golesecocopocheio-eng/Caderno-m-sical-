@@ -227,6 +227,7 @@ h2.sec{font:700 18px var(--ui);margin:20px 2px 8px}
 .anah{font-size:17px;margin:18px 0 6px}.anach{display:flex;flex-wrap:wrap;gap:6px}.anach span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700;font-size:17px;min-width:44px;text-align:center}.anach span.lo{opacity:.45}
 #anasheet .stack{display:flex;flex-direction:column;gap:10px;margin-top:18px}#anasheet .stack button{min-height:50px;font-size:16px}
 #anasheet svg.i{width:24px;height:24px;vertical-align:-5px;margin-right:6px}
+.bdc{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:16px;font-weight:600;min-height:48px}.bdc input{width:22px;height:22px}
 </style>
 </head>
 <body>
@@ -641,7 +642,7 @@ function anaMono(s,pred,R0){const T=s.audios.filter(a=>mx.buf[a.id]&&!a.mute&&(!
  len=Math.min(len,R*600);const y=new Float32Array(len);parts.forEach(p=>{for(let i=0;i<p.o.length&&p.off+i<len;i++)y[p.off+i]+=p.o[i]*p.g});return{y,R}}
 function anaBpm(y,R){const H=256,W=1024,n=Math.floor((y.length-W)/H);if(n<96)return null;const e=new Float32Array(n);
  for(let i=0;i<n;i++){let t=0;for(let k=0;k<W;k+=2){const v=y[i*H+k];t+=v*v}e[i]=Math.sqrt(t/(W/2))}
- const fl=new Float32Array(n);let mu=0;for(let i=1;i<n;i++){fl[i]=Math.max(0,e[i]-e[i-1]);mu+=fl[i]}mu/=n;for(let i=0;i<n;i++)fl[i]=Math.max(0,fl[i]-mu);
+ const fl=new Float32Array(n);let mu=0;for(let i=1;i<n;i++){fl[i]=Math.sqrt(Math.max(0,e[i]-e[i-1]));mu+=fl[i]}mu/=n;for(let i=0;i<n;i++)fl[i]=Math.max(0,fl[i]-mu);
  let a0=0;for(let i=0;i<n;i++)a0+=fl[i]*fl[i];if(a0<1e-9)return null;const fps=R/H,lo=Math.floor(fps*60/200),hi=Math.ceil(fps*60/60),ac=new Float32Array(hi+2);
  for(let l=lo-1;l<=hi+1;l++){let t=0;for(let i=l;i<n;i++)t+=fl[i]*fl[i-l];ac[l]=t/a0*(n/(n-l))}
  let best=-1,bl=0;for(let l=lo;l<=hi;l++){const bpm=60*fps/l,w=Math.exp(-.5*Math.pow(Math.log2(bpm/110)/.9,2)),v=ac[l]*w;if(ac[l]>=ac[l-1]&&ac[l]>=ac[l+1]&&v>best){best=v;bl=l}}
@@ -753,6 +754,58 @@ function trOpen(){const d=daw,s=d&&d.s;if(!s)return;if(d.recording)return toast(
     g.textContent='Transcrever de novo';g.disabled=false;paintUso()}
    catch(e){g.disabled=false;g.textContent='Transcrever agora';r.innerHTML=`<p class="hint">${esc(e&&e.message&&e.message!=='Failed to fetch'?e.message:'Não consegui falar com o servidor. Confira a internet e o endereço.')}</p>`}}};
  const paintUso=()=>{const c=iaCfg(),l=c.lim==null?1:+c.lim,e=$('#truso');if(e)e.textContent='Gasto neste mês: '+usd(iaUso().mes)+' de '+usd(l)+' (limite seu).'};paint()}
+/* ===== Minha banda: faixas separadas geradas no aparelho (sons sintetizados, sem custo) ===== */
+const BD_INST={baixo:{n:'Baixo',lane:'baixo'},bateria:{n:'Bateria',lane:'bateria'},teclado:{n:'Teclado (órgão)',lane:'teclado'},guitarra:{n:'Guitarra',lane:'violao'},perc:{n:'Percussão',lane:'outro'}};
+const BD_EST={reggae:'Reggae (one drop)',rock:'Rock',pop:'Pop'};
+const bdNote=m=>440*Math.pow(2,(m-69)/12);
+function bdChords(s,bars,barDur){const A=((s.ana&&s.ana.chords)||[]).filter(c=>!c.silent&&/^[A-G][#b]?m?$/.test(c.name)),out=[];
+ const k=idx(s.key||'C')<0?0:idx(s.key||'C'),min=s.mode==='m',prog=min?[[0,'m'],[8,'M'],[3,'M'],[7,'M']]:[[0,'M'],[9,'m'],[5,'M'],[7,'M']];
+ for(let b=0;b<bars;b++){const t=b*barDur;let c=null;if(A.length){for(const x of A){if(x.t<=t+.05)c=x;else break}if(!c)c=A[0]}
+  if(c){const m=/^([A-G][#b]?)(m?)$/.exec(c.name);out.push({r:idx(m[1]),m:m[2]?'m':'M'})}else{const p=prog[b%4];out.push({r:(k+p[0])%12,m:p[1]})}}
+ return out}
+function bdPatterns(st,ins){
+ const P={baixo:{reggae:[[0,4,0],[6,2,0],[8,4,7],[12,3,0]],rock:[0,2,4,6,8,10,12,14].map(x=>[x,2,0]),pop:[[0,3,0],[4,3,0],[8,3,7],[10,2,0],[12,3,0]]},
+  teclado:{reggae:[2,6,10,14].map(x=>[x,2]),rock:[[0,16]],pop:[[0,6],[6,2],[8,6],[14,2]]},
+  guitarra:{reggae:[2,6,10,14].map(x=>[x,1]),rock:[0,2,4,6,8,10,12,14].map(x=>[x,2]),pop:[[0,2],[3,1],[6,2],[8,2],[11,1],[14,2]]}};
+ return(P[ins]||{})[st]||[]}
+async function bdRender(s,ins,st,dur,onP){const sr=44100,spb=60/(s.bpm||90),sp=spb/4,barDur=spb*4,bars=Math.max(2,Math.ceil(dur/barDur)),len=bars*barDur,oc=new OfflineAudioContext(2,Math.ceil(len*sr),sr),m=oc.createGain();m.gain.value=.8;m.connect(oc.destination);
+ const noise=oc.createBuffer(1,sr,sr),nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+ const ch=bdChords(s,bars,barDur);
+ const tone=(t,d,f,o)=>{o=o||{};const os=oc.createOscillator(),g=oc.createGain(),fl=oc.createBiquadFilter();os.type=o.type||'sine';os.frequency.value=f;fl.type='lowpass';fl.frequency.value=o.lp||4000;
+  const a=o.att||.005,pk=o.g||.3;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+a);g.gain.setValueAtTime(pk,t+Math.max(a,d-(o.rel||.05)));g.gain.linearRampToValueAtTime(0,t+d+.02);os.connect(fl);fl.connect(g);g.connect(m);os.start(t);os.stop(t+d+.05)};
+ const nz=(t,d,hp,gv,bp)=>{const sc=oc.createBufferSource(),g=oc.createGain(),fl=oc.createBiquadFilter();sc.buffer=noise;sc.loop=true;fl.type=bp?'bandpass':'highpass';fl.frequency.value=hp;g.gain.setValueAtTime(gv,t);g.gain.exponentialRampToValueAtTime(.001,t+d);sc.connect(fl);fl.connect(g);g.connect(m);sc.start(t);sc.stop(t+d+.02)};
+ const kick=t=>{const os=oc.createOscillator(),g=oc.createGain();os.frequency.setValueAtTime(150,t);os.frequency.exponentialRampToValueAtTime(45,t+.12);g.gain.setValueAtTime(.95,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);os.connect(g);g.connect(m);os.start(t);os.stop(t+.32)};
+ const snare=t=>{nz(t,.18,1200,.5);tone(t,.12,190,{type:'triangle',g:.35,att:.001,rel:.1})};
+ const conga=(t,hi)=>{const os=oc.createOscillator(),g=oc.createGain();os.frequency.setValueAtTime(hi?420:290,t);os.frequency.exponentialRampToValueAtTime(hi?300:200,t+.1);g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);os.connect(g);g.connect(m);os.start(t);os.stop(t+.25)};
+ const tri=(c)=>[c.r,c.r+(c.m==='m'?3:4),c.r+7];
+ for(let b=0;b<bars;b++){const c=ch[b],t0=b*barDur;
+  if(ins==='baixo')for(const[x,l,o]of bdPatterns(st,'baixo')){const mid=36+((c.r+o)%12)+(c.r+o>=12?0:0);tone(t0+x*sp,Math.max(.08,l*sp*.92),bdNote(mid),{type:'triangle',g:.65,lp:700,att:.01,rel:.06})}
+  else if(ins==='bateria'){for(let x=0;x<16;x++){const t=t0+x*sp;
+    if(st==='reggae'){if(x===8){kick(t);snare(t)}if(x%2===0)nz(t,.04,7000,.18)}
+    else if(st==='rock'){if(x===0||x===8||x===10)kick(t);if(x===4||x===12)snare(t);if(x%2===0)nz(t,.05,7000,.2)}
+    else{if(x%4===0)kick(t);if(x===4||x===12)snare(t);if(x%4===2)nz(t,.14,7000,.22)}}}
+  else if(ins==='teclado')for(const[x,l]of bdPatterns(st,'teclado')){const d=Math.max(.08,l*sp*.9),ns=tri(c);ns.forEach(n=>{const f=bdNote(60+(n%12));[1,2,3,4].forEach((h,i)=>tone(t0+x*sp,d,f*h,{type:'sine',g:.07/(i+1)*(i?1.4:1),lp:5000,att:.006,rel:.04}))})}
+  else if(ins==='guitarra')for(const[x,l]of bdPatterns(st,'guitarra')){const d=Math.max(.05,l*sp*.85),ns=st==='rock'?[c.r,c.r+7,c.r+12]:tri(c);ns.forEach(n=>tone(t0+x*sp,d,bdNote(52+((n%12+12)%12)),{type:st==='rock'?'sawtooth':'square',g:st==='rock'?.09:.07,lp:st==='rock'?1800:2600,att:.002,rel:.03}))}
+  else if(ins==='perc')for(let x=0;x<16;x+=2){const t=t0+x*sp;nz(t,.05,5500,.2,true);if(st==='reggae'&&(x===6||x===14))conga(t,x===14);if(st!=='reggae'&&x%4===2)conga(t,true)}
+  if(b%4===0&&onP){onP(b/bars);await anaWait()}}
+ const r=await oc.startRendering();let pk=0;for(let c=0;c<2;c++){const d=r.getChannelData(c);for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]))}
+ if(pk>0){const g=.85/pk;for(let c=0;c<2;c++){const d=r.getChannelData(c);for(let i=0;i<d.length;i++)d[i]*=g}}return r}
+function bdOpen(){const d=daw,s=d&&d.s;if(!s)return;if(d.recording)return toast('Pare a gravação antes.');mixStop();
+ const dur=Math.min(300,Math.max(8,...s.audios.filter(a=>mx.buf[a.id]).map(a=>mx.buf[a.id].duration+(a.off||0)/1000)));
+ const sh=document.createElement('div');sh.id='bdsheet';sh.className='sheet';sh.style.zIndex=70;
+ const hasA=!!(s.ana&&s.ana.chords&&s.ana.chords.length),k=(s.key||'C')+(s.mode==='m'?'m':'');
+ sh.innerHTML=`<div class="shin"><div class="row"><h2 style="flex:1;margin:0;font-size:20px">${IC.wand} Minha banda</h2><button id="bdx" style="flex:0 0 auto">✕ Fechar</button></div>
+ <p class="hint">Cria uma faixa para cada instrumento, no andamento (<b>${s.bpm||90} BPM</b>) e no tom (<b>${esc(k)}</b>) da música. ${hasA?'Segue os acordes da análise.':'Sem análise, usa uma sequência simples de acordes no seu tom. Toque em Analisar antes para seguir os acordes reais.'}</p>
+ <h3 class="anah">Instrumentos</h3><div class="anach" id="bdi">${Object.entries(BD_INST).map(([k2,v])=>`<label class="bdc"><input type="checkbox" value="${k2}" ${k2==='baixo'||k2==='bateria'?'checked':''}> ${v.n}</label>`).join('')}</div>
+ <label class="sel" style="margin-top:12px"><span>Estilo</span><select id="bde">${Object.entries(BD_EST).map(([k2,v])=>`<option value="${k2}">${v}</option>`).join('')}</select></label>
+ <div class="stack"><button class="pri" id="bdg">Criar faixas</button></div><p class="hint" id="bdp"></p>
+ <p class="hint">Os sons são sintetizados aqui no aparelho, sem custo. Servem de base para você tocar e cantar por cima: não imitam uma banda de verdade. Cada instrumento vira uma faixa separada, e as suas gravações não são mexidas. Para timbres reais seria preciso um serviço de IA pago.</p></div>`;document.body.appendChild(sh);
+ $('#bdx').onclick=()=>sh.remove();
+ $('#bdg').onclick=async()=>{const L=[...sh.querySelectorAll('#bdi input:checked')].map(x=>x.value);if(!L.length)return toast('Escolha pelo menos um instrumento.');const st=$('#bde').value,g=$('#bdg'),p=$('#bdp');g.disabled=true;
+  try{dawSnap();for(let i=0;i<L.length;i++){const ins=L[i];p.textContent='Criando '+BD_INST[ins].n+' ('+(i+1)+' de '+L.length+')…';const r=await bdRender(s,ins,st,dur);
+    s.audios.push({id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'arquivo',inst:BD_INST[ins].lane,name:BD_INST[ins].n+' ('+BD_EST[st].split(' ')[0]+')',blob:wav(r),vol:.8,off:0})}
+   s.upd=Date.now();save(s);put(s);await loadBufs(s);dawRender();p.textContent='Pronto: '+L.length+' faixa(s) nova(s) no Mixer. Toque em tocar para ouvir.';toast('Faixas da banda criadas')}
+  catch(e){p.textContent='Não consegui criar as faixas neste aparelho.'}g.disabled=false}}
 async function dawNoise(){const d=daw,s=d.s,a=s.audios.find(x=>x.id===d.sel),b=a&&mx.buf[a.id];if(!b)return;const bt=$('#dsn');if(bt){bt.disabled=true;bt.textContent='Limpando…'}mixStop();
  try{const ac=AC(),nb=ac.createBuffer(b.numberOfChannels,b.length,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++){const out=await denoise(b.getChannelData(c),.6,v=>{if(bt&&daw===d)bt.textContent='Limpando '+Math.round((c+v)/b.numberOfChannels*100)+'%'});nb.copyToChannel(out,c)}
   dawSnap();const n={...a,id:'a'+Date.now()+Math.random().toString(36).slice(2,5),tipo:'limpo',name:a.name+' (sem ruído)',blob:wav(nb)};delete n._p;s.audios.splice(s.audios.indexOf(a)+1,0,n);d.sel=n.id;save(s);put(s);await loadBufs(s);dawRender();toast('Faixa sem ruído criada. A original foi mantida.')}
@@ -825,7 +878,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  const e=document.createElement('div');e.id='daw';e.className='sheet daw';
  e.innerHTML=`<div class="dh"><button id="dx" class="rb sm" aria-label="Fechar o estúdio">${IC.x}</button><div class="dti"><b>${esc(s.title||'Sem título')}</b><small id="dtm">0:00.0 / 0:00.0</small></div><div class="lvl" id="dvu" aria-label="Nível do microfone"><i></i></div></div>
  <div class="dt"><div class="tr"><button id="dhome" class="rb" aria-label="Voltar ao início">${IC.rew}</button><button id="dplay" class="rb pl" aria-label="Tocar">${IC.play}</button><button id="drecb" class="rcb">${IC.rec} Gravar</button></div>
- <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dana">${IC.wand} Analisar</button><button id="dtr">${IC.notes} Transcrever letra</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
+ <div class="dchips" role="toolbar" aria-label="Ferramentas"><button class="tg" id="dmet">${IC.metro} Metrônomo</button><button class="tg on" id="dcnt">${IC.wave} Contagem</button><label class="bpm">BPM<input type="number" id="dbpm" min="40" max="220" value="${s.bpm}" aria-label="BPM"></label><button class="tg" id="dlp">${IC.loop} Repetir</button><button id="dun">${IC.undo} Desfazer</button><button id="dimp">${IC.plus} Importar áudio</button><button id="dana">${IC.wand} Analisar</button><button id="dtr">${IC.notes} Transcrever letra</button><button id="dbd">${IC.plus} Minha banda</button><button id="dbl">${IC.ext} Enviar ao BandLab</button><button class="pri" id="drx">${IC.wand} Remix auto</button><button id="dzo" aria-label="Menos zoom">${IC.zout}</button><button id="dzi" aria-label="Mais zoom">${IC.zin}</button><input type="file" id="dimpf" accept="audio/*" multiple hidden></div></div>
  <details class="dly" id="dly" ${(s.letra||s.ouvido||'').trim()?'open':''}><summary>${IC.notes} Letra <button id="dlye" class="mini" type="button">Editar</button></summary><div id="dlyv" class="dlyv"></div><div id="dlvi" class="dlvi" aria-live="polite"></div><textarea id="dlyt" class="dlyt" hidden placeholder="Cole ou escreva a letra aqui"></textarea></details>
  <div class="dbody" id="dbody"><div class="dleft" id="dleft"></div><div class="dright" id="dscr"><div class="dinner" id="dinner"></div></div></div>
  <div class="dsel" id="dsel"></div>`;
@@ -839,7 +892,7 @@ async function openDaw(s){if(!s)return;if(rec&&rec.state==='recording')return to
  $('#dbl').onclick=async()=>{const fl=s.audios.filter(x=>x.blob&&x.blob.size).map(x=>{const t=x.blob.type||'audio/webm',ex=/wav/.test(t)?'wav':/mp4|aac|m4a/.test(t)?'m4a':/mpeg|mp3/.test(t)?'mp3':/ogg/.test(t)?'ogg':'webm';return new File([x.blob],((s.title||'musica')+' - '+(x.name||'faixa')).replace(/[^\w\- ]+/g,'').trim().slice(0,60)+'.'+ex,{type:t})});if(!fl.length)return toast('Grave ou importe uma faixa primeiro.');
   if(navigator.canShare&&navigator.canShare({files:fl})){try{await navigator.share({files:fl,title:s.title||'Música'});toast('Escolha o BandLab na lista de apps.')}catch(x){}}
   else{fl.forEach((f,i)=>setTimeout(()=>{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)},i*500));toast('Arquivos baixados. No BandLab, importe-os no estúdio.');openExt('https://www.bandlab.com/')}};
- $('#dana').onclick=anaOpen;$('#dtr').onclick=trOpen; $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
+ $('#dana').onclick=anaOpen;$('#dtr').onclick=trOpen;$('#dbd').onclick=bdOpen; $('#dun').onclick=dawUndo;$('#drx').onclick=dawRemix;$('#dlp').onclick=()=>{daw.loop=!daw.loop;$('#dlp').classList.toggle('on',daw.loop)};
  $('#dzo').onclick=()=>zoom(.7);$('#dzi').onclick=()=>zoom(1.4);
  const lyrOf=()=>(s.letra||'').trim()?s.letra:(s.ouvido||'');
  daw.lyr=null;const lyrDraw=()=>{const v=$('#dlyv');if(!v)return;const L=lyrOf(s).split('\n');let n=0;daw.lyr=L.map(t=>{const x=t.trim(),h=/^\[.*\]$/.test(x)||/^(intro|verso|pr[eé]-refr[aã]o|refr[aã]o|ponte|final)\s*\d*:?$/i.test(x),on=!!x&&!h;return {t:x,h,on,i:on?n++:-1}});daw.nl=n;daw.cl=-2;

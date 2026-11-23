@@ -18,7 +18,7 @@ export async function telaEstudio(id) {
   if (!p) return '<main class="tela"><div class="vazio"><p><b>Não achei esse projeto.</b></p><button id="voltar">Voltar</button></div></main>';
   return `<main class="tela"><button id="voltar" style="min-height:44px">← ${esc(p.titulo)}</button><h1>Estúdio</h1><div id="est"><p class="mute">Carregando as faixas…</p></div></main>`;
 }
-export function ligarEscolher(ctx) { document.querySelectorAll('[data-es]').forEach((b) => (b.onclick = () => ctx.ir('/estudio/' + b.dataset.es))); }
+export function ligarEscolher(ctx) { document.querySelectorAll('[data-es]').forEach((b) => (b.onclick = () => ctx.ir('/estudio/' + b.dataset.es + (ctx.q && ctx.q.foco ? '?foco=' + ctx.q.foco : '')))); }
 
 const fmtOff = (ms) => (ms >= 0 ? '+' : '−') + (Math.abs(ms) / 1000).toFixed(1).replace('.', ',') + ' s';
 export async function ligarEstudio(ctx, p) {
@@ -37,6 +37,7 @@ export async function ligarEstudio(ctx, p) {
     <div style="display:flex;gap:8px;align-items:center"><span class="mute peq">Começa em</span><button data-o="-100" aria-label="Adiantar 0,1 segundo">−0,1</button><b data-ov style="min-width:70px;text-align:center">${fmtOff(x.f.off || 0)}</b><button data-o="100" aria-label="Atrasar 0,1 segundo">+0,1</button></div></div>`).join('')}</div>
   <h2>Fechar a mixagem</h2><label class="linha"><input type="checkbox" id="nm" checked style="width:24px;min-height:24px"> <span>Normalizar o volume final</span></label>
   <button class="ouro cta" id="ex" style="margin-top:10px">Exportar mixagem (WAV)</button><p class="mute peq" id="exm">O arquivo sai em WAV, sem perda de qualidade. As faixas originais não são alteradas.</p>`;
+  if (ctx.q && ctx.q.foco === 'exportar') setTimeout(() => { const e = $('#ex'); if (e) e.scrollIntoView({ block: 'center' }); }, 60);
   const tempo = () => { if (!E) return 0; if (!E.tocando) return E.pos; return Math.min(total(), E.pos + (contexto().currentTime - E.t0)); };
   const pinta = () => { if (!E) return; const t = tempo(); $('#tp').textContent = mmss(t) + ' / ' + mmss(total()); $('#sk').value = Math.round(t / total() * 1000); if (E.tocando) { if (t >= total()) { E.pos = 0; parar(); $('#tp').textContent = '0:00 / ' + mmss(total()); $('#sk').value = 0; return; } E.raf = requestAnimationFrame(pinta); } };
   const tocar = async (de) => { const ac = contexto(); if (ac.state === 'suspended') await ac.resume(); if (E.m) E.m.fim(); E.m = montar(ac, E.fx, E.mestre, de); E.pos = de; E.t0 = E.m.t0; E.tocando = true; $('#pl').textContent = '⏸ Pausar'; cancelAnimationFrame(E.raf); pinta(); };

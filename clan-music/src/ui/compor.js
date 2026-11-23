@@ -24,11 +24,11 @@ export async function telaCompor(id) {
   if (!p) return '<main class="tela"><div class="vazio"><p><b>Não achei esse projeto.</b></p><button id="voltar">Voltar</button></div></main>';
   return `<main class="tela"><button id="voltar" style="min-height:44px">← ${esc(p.titulo)}</button><h1>Compositor</h1><p class="mute peq">Nada é trocado na sua letra sem você pedir, e tudo fica no histórico. As sugestões vêm de regras e vocabulário do próprio app (sem internet): são ponto de partida, não texto pronto.</p><div id="cp"><p class="mute">Carregando…</p></div></main>`;
 }
-export function ligarEscolher(ctx) { document.querySelectorAll('[data-cp]').forEach((b) => (b.onclick = () => ctx.ir('/compor/' + b.dataset.cp))); }
+export function ligarEscolher(ctx) { document.querySelectorAll('[data-cp]').forEach((b) => (b.onclick = () => ctx.ir('/compor/' + b.dataset.cp + (ctx.q && ctx.q.aba ? '?aba=' + ctx.q.aba : '')))); }
 
 export async function ligarCompor(ctx, p0) {
   $('#voltar').onclick = () => ctx.ir('/projeto/' + p0.id);
-  aba = 'letra'; let p = await preparar(p0.id); const id = p.id; let C = { estilo: 'pop', tema: null, esquema: 'AABB', rascunho: '', ...(p.compo || {}) };
+  aba = ['letra', 'rimas', 'estrutura', 'harmonia', 'versoes'].includes(ctx.q && ctx.q.aba) ? ctx.q.aba : 'letra'; let p = await preparar(p0.id); const id = p.id; let C = { estilo: 'pop', tema: null, esquema: 'AABB', rascunho: '', ...(p.compo || {}) };
   const recarrega = async () => { p = await obter(id); return p; };
   const salvaC = debounce(async () => { const q = await obter(id); if (!q) return; q.compo = C; await salvar(q); }, 400);
   const mexe = async (fn) => { const q = await obter(id); fn(q); await salvar(q); p = q; return q; };

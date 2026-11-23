@@ -1,11 +1,14 @@
 import { $, esc, aviso } from './util.js';
 import { Gravador, erroAmigavel } from '../audio/gravador.js';
 import { decodificar, picos, paraWav, mmss } from '../audio/wav.js';
+import { iniciarLegenda, legendaDisponivel } from '../audio/legenda.js';
+import { adicionarAoFim } from '../compor/versoes.js';
 import { listar, obter, salvar, novoProjeto, obterMidia, adicionarFaixa, removerFaixa, salvarPedaco, pedacosPendentes, apagarRascunho } from '../dados/banco.js';
 
 const MODOS = [['voz', 'Cantar'], ['cantarolar', 'Cantarolar'], ['violao', 'Violão'], ['instrumento', 'Instrumento']];
 const NOME = { voz: 'Voz', cantarolar: 'Cantarolar', violao: 'Violão', instrumento: 'Instrumento' };
-let rec = null, fila = Promise.resolve(), modo = 'voz', rid = null, barras = [], ultimo = 0;
+let rec = null, fila = Promise.resolve(), modo = 'voz', rid = null, barras = [], ultimo = 0, leg = null, legPid = null;
+async function fechaLegenda() { if (!leg) return []; const l = leg.parar(); leg = null; const pid = legPid; if (l.length && pid) { const q = await obter(pid); if (q) { q.ouvido = (q.ouvido ? q.ouvido.replace(/\s+$/, '') + '\n' : '') + l.join('\n'); await salvar(q); } } return l; }
 
 export const gravando = () => !!(rec && rec.estado !== 'parado');
 
@@ -35,6 +38,8 @@ export async function telaGravar(id) {
   <canvas id="onda" aria-label="Forma de onda ao vivo"></canvas>
   <div class="tempo" id="tempo">0:00</div>
   <div class="medidor" aria-hidden="true"><i id="nv"></i></div><p class="peq mute" id="alerta" style="min-height:20px;text-align:center"></p>
+  ${legendaDisponivel() ? `<label class="linha" style="justify-content:center"><input type="checkbox" id="leg-on" checked style="width:24px;min-height:24px"> <span>Escrever a letra enquanto eu canto</span></label>` : ''}
+  <div id="leg" class="card" aria-live="polite" hidden style="margin:8px 0"></div>
   <div class="gcontrole"><button id="pau" disabled>Pausar</button><button id="rec" class="grande" aria-label="Gravar"><span></span></button><button id="imp">Importar áudio</button></div>
   <p class="mute peq" id="msg" style="text-align:center">Toque no botão vermelho para gravar.</p>
   <input type="file" id="impf" accept="audio/*" multiple hidden>
@@ -70,9 +75,12 @@ export function ligarGravar(ctx, p) {
   const rb = $('#rec'), pb = $('#pau'), msg = $('#msg'), tempo = $('#tempo');
   document.querySelectorAll('[data-modo]').forEach((b) => (b.onclick = () => { if (gravando()) return aviso('Pare a gravação para trocar.'); modo = b.dataset.modo; document.querySelectorAll('[data-modo]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); }));
   const estado = (e) => { rb.classList.toggle('on', e !== 'parado'); rb.setAttribute('aria-label', e === 'parado' ? 'Gravar' : 'Parar'); pb.disabled = e === 'parado'; pb.textContent = e === 'pausado' ? 'Continuar' : 'Pausar'; };
+  const ligaLegenda = () => { const on = $('#leg-on'); if (!on || !on.checked || !['voz', 'cantarolar'].includes(modo) || leg) return; const box = $('#leg'); legPid = p.id; box.hidden = false; box.textContent = 'Ouvindo…'; leg = iniciarLegenda({ aoTexto: (ls, parc) => { box.textContent = [...ls.slice(-3), parc].filter(Boolean).join('\n') || 'Ouvindo…'; }, aoErro: (m) => { box.textContent = m; } }); };
+  const mostraTexto = (ls) => { const box = $('#leg'); if (!box) return; box.hidden = false; box.innerHTML = `<b>Letra ouvida (${ls.length} linha${ls.length > 1 ? 's' : ''})</b><pre style="white-space:pre-wrap;font:inherit;margin:6px 0">${esc(ls.join('\n'))}</pre><button id="leg-add" class="ouro">Levar para a letra</button><p class="mute peq">Já ficou guardado no rascunho do projeto. Se levar para a letra, dá para desfazer em Compositor › Versões.</p>`; $('#leg-add').onclick = async () => { await adicionarAoFim(p.id, ls.join('\n'), 'Letra ouvida ao gravar'); $('#leg-add').disabled = true; aviso('Levado para a letra. Dá para desfazer em Versões.'); }; };
   const terminar = async (aviso2) => {
     if (!rec) return; const g = rec, r = rid; rec = null; estado('parado');
-    const cru = await g.parar(); await fila;
+    const textoLeg = await fechaLegenda(); const cru = await g.parar(); await fila;
+    if (textoLeg.length) mostraTexto(textoLeg);
     if (cru.blob.size < 200) { await apagarRascunho(r); msg.textContent = 'Não gravou nada. Tente de novo.'; return; }
     msg.textContent = 'Salvando…'; const { blob, dur } = await finalizar(cru.blob, cru.dur);
     const f = await adicionarFaixa(p.id, blob, { nome: await proximoNome(p.id, modo), inst: modo, tipo: 'gravacao', dur });
@@ -87,10 +95,10 @@ export function ligarGravar(ctx, p) {
         pedaco: (b, n) => { fila = fila.then(() => salvarPedaco(rid, n, b, { projetoId: p.id, inst, mime: b.type, em: Date.now() })).catch(() => {}); },
         erro: (m) => { aviso(m); terminar('Gravação interrompida, mas guardada.'); },
       });
-      await rec.iniciar(); estado('gravando'); msg.textContent = 'Gravando… cada trecho é salvo na hora.';
+      await rec.iniciar(); estado('gravando'); msg.textContent = 'Gravando… cada trecho é salvo na hora.'; ligaLegenda();
     } catch (e) { rec = null; estado('parado'); msg.textContent = erroAmigavel(e); aviso(erroAmigavel(e)); }
   };
-  pb.onclick = () => { if (!rec) return; if (rec.estado === 'gravando') { rec.pausar(); estado('pausado'); msg.textContent = 'Pausado.'; } else { rec.continuar(); estado('gravando'); msg.textContent = 'Gravando…'; } };
+  pb.onclick = () => { if (!rec) return; if (rec.estado === 'gravando') { rec.pausar(); fechaLegenda(); estado('pausado'); msg.textContent = 'Pausado.'; } else { rec.continuar(); estado('gravando'); msg.textContent = 'Gravando…'; ligaLegenda(); } };
   $('#imp').onclick = () => $('#impf').click();
   $('#impf').onchange = async (e) => {
     const fs = [...e.target.files]; e.target.value = ''; let n = 0;

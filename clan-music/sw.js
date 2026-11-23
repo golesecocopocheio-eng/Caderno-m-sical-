@@ -1,10 +1,10 @@
 // Funciona offline: usa a rede quando há internet e a cópia salva quando não há.
-const VERSAO = 'clan-studio-v8';
+const VERSAO = 'clan-studio-v9';
 const ARQUIVOS = [
   './', './index.html', './manifest.webmanifest', './icon.svg',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png',
   './fonts/bricolage-grotesque-latin-wght-normal.woff2', './fonts/jetbrains-mono-latin-400-normal.woff2', './fonts/jetbrains-mono-latin-700-normal.woff2',
-  './src/ui/tema.css', './src/main.js', './src/ui/telas.js', './src/dados/banco.js', './src/dados/backup.js', './src/dados/importar-antigo.js', './src/ui/util.js', './src/ui/gravar.js', './src/audio/gravador.js', './src/audio/wav.js', './src/ui/analise.js', './src/ui/estudio.js', './src/ui/banda.js', './src/ui/compor.js', './src/compor/dic.js', './src/compor/rimas.js', './src/compor/letra.js', './src/compor/harmonia.js', './src/compor/versoes.js', './src/ui/diagnostico.js', './src/banda/gerar.js', './src/audio/mix.js', './src/dados/entregar.js', './src/analise/dsp.js', './src/analise/analisar.js', './src/analise/worker.js',
+  './src/ui/tema.css', './src/main.js', './src/ui/telas.js', './src/dados/banco.js', './src/dados/backup.js', './src/dados/importar-antigo.js', './src/ui/util.js', './src/ui/gravar.js', './src/audio/gravador.js', './src/audio/wav.js', './src/ui/analise.js', './src/ui/estudio.js', './src/ui/banda.js', './src/ui/compor.js', './src/ui/separar.js', './src/ui/novidades.js', './src/ui/comeco.js', './src/separar/dsp.js', './src/separar/worker.js', './src/audio/legenda.js', './src/compor/dic.js', './src/compor/rimas.js', './src/compor/letra.js', './src/compor/harmonia.js', './src/compor/versoes.js', './src/ui/diagnostico.js', './src/banda/gerar.js', './src/audio/mix.js', './src/dados/entregar.js', './src/analise/dsp.js', './src/analise/analisar.js', './src/analise/worker.js',
 ];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {

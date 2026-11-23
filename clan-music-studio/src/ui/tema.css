@@ -1,0 +1,43 @@
+/* Identidade do Clan Music Studio: preto, ouro e roxo. */
+@font-face{font-family:"Bricolage";src:url(../../fonts/bricolage-grotesque-latin-wght-normal.woff2) format("woff2");font-weight:200 800;font-display:swap}
+@font-face{font-family:"JBMono";src:url(../../fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+:root{--bg:#09090B;--card:#151417;--card2:#1c1a20;--ink:#F6F1E4;--mute:#A39C8A;--line:#2A2619;--ouro:#F5C242;--ouro-t:#14110A;--roxo:#7C3AED;--rec:#FF6B70;--perigo:#FF8A80;--satmin:0px;--topo:max(env(safe-area-inset-top,0px),var(--satmin))}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage",system-ui,sans-serif;font-size:17px;line-height:1.4}
+body{min-height:100dvh;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;min-height:48px;border-radius:14px;border:1px solid var(--line);background:var(--card);padding:0 16px;font-weight:600}
+button:disabled{opacity:.45;cursor:default}
+button.ouro{background:var(--ouro);color:var(--ouro-t);border-color:transparent}
+button.perigo{color:var(--perigo)}
+input,textarea,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:48px}
+textarea{resize:vertical;line-height:1.5}
+:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
+.tela{max-width:560px;margin:0 auto;padding:calc(var(--topo) + 18px) 16px 24px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:19px;margin:22px 0 8px}
+p{margin:6px 0}.mute{color:var(--mute)}.peq{font-size:14px}
+.topo{background:radial-gradient(120% 140% at 85% -10%,rgba(124,58,237,.35),transparent 55%),linear-gradient(180deg,#14110A,var(--bg));border-bottom:1px solid var(--line);border-radius:0 0 26px 26px}
+.topo .tela{padding-bottom:20px}
+.marca{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px}
+.marca i{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FFE08A,var(--ouro) 55%,#B8860B);box-shadow:0 0 0 3px rgba(124,58,237,.55)}
+.cta{display:block;width:100%;min-height:72px;margin-top:18px;font-size:20px;font-weight:800;border-radius:20px}
+.grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.area{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;min-height:96px;padding:14px;border-radius:18px;background:var(--card)}
+.area b{font-size:16px}.area small{color:var(--mute);font-size:13px}
+.chip{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--card2);color:var(--mute);border:1px solid var(--line)}
+.chip.ok{background:rgba(245,194,66,.15);color:var(--ouro);border-color:rgba(245,194,66,.4)}
+.lista{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;text-align:left;min-height:64px;padding:12px 14px;border-radius:16px;width:100%}
+.item .t{flex:1;min-width:0}.item .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item .t small{color:var(--mute)}
+.item .tom{font-weight:800;color:var(--ouro);min-width:40px;text-align:center}
+.vazio{text-align:center;padding:36px 12px;color:var(--mute)}
+.campo{display:flex;flex-direction:column;gap:6px;margin:12px 0}.campo>span{font-size:14px;color:var(--mute)}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+nav.baixo{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;gap:4px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(9,9,11,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line)}
+nav.baixo button{flex:1;min-height:56px;border:0;background:transparent;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px}
+nav.baixo button.on{color:var(--ouro)}nav.baixo svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#aviso{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:88vw;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+#aviso.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}

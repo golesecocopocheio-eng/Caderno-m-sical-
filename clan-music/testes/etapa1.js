@@ -1,0 +1,32 @@
+// Teste da etapa 1: node testes/etapa1.js  (precisa do playwright instalado)
+const { chromium } = require('playwright'); const http = require('http'), fs = require('fs'), path = require('path');
+const raiz = path.join(__dirname, '..');
+const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
+const srv = http.createServer((q, r) => { const f = path.join(raiz, q.url === '/' ? 'index.html' : q.url.split('?')[0]); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); } else { r.writeHead(200, { 'content-type': tipos[path.extname(f)] || 'application/octet-stream' }); r.end(d); } }); }).listen(8150);
+let mal = 0; const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALHA ') + m); if (!c) mal++; };
+(async () => {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true }); const pg = await ctx.newPage(); const erros = []; pg.on('pageerror', (e) => erros.push(e.message));
+  await pg.goto('http://localhost:8150/'); await pg.waitForSelector('#novo');
+  ok((await pg.locator('.area').count()) === 10, '10 áreas do estúdio na tela inicial');
+  await pg.click('[data-area=gravar]', { force: true }); ok(/etapa 3/.test(await pg.textContent('#aviso')), 'áreas futuras avisam em qual etapa chegam');
+  await pg.click('#novo'); await pg.waitForSelector('#ti');
+  await pg.fill('#ti', 'Minha primeira'); await pg.fill('#bp', '110'); await pg.selectOption('#to', 'G'); await pg.fill('#le', 'Quando o sol nasce\nEu canto'); await pg.waitForFunction(() => /Salvo/.test(document.querySelector('#st').textContent));
+  await pg.reload(); await pg.waitForSelector('#ti');
+  ok(await pg.evaluate(() => document.querySelector('#ti').value === 'Minha primeira' && document.querySelector('#bp').value === '110' && document.querySelector('#to').value === 'G' && /Eu canto/.test(document.querySelector('#le').value)), 'projeto salvo no celular volta igual depois de fechar e abrir');
+  await pg.click('[data-nav=ajustes]'); await pg.waitForSelector('#exp');
+  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('#exp')]); const cam = await dl.path(); const txt = fs.readFileSync(cam, 'utf8');
+  ok(JSON.parse(txt).projetos.length === 1, 'cópia de segurança gerada (' + dl.suggestedFilename() + ')');
+  await pg.click('[data-nav=biblioteca]'); await pg.click('.item'); await pg.waitForSelector('#ap'); pg.once('dialog', (d) => d.accept()); await pg.click('#ap'); await pg.waitForSelector('.vazio');
+  ok(true, 'apagar pede confirmação');
+  await pg.click('[data-nav=ajustes]'); await pg.waitForSelector('#imp'); const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('#imp')]); await fc.setFiles(cam);
+  await pg.waitForFunction(() => /1 novo/.test(document.querySelector('#aviso').textContent));
+  await pg.click('[data-nav=biblioteca]'); await pg.waitForSelector('.item');
+  ok(/Minha primeira/.test(await pg.textContent('.item')), 'restaurar traz o projeto de volta');
+  await pg.click('[data-nav=ajustes]'); const [fc2] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('#imp')]); await fc2.setFiles(cam);
+  await pg.waitForFunction(() => /Nada novo/.test(document.querySelector('#aviso').textContent)); ok(true, 'restaurar duas vezes não duplica nem apaga');
+  await pg.evaluate(() => navigator.serviceWorker.ready); await pg.waitForTimeout(800);
+  await ctx.setOffline(true); await pg.goto('http://localhost:8150/#/biblioteca'); await pg.waitForSelector('.item', { timeout: 8000 });
+  ok(true, 'abre e mostra os projetos sem internet');
+  ok(erros.length === 0, 'sem erros ' + erros.join('|'));
+  console.log(mal ? 'FALHAS' : 'TUDO OK'); await b.close(); srv.close(); process.exit(mal ? 1 : 0);
+})();

@@ -1,0 +1,8 @@
+{
+  "appId": "br.bar.clanmusicstudio",
+  "appName": "Clan Music Studio",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "clan-music-studio-android",
+  "private": true,
+  "description": "Gera o APK Android do Clan Music Studio (pasta clan-music/) com o Capacitor.",
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor-community/speech-recognition": "^7.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0"
+  }
+}

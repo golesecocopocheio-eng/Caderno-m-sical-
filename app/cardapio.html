@@ -632,6 +632,7 @@ function telaPag(){
   ${dev?`<label>Na lista de cobrança, a maquininha do 🍸 bar aparece como<select id="mpMaq">${cfg.maquinas.map(m=>`<option value="${m.id}" ${MP.maq()===m.id?'selected':''}>${esc(m.n)}</option>`).join('')}</select></label>
     <p class="sub" style="margin-top:8px">✅ Bar: ao cobrar em Crédito ou Débito e escolher <b>${esc(nomeVia(MP.maq()))}</b>, aparece <b>📲 Enviar para a maquininha</b>.${mpDoPapel('portaria')?'<br>✅ Portaria: na aba 🚪 Portaria, a entrada em 💳 Cartão vai direto para a maquininha da portaria.':''}</p>`:''}
   ${mpDoPapel('portaria')&&!dev?`<p class="sub" style="margin-top:8px">✅ Portaria: na aba 🚪 Portaria, a entrada em 💳 Cartão vai direto para a maquininha da portaria.</p>`:''}
+  ${mpDoPapel('portaria')?`<div class="mpd" style="border-style:dashed"><b>📲 Celular da portaria</b><p class="sub" style="margin:4px 0 8px">Para quem fica na portaria cobrar na maquininha pelo celular dela: toque abaixo, mande o código para esse celular e lá, em <b>🚪 Portaria → 💳 Maquininha</b>, cole e toque em Ligar. O celular precisa estar com o <b>app instalado (APK)</b>.</p><button class="btn sec" id="mpCodPorta" style="margin:0">📤 Mandar o código da maquininha da portaria</button><p class="sub" style="font-size:12px;margin:6px 0 0">🔒 O código leva a chave do Mercado Pago. Mande só para quem trabalha na portaria e, se a pessoa sair, gere uma chave nova no Mercado Pago.</p></div>`:''}
   ${dev||mpDoPapel('portaria')?`<button class="link" id="mpDesligar" style="color:var(--bad)">Desligar as maquininhas deste celular</button>`:''}
   </div>`;
   h+=`<div class="card"><h2>Santander (Getnet)</h2><p class="sub" style="margin:0">A ligação automática da Getnet depende de liberação comercial do banco. Por enquanto: passe o valor na maquininha e confirme a venda no app.</p></div>`;}
@@ -871,6 +872,10 @@ document.addEventListener('click',async ev=>{
   if(b.id==='mpBuscar'){const t=$('#mpTk');if(t)localStorage.setItem('mp-token',t.value.trim());if(!MP.tk()){mpEst.msg='Cole o Access Token primeiro.';draw();return}mpBuscar();return}
   if(d.mppapel!==undefined){const o=mpPapeis(),p=d.p||'';Object.keys(o).forEach(k=>{if(p&&o[k].papel===p&&k!==d.mppapel)o[k].papel=''});o[d.mppapel]={...(o[d.mppapel]||{}),papel:p};mpSalvarPapeis(o);toast(p?'✅ Maquininha da '+(p==='bar'?'🍸 bar':'🚪 portaria')+' escolhida':'Maquininha sem uso neste celular');draw();return}
   if(d.mppdv){mpModoPDV(d.mppdv);return}
+  if(b.id==='mpCodPorta'){const d=mpDoPapel('portaria');if(!d||!MP.tk())return;const cod='BARMP1-'+btoa(unescape(encodeURIComponent(JSON.stringify({tk:MP.tk(),dev:d,nome:(mpPapeis()[d]||{}).nome||''}))));
+    const txt='Código da maquininha da portaria (Bar Conect). No app, abra 🚪 Portaria → 💳 Maquininha, cole e toque em Ligar:\n\n'+cod;
+    try{if(navigator.share){await navigator.share({text:txt});return}}catch(e){if(e&&e.name==='AbortError')return}
+    try{await navigator.clipboard.writeText(cod);toast('✅ Código copiado. Cole no WhatsApp para o celular da portaria.')}catch(e){prompt('Copie o código:',cod)}return}
   if(b.id==='mpDesligar'){['mp-token','mp-device','mp-papeis'].forEach(k=>localStorage.removeItem(k));mpEst={devs:null,msg:'Maquininhas desligadas deste celular.',busy:false};draw();return}
   if(d.pg&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
   if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}

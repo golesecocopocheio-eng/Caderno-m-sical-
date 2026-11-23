@@ -261,15 +261,21 @@ async function mpCobrarEntrada(en){
 async function mpCfgDesenhar(devs,msg){
   const tk=MPP.tk(),dev=MPP.dev(),o=MPP.papeis();
   $("#mpCfgSt").textContent=mpPortaria()?"· ✅ ligada ("+((o[dev]||{}).nome||dev.slice(-6))+")":"· não ligada";
-  let h=`<label style="display:block;margin-top:10px">Access Token (o mesmo da aba Cardápio → Receber)<input id="mpTkP" type="password" autocomplete="off" autocapitalize="none" placeholder="APP_USR-…" value="${tk?"••••••••":""}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)"></label>
-    <button class="btn" id="mpBuscaP">🔎 Buscar as maquininhas</button>`;
+  const app=!!(window.parent.Capacitor||window.Capacitor);
+  let h=app?"":`<div class="msg" style="font-weight:600;color:#b45309;text-align:left">⚠️ Para cobrar na maquininha, este celular precisa do <b>app Bar Conect instalado</b> (o navegador não deixa falar com o Mercado Pago). Baixe em: <a href="https://github.com/golesecocopocheio-eng/Caderno-m-sical-/releases/latest/download/BarConect.apk">BarConect.apk</a></div>`;
+  h+=mpPortaria()?`<div class="msg" style="font-weight:600;color:var(--ok);text-align:left">✅ Pronto: escolha 💳 Cartão e toque na entrada. O valor vai para a maquininha.</div>`:"";
+  h+=`<label style="display:block;margin-top:10px">Código da maquininha (o dono manda pelo WhatsApp) ou Access Token<input id="mpTkP" type="password" autocomplete="off" autocapitalize="none" placeholder="Cole aqui BARMP1-… ou APP_USR-…" value="${tk?"••••••••":""}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)"></label>
+    <button class="btn" id="mpBuscaP">🔌 Ligar a maquininha</button>`;
   if(msg)h+=`<div class="msg" style="font-weight:600;color:var(--tx)">${msg}</div>`;
   if(devs)h+=devs.map(d=>{const p=(o[d.id]||{}).papel,pdv=d.operating_mode==="PDV";return `<div style="border:1px solid ${p==="portaria"?"var(--ok)":"var(--bd)"};border-radius:12px;padding:10px;margin-top:8px"><b>💳 ${(o[d.id]||{}).nome||"Maquininha "+d.id.slice(-6)}</b> <small style="color:${pdv?"var(--ok)":"#b45309"}">${pdv?"✅ integrado":"⚠️ "+(d.operating_mode||"?")}</small>${p&&p!=="portaria"?`<small style="display:block;color:var(--mut)">hoje usada no 🍸 bar</small>`:""}
       <div class="row" style="margin-top:6px">${pdv?"":`<button class="btn" data-mpativa="${d.id}" style="margin-top:0;background:#b45309">⚡ Ativar integrado</button>`}<button class="btn" data-mpusa="${d.id}" style="margin-top:0;${p==="portaria"?"background:var(--ok)":"background:#009ee3"}">${p==="portaria"?"✅ É a da portaria":"🚪 Usar na portaria"}</button></div></div>`}).join("");
   if(mpPortaria())h+=`<button class="link" id="mpTiraP" style="margin-top:10px;color:#b42318">Não usar maquininha na portaria</button>`;
   $("#mpCfgCorpo").innerHTML=h;
 }
-async function mpBuscarP(){const v=$("#mpTkP").value.trim();if(v&&!/^•+$/.test(v))localStorage.setItem("mp-token",v);if(!MPP.tk()){mpCfgDesenhar(null,"Cole o Access Token primeiro.");return}
+async function mpBuscarP(){const v=($("#mpTkP")||{value:""}).value.trim();
+  // código do dono: já traz a chave e qual é a maquininha da portaria
+  if(/^BARMP1-/.test(v)){try{const j=JSON.parse(decodeURIComponent(escape(atob(v.slice(7)))));localStorage.setItem("mp-token",j.tk);const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});o[j.dev]={...(o[j.dev]||{}),papel:"portaria",nome:j.nome||""};localStorage.setItem("mp-papeis",JSON.stringify(o));mpCfgDesenhar(null,"✅ Maquininha da portaria ligada neste celular.");return}catch(e){mpCfgDesenhar(null,"❌ Código inválido. Peça para o dono mandar de novo.");return}}
+  if(v&&!/^•+$/.test(v))localStorage.setItem("mp-token",v);if(!MPP.tk()){mpCfgDesenhar(null,"Cole o Access Token primeiro.");return}
   mpCfgDesenhar(null,"Buscando…");try{const d=await mpReq("GET","/point/integration-api/devices");const ds=(d&&d.devices)||[];mpCfgDesenhar(ds,ds.length?"Escolha a maquininha da portaria:":"Nenhuma maquininha nessa conta.")}catch(e){mpCfgDesenhar(null,"❌ "+(e.message||e)+(window.parent.Capacitor||window.Capacitor?"":" (só funciona no app instalado)"))}}
 mpCfgDesenhar();
 // a configuração feita na aba Cardápio → Receber aparece aqui na hora

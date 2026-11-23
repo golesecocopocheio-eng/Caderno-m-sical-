@@ -1,10 +1,10 @@
 // Funciona offline: usa a rede quando há internet e a cópia salva quando não há.
-const VERSAO = 'clan-studio-v1';
+const VERSAO = 'clan-studio-v2';
 const ARQUIVOS = [
   './', './index.html', './manifest.webmanifest', './icon.svg',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png',
   './fonts/bricolage-grotesque-latin-wght-normal.woff2', './fonts/jetbrains-mono-latin-400-normal.woff2', './fonts/jetbrains-mono-latin-700-normal.woff2',
-  './src/ui/tema.css', './src/main.js', './src/ui/telas.js', './src/dados/banco.js', './src/dados/backup.js', './src/ui/util.js',
+  './src/ui/tema.css', './src/main.js', './src/ui/telas.js', './src/dados/banco.js', './src/dados/backup.js', './src/dados/importar-antigo.js', './src/ui/util.js',
 ];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {

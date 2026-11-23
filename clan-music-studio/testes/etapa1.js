@@ -14,8 +14,8 @@ let mal = 0; const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALHA ') + m); i
   await pg.reload(); await pg.waitForSelector('#ti');
   ok(await pg.evaluate(() => document.querySelector('#ti').value === 'Minha primeira' && document.querySelector('#bp').value === '110' && document.querySelector('#to').value === 'G' && /Eu canto/.test(document.querySelector('#le').value)), 'projeto salvo no celular volta igual depois de fechar e abrir');
   await pg.click('[data-nav=ajustes]'); await pg.waitForSelector('#exp');
-  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('#exp')]); const cam = await dl.path(); const txt = fs.readFileSync(cam, 'utf8');
-  ok(JSON.parse(txt).projetos.length === 1, 'cópia de segurança gerada (' + dl.suggestedFilename() + ')');
+  const [dl] = await Promise.all([pg.waitForEvent('download'), pg.click('#exp')]); const cam = await dl.path(); const buf = fs.readFileSync(cam);
+  ok(buf.slice(0, 4).toString() === 'CSTD', 'cópia de segurança gerada (' + dl.suggestedFilename() + ')');
   await pg.click('[data-nav=biblioteca]'); await pg.click('.item'); await pg.waitForSelector('#ap'); pg.once('dialog', (d) => d.accept()); await pg.click('#ap'); await pg.waitForSelector('.vazio');
   ok(true, 'apagar pede confirmação');
   await pg.click('[data-nav=ajustes]'); await pg.waitForSelector('#imp'); const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('#imp')]); await fc.setFiles(cam);

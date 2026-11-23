@@ -98,6 +98,10 @@ body.venda{background:var(--bg)}
 .prod .pc .qt,.prod .pc.auto .qt{position:static;order:-1;background:var(--ac);color:#fff;min-width:24px;height:24px;font-size:12.5px;box-shadow:none;margin-right:-4px}
 .cats button.cc{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--bd)}
 .cats button.cc.on{color:var(--bg);background:var(--tx);box-shadow:none}
+.outras{margin-top:12px;padding-top:10px;border-top:1px dashed var(--bd)}
+.outras>b{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+.outras .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;margin-top:6px}
+.outras .btn small{font-weight:500;color:var(--mut);font-size:12px}
 /* ➕ valor avulso */
 .avb{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 10px;padding:12px;font-weight:800;border:1.5px dashed var(--ac);color:var(--ac);background:color-mix(in srgb,var(--ac) 6%,var(--card))}
 .avb small{font-weight:500;color:var(--mut);font-size:12.5px}
@@ -405,7 +409,7 @@ function resumo(lista){
     (v.itens||[]).forEach(x=>{const k=x.n;r.itens[k]=r.itens[k]||{q:0,v:0};r.itens[k].q+=x.q;r.itens[k].v+=x.p*x.q})});
   return r;
 }
-const nomeVia=id=>{const m=cfg.maquinas.find(x=>x.id===id);if(m)return m.n;const c=cfg.contas.find(x=>x.id===id);return c?c.n:id};
+const nomeVia=id=>{if(id==='link-mp')return 'Link de pagamento (Mercado Pago)';if(id==='tap-mp')return 'Aproximação no celular (Mercado Pago)';const m=cfg.maquinas.find(x=>x.id===id);if(m)return m.n;const c=cfg.contas.find(x=>x.id===id);return c?c.n:id};
 
 /* ---------- Mercado Pago Point (maquininha ligada ao app) ----------
    O app manda o valor para a maquininha (modo integrado/PDV) e acompanha até aprovar.
@@ -465,6 +469,27 @@ async function mpAcompanhar(id){
   }
   if(mpCob&&mpCob.id===id){mpCob.estado='erro';mpCob.msg='Tempo esgotado. Confira na maquininha; se aprovou, confirme a venda à mão.';desenharFolha()}
 }
+/* 🔗 Link de pagamento (Checkout do Mercado Pago): QR Code / link que a pessoa abre no celular
+   e paga com cartão de crédito, débito ou carteira digital. O app acompanha e registra quando aprovar. */
+let mpLk=null; // {url, ext, estado, msg}
+function telaLink(total){const L=mpLk;let img='';if(L.url){try{const q=qrcode(0,'M');q.addData(L.url);q.make();img=q.createImgTag(5,0)}catch(e){}}
+  return `<div class="card" style="border-color:#009ee3;margin-top:4px"><b>🔗 Link de pagamento · ${R(total)}</b>
+    ${L.url?`<div class="qr" style="margin-top:8px">${img}</div><p class="msg">A pessoa aponta a câmera do celular para o QR Code e paga com <b>cartão de crédito, débito</b> ou carteira digital.</p><button class="btn sec" id="lkEnviar">📤 Mandar o link (WhatsApp)</button>`:''}
+    <p class="msg" style="font-weight:600;color:var(--tx)">${esc(L.msg||'')}</p>
+    <button class="btn sec" id="lkCancelar">${L.estado==='erro'?'Voltar':'Cancelar o link'}</button></div>`}
+async function mpLinkCriar(){const total=Math.round(totalCarrinho()*100)/100;if(!total||!folha)return;
+  const ext='bar-link-'+Date.now().toString(36);mpLk={ext,estado:'criando',msg:'Criando o link…'};desenharFolha();
+  try{const r=await mpReq('POST','/checkout/preferences',{items:[{title:nomeBar()+' · consumo',quantity:1,unit_price:total,currency_id:'BRL'}],external_reference:ext,payment_methods:{excluded_payment_types:[{id:'ticket'}],installments:1},statement_descriptor:nomeBar().slice(0,13)});
+    if(!mpLk||mpLk.ext!==ext)return;mpLk.url=r.init_point;mpLk.estado='aberto';mpLk.msg='⏳ Aguardando o pagamento…';desenharFolha();mpLinkAcompanhar(ext)}
+  catch(e){if(mpLk&&mpLk.ext===ext){mpLk.estado='erro';mpLk.msg='❌ Não consegui criar o link: '+(e.message||e);desenharFolha()}}}
+async function mpLinkAcompanhar(ext){
+  for(let i=0;i<200&&mpLk&&mpLk.ext===ext;i++){await new Promise(r=>setTimeout(r,4000));if(!mpLk||mpLk.ext!==ext)return;
+    let d;try{d=await mpReq('GET','/v1/payments/search?sort=date_created&criteria=desc&external_reference='+encodeURIComponent(ext))}catch(e){continue}
+    const ps=(d&&d.results)||[],ok=ps.find(p=>p.status==='approved');
+    if(ok){mpLk.estado='aprovado';mpLk.msg='✅ Pagamento aprovado ('+(ok.payment_type_id==='debit_card'?'débito':ok.payment_type_id==='credit_card'?'crédito':ok.payment_method_id||'cartão')+').';desenharFolha();
+      folha.via='link-mp';if(ok.payment_type_id==='debit_card')folha.pg='debito';else if(ok.payment_type_id==='credit_card')folha.pg='credito';const id=String(ok.id);mpLk=null;await confirmarVenda({mp:id});return}
+    const rej=ps.find(p=>p.status==='rejected');if(rej&&mpLk)mpLk.msg='⚠️ Um pagamento foi recusado. A pessoa pode tentar de novo com outro cartão.';desenharFolha()}
+  if(mpLk&&mpLk.ext===ext){mpLk.estado='erro';mpLk.msg='Tempo esgotado. Se a pessoa pagou, confira no app Mercado Pago e confirme à mão.';desenharFolha()}}
 async function mpCancelar(){
   const c=mpCob;if(!c||!c.id){mpCob=null;desenharFolha();return}
   mpCob={estado:'erro',msg:'Cancelando na maquininha…'};desenharFolha();
@@ -665,10 +690,10 @@ function telaPag(){
 /* ---------- cobrança ---------- */
 function abrirCobranca(){
   const total=totalCarrinho();if(!total)return;
-  folha={pg:'',via:'',recebido:''};desenharFolha();
+  folha={pg:'',via:'',recebido:''};mpLk=null;desenharFolha();
 }
 function desenharFolha(){
-  let f=$('#folha');if(!folha){if(f)f.remove();return}
+  let f=$('#folha');if(!folha){mpLk=null;if(f)f.remove();return}
   if(!f){f=document.createElement('div');f.id='folha';f.className='fundo';document.body.appendChild(f);f.addEventListener('click',e=>{if(e.target===f){folha=null;desenharFolha()}})}
   const total=totalCarrinho(),F=folha;
   let h=`<div class="folha"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Cobrar</h2><button class="x" id="fFechar">✕</button></div><div class="tot" style="text-align:center;margin:6px 0 10px">${R(total)}</div>
@@ -676,13 +701,21 @@ function desenharFolha(){
   if(F.pg==='dinheiro'){const rec=nv(F.recebido),tr=rec-total;
     h+=`<label>Valor recebido<input data-k="rec" id="rec" inputmode="decimal" placeholder="${campo(total)}" value="${esc(F.recebido)}" style="font-size:20px;text-align:right"></label><div class="row" style="gap:6px;margin-top:6px">${[total,...[10,20,50,100,200].filter(v=>v>total).slice(0,3)].map(v=>`<button class="btn sec" style="margin:0;padding:9px" data-rec="${v}">${R(v)}</button>`).join('')}</div>
     <p class="big" style="text-align:center;margin:12px 0 0;color:${tr<0?'var(--bad)':'var(--ok)'}">${rec?(tr<0?'Falta '+R(-tr):'Troco '+R(tr)):''}</p>`}
+  if((F.pg==='credito'||F.pg==='debito')&&!F.via&&!F.tap&&mpLigada()&&!mpLk)F.via=MP.maq(); // maquininha do bar já vem escolhida
   if(F.pg==='credito'||F.pg==='debito'){
+    if(mpLk){h+=telaLink(total)}else{
     h+=`<label>Qual maquininha?</label><div class="opc">${cfg.maquinas.map(m=>`<button data-via="${m.id}" class="${F.via===m.id?'on':''}">${esc(m.n)}</button>`).join('')}</div>`;
     if(F.via&&F.via===MP.maq()&&mpLigada()){
       if(!mpCob)h+=`<button class="btn" id="mpEnviar" style="background:#009ee3;color:#fff">📲 Enviar ${R(total)} para a maquininha</button><p class="msg">Ou passe à mão e confirme abaixo.</p>`;
       else h+=`<div class="card" style="margin-top:10px;border-color:#009ee3"><p class="msg" style="font-size:15px;font-weight:600;color:var(--tx);margin:0">${esc(mpCob.msg)}</p>${mpCob.estado==='OPEN'||mpCob.estado==='enviando'?'<button class="btn sec" id="mpCancelar">Cancelar cobrança</button>':''}${mpCob.estado==='erro'?'<button class="btn sec" id="mpDeNovo">Tentar de novo</button>':''}</div>`;
     }
-    else if(F.via)h+=`<p class="msg" style="font-size:15px">Passe <b>${R(total)}</b> no <b>${F.pg==='credito'?'crédito':'débito'}</b> da <b>${esc(nomeVia(F.via))}</b> e confirme quando aprovar.</p>`}
+    else if(F.via)h+=`<p class="msg" style="font-size:15px">Passe <b>${R(total)}</b> no <b>${F.pg==='credito'?'crédito':'débito'}</b> da <b>${esc(nomeVia(F.via))}</b> e confirme quando aprovar.</p>`;
+    if(!mpLigada()&&MP.tk())h+=`<p class="msg">Para o valor ir sozinho para a maquininha, marque uma como <b>🍸 Bar</b> em 💳 Receber.</p>`;
+    if(!mpCob)h+=`<div class="outras"><b>Outras formas no cartão</b>
+      ${MP.tk()?`<button class="btn sec" id="mpLink">🔗 Link de pagamento (QR Code)<small>a pessoa paga no celular dela: cartão, Google Pay</small></button>`:''}
+      <button class="btn sec" id="tapInfo">📱 Aproximação no meu celular<small>pelo app Mercado Pago (Cobrar → por aproximação)</small></button>
+      ${F.tap?`<div class="card" style="margin:8px 0 0"><p class="sub" style="margin:0">1. Toque em <b>Copiar valor</b>.<br>2. Abra o app <b>Mercado Pago</b> → <b>Cobrar</b> → <b>Por aproximação</b> (Tap to Pay) e cole <b>${R(total)}</b>.<br>3. A pessoa encosta o cartão ou o celular no seu celular.<br>4. Aprovou? Volte aqui e toque em <b>Confirmar venda</b>.</p><button class="btn sec" id="tapCopiar" style="margin-top:8px">📋 Copiar valor ${R(total)}</button></div>`:''}</div>`}
+  }
   if(F.pg==='pix'){
     h+=`<label>Receber em qual conta?</label><div class="opc">${cfg.contas.map(c=>`<button data-via="${c.id}" class="${F.via===c.id?'on':''}">${esc(c.n)}<small>${esc(c.tipo||'')}${c.chave?' · chave '+esc(c.chave):' · sem chave Pix cadastrada'}</small></button>`).join('')}</div>`;
     const c=cfg.contas.find(x=>x.id===F.via);
@@ -690,7 +723,8 @@ function desenharFolha(){
       if(cod){let img='';try{const q=qrcode(0,'M');q.addData(cod);q.make();img=q.createImgTag(5,0)}catch(e){}
         h+=`<div class="qr">${img}</div><p class="msg">O cliente lê o QR Code no app do banco e paga <b>${R(total)}</b> direto na conta <b>${esc(c.n)}</b>. Confira no extrato e confirme.</p><div class="copia" id="pixCod">${esc(cod)}</div><button class="btn sec" id="pixCopiar">📋 Copiar Pix copia e cola</button>`}
       else h+=`<p class="msg">Essa conta não tem chave Pix. ${dono?'Cadastre em <b>💳 Receber</b>.':'Peça ao dono para cadastrar.'} Você ainda pode confirmar se o cliente pagou pelo QR Code da conta.</p>`}}
-  const pode=F.pg&&(F.pg==='dinheiro'?(!F.recebido||nv(F.recebido)>=total):!!F.via)&&!(mpCob&&mpCob.estado!=='erro');
+  if(F.tap&&!F.via&&(F.pg==='credito'||F.pg==='debito'))F.via='tap-mp';
+  const pode=F.pg&&(F.pg==='dinheiro'?(!F.recebido||nv(F.recebido)>=total):!!F.via)&&!(mpCob&&mpCob.estado!=='erro')&&!(mpLk&&mpLk.estado!=='erro');
   h+=`<button class="btn ok" id="fConfirmar" ${pode?'':'disabled'}>✅ Confirmar venda</button></div>`;
   f.innerHTML=h;
 }
@@ -903,7 +937,9 @@ document.addEventListener('click',async ev=>{
     try{if(navigator.share){await navigator.share({text:txt});return}}catch(e){if(e&&e.name==='AbortError')return}
     try{await navigator.clipboard.writeText(cod);toast('✅ Código copiado. Cole no WhatsApp para o celular da portaria.')}catch(e){prompt('Copie o código:',cod)}return}
   if(b.id==='mpDesligar'){['mp-token','mp-device','mp-papeis'].forEach(k=>localStorage.removeItem(k));mpEst={devs:null,msg:'Maquininhas desligadas deste celular.',busy:false};draw();return}
-  if(d.pg&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.pg=d.pg;folha.via=d.pg==='dinheiro'?'':(folha.pg===d.pg?folha.via:'');if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
+  if(d.pg&&folha){if(mpCob&&mpCob.estado!=='erro')return;if(mpLk&&mpLk.estado==='aberto'&&folha.pg!==d.pg){toast('Cancele o link de pagamento antes de trocar');return}mpCob=null;
+    // trocar a forma de pagamento limpa a escolha anterior (a conta do Pix não pode virar "maquininha" no crédito)
+    const mesma=folha.pg===d.pg;folha.pg=d.pg;if(!mesma){folha.via='';folha.tap=false;mpLk=null}if(d.pg==='pix'&&cfg.contas.length===1)folha.via=cfg.contas[0].id;desenharFolha();return}
   if(d.via&&folha){if(mpCob&&mpCob.estado!=='erro')return;mpCob=null;folha.via=d.via;desenharFolha();return}
   if(d.rec&&folha){folha.recebido=campo(+d.rec);desenharFolha();return}
   if(b.id==='pixCopiar'){copiar($('#pixCod').textContent);return}
@@ -918,6 +954,11 @@ document.addEventListener('click',async ev=>{
   if(d.fv){fotoVer=d.fv;verFoto();return}
   if(b.id==='fvFechar'){fotoVer=null;verFoto();return}
   if(b.id==='fvLer'){const x=fotos.find(y=>y.id===fotoVer);fotoVer=null;verFoto();if(x)lerFotos([await deDataUrl(await carregarGrande(x))],false);return}
+  if(b.id==='mpLink'){mpLinkCriar();return}
+  if(b.id==='lkCancelar'){mpLk=null;desenharFolha();return}
+  if(b.id==='lkEnviar'){const u=mpLk&&mpLk.url;if(!u)return;const tx='Pagamento '+nomeBar()+': '+R(totalCarrinho())+'\n'+u;try{if(navigator.share){await navigator.share({text:tx});return}}catch(e){if(e&&e.name==='AbortError')return}try{await navigator.clipboard.writeText(u);toast('✅ Link copiado')}catch(e){prompt('Copie o link:',u)}return}
+  if(b.id==='tapInfo'){folha.tap=!folha.tap;folha.via=folha.tap?'tap-mp':'';desenharFolha();return}
+  if(b.id==='tapCopiar'){const v=campo(totalCarrinho());try{await navigator.clipboard.writeText(v);toast('✅ Valor '+v+' copiado')}catch(e){prompt('Valor:',v)}return}
   if(b.id==='fConfirmar'){b.disabled=true;await confirmarVenda();return}
   if(b.id==='relBtn'){copiar(relatorio());return}
   if(b.id==='caixaBtn'){aplicarCaixa();return}

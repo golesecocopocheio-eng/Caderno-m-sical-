@@ -1,7 +1,7 @@
 import { $, esc, aviso, debounce } from './util.js';
 import { listar, obter, salvar, adicionarFaixa, removerFaixa } from '../dados/banco.js';
 import { paraWav, mmss } from '../audio/wav.js';
-import { gerar, lerAcordes, acordesDaCifra, ESTILOS, INSTR, ENERGIAS, MIX } from '../banda/gerar.js';
+import { gerar, lerAcordes, progDaCifra, progDaAnalise, ESTILOS, INSTR, ENERGIAS, MIX } from '../banda/gerar.js';
 
 let ocupado = false;
 export async function telaEscolher() {
@@ -16,9 +16,10 @@ export async function telaBanda(id) {
 }
 export function ligarEscolher(ctx) { document.querySelectorAll('[data-bd]').forEach((b) => (b.onclick = () => ctx.ir('/banda/' + b.dataset.bd))); }
 
+const msgAc = (ac) => (ac.ruim.length ? 'Não reconheci: ' + ac.ruim.join(' ') + '. ' : '') + (ac.ok.length ? ac.barras.length + ' compasso(s)' + (ac.barras.some((b) => b.length > 1) ? ' (com mais de um acorde em alguns)' : ' · um acorde por compasso') + (ac.excesso ? '. Máximo de 4 acordes por compasso: os extras foram ignorados' : '') + '. A sequência se repete até fechar cada seção.' : 'Escreva os acordes separados por espaço, como C Am F G.');
 const padrao = (p) => {
-  const an = p.analise && (p.analise.acordes || []).filter((c) => !c.mudo).map((c) => c.nome).filter((n, i, a) => n !== a[i - 1]).slice(0, 8), ci = acordesDaCifra(p.cifra);
-  return { estilo: 'pop', prog: (ci.length ? ci : an && an.length ? an : ['C', 'Am', 'F', 'G']).join(' '), secoes: [{ nome: 'Intro', compassos: 2, energia: 0 }, { nome: 'Verso', compassos: 8, energia: 1 }, { nome: 'Refrão', compassos: 8, energia: 2 }, { nome: 'Final', compassos: 2, energia: 0 }], instr: { bateria: true, baixo: true, violao: true, guitarra: false, teclado: true } };
+  const an = progDaAnalise(p.analise, p.analise && p.analise.bpm && p.analise.bpm.bpm), ci = progDaCifra(p.cifra);
+  return { estilo: 'pop', prog: ci || an || 'C Am F G', secoes: [{ nome: 'Intro', compassos: 2, energia: 0 }, { nome: 'Verso', compassos: 8, energia: 1 }, { nome: 'Refrão', compassos: 8, energia: 2 }, { nome: 'Final', compassos: 2, energia: 0 }], instr: { bateria: true, baixo: true, violao: true, guitarra: false, teclado: true } };
 };
 export async function ligarBanda(ctx, p) {
   $('#voltar').onclick = () => ctx.ir('/projeto/' + p.id);
@@ -27,8 +28,8 @@ export async function ligarBanda(ctx, p) {
   const total = () => A.secoes.reduce((s, x) => s + Math.max(1, Math.min(32, x.compassos | 0)), 0);
   const desenha = () => {
     const ac = lerAcordes(A.prog), c = total();
-    $('#bd').innerHTML = `<h2>Acordes (um por compasso)</h2><input id="ac" value="${esc(A.prog)}" aria-label="Acordes" autocapitalize="characters" style="width:100%">
-    <p class="mute peq" id="acm">${ac.ruim.length ? 'Não reconheci: ' + esc(ac.ruim.join(' ')) + '. ' : ''}${ac.ok.length ? ac.ok.length + ' acorde(s) em sequência, repetidos até fechar cada seção.' : 'Escreva os acordes separados por espaço, como C Am F G.'}</p>
+    $('#bd').innerHTML = `<h2>Acordes</h2><input id="ac" value="${esc(A.prog)}" aria-label="Acordes" autocapitalize="characters" style="width:100%">
+    <p class="mute peq" id="acm">${esc(msgAc(ac))}</p><p class="mute peq">Para dois ou mais acordes no mesmo compasso, separe os compassos com "|": <b>C G | Am F | Dm G</b>.</p>
     <div class="duas" style="margin-top:6px"><button id="dc">Pegar da cifra</button><button id="da" ${p.analise ? '' : 'disabled'}>Pegar da análise</button></div>
     <h2>Estilo</h2><div class="duas">${Object.entries(ESTILOS).map(([k, v]) => `<button data-e="${k}" aria-pressed="${A.estilo === k}">${v.nome}</button>`).join('')}</div>
     <label class="linha" style="margin-top:10px"><span>Andamento</span><input type="number" id="bp" min="50" max="220" value="${bpm}" style="width:90px" aria-label="Andamento em BPM"><span class="mute">BPM</span></label>
@@ -41,9 +42,9 @@ export async function ligarBanda(ctx, p) {
   };
   const atualizaTt = () => { const bt = $('#bp'); const d = total() * 4 * 60 / (bpm || 100); $('#tt').textContent = total() + ' compassos · cerca de ' + mmss(d) + (total() >= 96 ? ' (limite de 96 compassos)' : ''); };
   function liga() {
-    $('#ac').oninput = (e) => { A.prog = e.target.value; const ac = lerAcordes(A.prog); $('#acm').textContent = (ac.ruim.length ? 'Não reconheci: ' + ac.ruim.join(' ') + '. ' : '') + (ac.ok.length ? ac.ok.length + ' acorde(s) em sequência, repetidos até fechar cada seção.' : 'Escreva os acordes separados por espaço, como C Am F G.'); grava(); };
-    $('#dc').onclick = () => { const l = acordesDaCifra(p.cifra); if (!l.length) return aviso('Não achei linhas de acordes na cifra.'); A.prog = l.join(' '); grava(); desenha(); };
-    $('#da').onclick = () => { const l = (p.analise.acordes || []).filter((c) => !c.mudo).map((c) => c.nome).filter((n, i, a) => n !== a[i - 1]).slice(0, 16); if (!l.length) return aviso('A análise não achou acordes.'); A.prog = l.join(' '); grava(); desenha(); };
+    $('#ac').oninput = (e) => { A.prog = e.target.value; const ac = lerAcordes(A.prog); $('#acm').textContent = msgAc(ac); grava(); };
+    $('#dc').onclick = () => { const l = progDaCifra(p.cifra); if (!l) return aviso('Não achei linhas de acordes na cifra.'); A.prog = l; grava(); desenha(); };
+    $('#da').onclick = () => { const l = progDaAnalise(p.analise, p.analise.bpm && p.analise.bpm.bpm); if (!l) return aviso('A análise não achou acordes.'); A.prog = l; grava(); desenha(); };
     document.querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => { A.estilo = b.dataset.e; if (!manual) bpm = ESTILOS[A.estilo].bpm; grava(); desenha(); }));
     $('#bp').oninput = (e) => { bpm = Math.max(50, Math.min(220, +e.target.value || 100)); manual = true; atualizaTt(); grava(); };
     document.querySelectorAll('[data-i]').forEach((c) => (c.onchange = () => { A.instr[c.dataset.i] = c.checked; grava(); }));
@@ -59,7 +60,7 @@ export async function ligarBanda(ctx, p) {
     if (ocupado) return; const ac = lerAcordes(A.prog); if (!ac.ok.length) return aviso('Escreva ao menos um acorde.'); if (!Object.values(A.instr).some(Boolean)) return aviso('Marque ao menos um instrumento.');
     ocupado = true; grava.agora(); const b = $('#ger'); b.disabled = true; b.textContent = 'Gerando…'; const gr = $('#gr'); gr.innerHTML = '<div class="barra"><i id="bi"></i></div><p class="mute peq" id="bt"></p>';
     try {
-      const r = await gerar({ prog: ac.ok, secoes: A.secoes, estilo: A.estilo, bpm, instr: A.instr }, (t, v) => { const i = $('#bi'), x = $('#bt'); if (i) i.style.width = Math.round(v * 100) + '%'; if (x) x.textContent = t; });
+      const r = await gerar({ prog: ac.barras, secoes: A.secoes, estilo: A.estilo, bpm, instr: A.instr }, (t, v) => { const i = $('#bi'), x = $('#bt'); if (i) i.style.width = Math.round(v * 100) + '%'; if (x) x.textContent = t; });
       const q = await obter(p.id), velhas = (q.faixas || []).filter((f) => f.tipo === 'banda' && A.instr[f.inst]);
       for (const f of velhas) await removerFaixa(p.id, f.id);
       for (const [k, v] of Object.entries(r.faixas)) await adicionarFaixa(p.id, paraWav(v.buf), { nome: INSTR.find((x) => x[0] === k)[1] + ' (banda ' + ESTILOS[A.estilo].nome + ')', inst: k, tipo: 'banda', vol: MIX[k].vol, pan: MIX[k].pan });

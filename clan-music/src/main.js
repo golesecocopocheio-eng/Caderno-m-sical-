@@ -2,6 +2,7 @@ import { $ } from './ui/util.js';
 import { inicio, biblioteca, projeto, ajustes, ligar } from './ui/telas.js';
 import { obter } from './dados/banco.js';
 import { telaEscolher, ligarEscolher, telaGravar, ligarGravar, sair as sairGravacao } from './ui/gravar.js';
+import * as an from './ui/analise.js';
 
 const IC = {
   inicio: '<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -21,6 +22,7 @@ async function desenhar() {
     if (nome === 'biblioteca') html = await biblioteca();
     else if (nome === 'projeto') { ctx.p = await obter(rota[1]); html = await projeto(rota[1]); aba = 'biblioteca'; }
     else if (nome === 'gravar') { aba = 'gravar'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await telaGravar(rota[1]); } else html = await telaEscolher(); }
+    else if (nome === 'analise') { aba = 'inicio'; if (rota[1]) { ctx.p = await obter(rota[1]); html = await an.telaAnalise(rota[1]); } else html = await an.telaEscolher(); }
     else if (nome === 'ajustes') html = await ajustes();
     else { html = await inicio(); aba = 'inicio'; }
   } catch (e) {
@@ -29,6 +31,7 @@ async function desenhar() {
   $('#app').innerHTML = html + `<nav class="baixo" aria-label="Navegação">${[['inicio', 'Início', IC.inicio], ['gravar', 'Gravar', IC.mic], ['biblioteca', 'Biblioteca', IC.lib], ['ajustes', 'Ajustes', IC.aj]].map(([id, t, i]) => `<button data-nav="${id}" class="${aba === id ? 'on' : ''}" ${aba === id ? 'aria-current="page"' : ''}>${i}${t}</button>`).join('')}</nav>`;
   document.querySelectorAll('[data-nav]').forEach((b) => (b.onclick = () => ctx.ir('/' + b.dataset.nav)));
   if (nome === 'gravar') { if (rota[1] && ctx.p) ligarGravar(ctx, ctx.p); else if (!rota[1]) ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/gravar'); } }
+  else if (nome === 'analise') { if (rota[1] && ctx.p) an.ligarAnalise(ctx, ctx.p); else if (!rota[1]) an.ligarEscolher(ctx); else { const v = $('#voltar'); if (v) v.onclick = () => ctx.ir('/inicio'); } }
   else ligar(nome === 'projeto' ? 'projeto' : nome, ctx);
   window.scrollTo(0, 0);
 }

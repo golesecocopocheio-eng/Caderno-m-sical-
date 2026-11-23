@@ -1,6 +1,7 @@
 import { $, esc, aviso, quando, debounce } from './util.js';
-import { listar, obter, salvar, apagar, novoProjeto } from '../dados/banco.js';
-import { exportar, importarTexto } from '../dados/backup.js';
+import { listar, obter, salvar, apagar, novoProjeto, obterMidia } from '../dados/banco.js';
+import { exportar, importarArquivo } from '../dados/backup.js';
+import { lerCmbk, bancoAntigoExiste, lerBancoAntigo, separar, importar } from '../dados/importar-antigo.js';
 
 const NOTAS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -44,7 +45,11 @@ export async function projeto(id) {
   <label class="campo"><span>Título</span><input id="ti" value="${esc(p.titulo)}" maxlength="80"></label>
   <div class="duas"><label class="campo"><span>Andamento (BPM)</span><input id="bp" type="number" inputmode="numeric" min="40" max="220" value="${p.bpm}"></label>
   <label class="campo"><span>Tom</span><div class="duas"><select id="to">${NOTAS.map((n) => `<option ${n === p.tom ? 'selected' : ''}>${n}</option>`).join('')}</select><select id="mo"><option value="M" ${p.modo !== 'm' ? 'selected' : ''}>Maior</option><option value="m" ${p.modo === 'm' ? 'selected' : ''}>Menor</option></select></div></label></div>
+  <label class="campo"><span>Artista</span><input id="ar" value="${esc(p.artista || '')}" maxlength="80"></label>
   <label class="campo"><span>Letra</span><textarea id="le" rows="10" placeholder="Escreva ou cole a letra aqui">${esc(p.letra)}</textarea></label>
+  <label class="campo"><span>Cifra</span><textarea id="ci" rows="8" placeholder="Letra com acordes" style="font-family:JBMono,monospace;font-size:14px">${esc(p.cifra || '')}</textarea></label>
+  ${p.ouvido ? `<label class="campo"><span>Rascunho (o que foi ouvido ao gravar)</span><textarea id="ou" rows="4">${esc(p.ouvido)}</textarea></label>` : ''}
+  ${(p.faixas || []).length ? `<h2>Faixas (${p.faixas.length})</h2><div class="lista">${p.faixas.map((f) => `<div class="item"><span class="t"><b>${esc(f.name || f.nome || 'Faixa')}</b><small>${esc(f.inst || f.tipo || '')}</small><audio data-m="${esc(f.midiaId || '')}" controls preload="none" style="width:100%;margin-top:6px"></audio></span></div>`).join('')}</div>` : ''}
   <label class="campo"><span>Notas</span><textarea id="no" rows="4" placeholder="Ideias, acordes, referências">${esc(p.notas)}</textarea></label>
   <p class="mute peq" id="st">Tudo é salvo sozinho neste celular.</p>
   <div class="linha" style="margin-top:14px"><button class="perigo" id="ap">Apagar projeto</button></div></main>`;
@@ -57,6 +62,9 @@ export async function ajustes() {
   <h2>Cópia de segurança</h2><p class="mute">Guarda todos os projetos em um arquivo. Restaurar só junta: não apaga nada que já está aqui.</p>
   <div class="lista"><button id="exp">Salvar cópia (Drive, WhatsApp, arquivos)</button><button id="imp">Restaurar de uma cópia</button></div>
   <input type="file" id="arq" hidden>
+  <h2>Trazer músicas do Clan music antigo</h2><p class="mute">Copia as suas músicas para cá. O app antigo não é mexido. Por padrão vêm só as suas (autorais); as cifras de outros artistas ficam de fora, a menos que você marque.</p>
+  <div class="lista"><button id="aold" hidden>Ler do Clan music deste aparelho</button><button id="aarq">Escolher a cópia do app antigo (.cmbk)</button></div>
+  <input type="file" id="aarqi" hidden><div id="aprev"></div>
   <h2>Armazenamento</h2><p class="mute" id="uso">${esc(uso) || 'Sem informação de espaço neste aparelho.'}</p>
   <button id="per">Proteger contra limpeza automática</button>
   <h2>Instalar</h2><p class="mute" id="inst">${window.matchMedia('(display-mode: standalone)').matches ? 'Já está instalado.' : 'No Chrome: menu ⋮ e Instalar app.'}</p>
@@ -76,8 +84,9 @@ export function ligar(tela, ctx) {
   const vo = $('#voltar'); if (vo) vo.onclick = () => ir('/biblioteca');
   if (tela === 'projeto') {
     const p = ctx.p; const st = $('#st');
-    const gravar = debounce(async () => { p.titulo = $('#ti').value.trim() || 'Sem título'; p.bpm = Math.max(40, Math.min(220, +$('#bp').value || 90)); p.tom = $('#to').value; p.modo = $('#mo').value; p.letra = $('#le').value; p.notas = $('#no').value; await salvar(p); st.textContent = 'Salvo.'; }, 600);
-    ['#ti', '#bp', '#to', '#mo', '#le', '#no'].forEach((s) => { const e = $(s); e.oninput = e.onchange = () => { st.textContent = 'Salvando…'; gravar(); }; });
+    const gravar = debounce(async () => { p.titulo = $('#ti').value.trim() || 'Sem título'; p.bpm = Math.max(40, Math.min(220, +$('#bp').value || 90)); p.tom = $('#to').value; p.modo = $('#mo').value; p.artista = $('#ar').value.trim(); p.letra = $('#le').value; p.cifra = $('#ci').value; if ($('#ou')) p.ouvido = $('#ou').value; p.notas = $('#no').value; await salvar(p); st.textContent = 'Salvo.'; }, 600);
+    ['#ti', '#bp', '#to', '#mo', '#ar', '#le', '#ci', '#ou', '#no'].filter((x) => $(x)).forEach((s) => { const e = $(s); e.oninput = e.onchange = () => { st.textContent = 'Salvando…'; gravar(); }; });
+    document.querySelectorAll('audio[data-m]').forEach(async (a) => { const m = a.dataset.m && (await obterMidia(a.dataset.m)); if (m && m.blob) a.src = URL.createObjectURL(m.blob); else a.replaceWith(Object.assign(document.createElement('small'), { textContent: 'Áudio não encontrado.' })); });
     window.addEventListener('pagehide', () => gravar.agora(), { once: true });
     $('#voltar').onclick = async () => { gravar.agora(); setTimeout(() => ir('/biblioteca'), 80); };
     $('#ap').onclick = async () => { if (!confirm('Apagar "' + p.titulo + '"? Isso não dá para desfazer.')) return; await apagar(p.id); aviso('Projeto apagado.'); ir('/biblioteca'); };
@@ -85,7 +94,18 @@ export function ligar(tela, ctx) {
   if (tela === 'ajustes') {
     $('#exp').onclick = async () => { try { const r = await exportar(); if (r.via !== 'cancelado') aviso(r.n + ' projeto(s) salvos na cópia.'); } catch (e) { aviso('Não consegui gerar a cópia.'); } };
     $('#imp').onclick = () => $('#arq').click();
-    $('#arq').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { const r = await importarTexto(await f.text()); aviso(r.novos || r.atualizados ? `${r.novos} novo(s), ${r.atualizados} atualizado(s).` : 'Nada novo na cópia: o app já tem tudo.'); } catch (x) { aviso(x.message); } };
+    $('#arq').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { const r = await importarArquivo(f); aviso(r.novos || r.atualizados ? `${r.novos} novo(s), ${r.atualizados} atualizado(s).` : 'Nada novo na cópia: o app já tem tudo.'); } catch (x) { aviso(x.message); } };
+    const prev = (songs) => {
+      const { proprias, outros } = separar(songs), na = (l) => l.reduce((n, s) => n + (s.audios || []).filter((a) => a.blob).length, 0), box = $('#aprev');
+      if (!songs.length) { box.innerHTML = '<p class="mute">Não achei músicas nessa cópia.</p>'; return; }
+      box.innerHTML = `<div class="item" style="flex-direction:column;align-items:stretch;margin-top:10px"><b>${proprias.length} música${proprias.length === 1 ? '' : 's'} ${proprias.length === 1 ? 'autoral' : 'autorais'} (${na(proprias)} faixas de áudio)</b>
+        ${outros.length ? `<label class="linha" style="margin-top:8px"><input type="checkbox" id="aout" style="width:24px;min-height:24px"> <span>Incluir também ${outros.length} de outros artistas (${na(outros)} faixas)</span></label>` : ''}
+        <button class="ouro" id="aok" style="margin-top:10px">Importar</button></div>`;
+      $('#aok').onclick = async () => { const b = $('#aok'); b.disabled = true; b.textContent = 'Importando…'; try { const r = await importar(proprias.concat($('#aout') && $('#aout').checked ? outros : [])); box.innerHTML = `<p><b>${r.novos} música(s) importada(s)</b>, ${r.faixas} faixa(s) de áudio.${r.jaTinha ? ' ' + r.jaTinha + ' já estavam aqui.' : ''}${r.semAudio ? ' ' + r.semAudio + ' faixa(s) sem áudio na cópia.' : ''}</p>`; aviso('Pronto. Veja na Biblioteca.'); } catch (x) { b.disabled = false; b.textContent = 'Importar'; aviso('Não consegui importar.'); } };
+    };
+    bancoAntigoExiste().then((ex) => { if (ex) { const b = $('#aold'); b.hidden = false; b.onclick = async () => { try { prev(await lerBancoAntigo()); } catch (e) { aviso('Não consegui ler o app antigo.'); } }; } });
+    $('#aarq').onclick = () => $('#aarqi').click();
+    $('#aarqi').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { prev(await lerCmbk(f)); } catch (x) { aviso('Esse arquivo não é uma cópia do Clan music antigo.'); } };
     $('#per').onclick = async () => { try { const ok = navigator.storage && (await navigator.storage.persist()); aviso(ok ? 'Armazenamento protegido.' : 'O aparelho não permitiu agora.'); } catch (e) { aviso('Não deu para pedir proteção.'); } };
     if (ctx.instalar) { const b = $('#ibt'); b.hidden = false; b.onclick = async () => { ctx.instalar.prompt(); await ctx.instalar.userChoice; ctx.instalar = null; b.hidden = true; }; }
   }

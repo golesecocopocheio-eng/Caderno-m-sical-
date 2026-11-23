@@ -23,7 +23,7 @@ export const novoId = () => 'p' + Date.now().toString(36) + Math.random().toStri
 
 export function novoProjeto(titulo = '') {
   const t = Date.now();
-  return { id: novoId(), titulo: titulo.trim() || 'Sem título', criado: t, atualizado: t, bpm: 90, tom: 'C', modo: 'M', letra: '', notas: '', faixas: [], versoes: [] };
+  return { id: novoId(), titulo: titulo.trim() || 'Sem título', criado: t, atualizado: t, bpm: 90, tom: 'C', modo: 'M', artista: '', cifra: '', ouvido: '', letra: '', notas: '', faixas: [], versoes: [] };
 }
 export async function listar() {
   const l = await pedido((await loja('projetos')).getAll());
@@ -32,5 +32,11 @@ export async function listar() {
 export async function obter(id) { return pedido((await loja('projetos')).get(id)); }
 export async function salvar(p) { p.atualizado = Date.now(); await pedido((await loja('projetos', 'readwrite')).put(p)); return p; }
 export async function gravarBruto(p) { await pedido((await loja('projetos', 'readwrite')).put(p)); return p; }
-export async function apagar(id) { await pedido((await loja('projetos', 'readwrite')).delete(id)); }
+export async function salvarMidia(m) { await pedido((await loja('midias', 'readwrite')).put(m)); return m; }
+export async function obterMidia(id) { return pedido((await loja('midias')).get(id)); }
+export async function apagar(id) {
+  const p = await obter(id);
+  if (p) for (const f of p.faixas || []) if (f.midiaId) await pedido((await loja('midias', 'readwrite')).delete(f.midiaId));
+  await pedido((await loja('projetos', 'readwrite')).delete(id));
+}
 export async function contar() { return pedido((await loja('projetos')).count()); }

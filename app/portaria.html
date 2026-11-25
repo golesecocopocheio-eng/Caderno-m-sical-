@@ -59,7 +59,7 @@ label{font-size:13px;color:var(--mut);flex:1}
 
   <div id="cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
   <div class="card" id="casa" style="border:2px solid var(--bd)">
-    <div class="grid dono" hidden style="margin-top:0"><div><b id="cEnt">0</b><span>Entraram</span></div><div><b id="cSai">0</b><span>Saíram</span></div><div><b id="cDentro" style="color:var(--ac)">0</b><span>Dentro agora</span></div></div>
+    <div class="grid ver" hidden style="margin-top:0"><div><b id="cEnt">0</b><span>Entraram</span></div><div><b id="cSai">0</b><span>Saíram</span></div><div><b id="cDentro" style="color:var(--ac)">0</b><span>Dentro agora</span></div></div>
     <div class="row" style="margin-top:10px"><button class="big" id="saida" style="background:#334155;color:#fff">🚶 +1 Saída<small>não mexe no dinheiro</small></button></div>
     <div class="row" style="justify-content:flex-end;margin-top:6px"><button class="link" id="saidaDesf" hidden>↩️ Desfazer a última saída</button></div>
   </div>
@@ -76,7 +76,7 @@ label{font-size:13px;color:var(--mut);flex:1}
     <div class="row"><button class="btn" id="mpCancela" style="margin-top:0;background:var(--bd);color:var(--tx)">Cancelar</button><button class="btn" id="mpSem" style="margin-top:0;background:#334155;color:#fff">Lançar sem a maquininha</button></div>
   </div>
 
-  <div class="card dono" hidden>
+  <div class="card ver" hidden>
     <div class="sub" style="margin:0">Total da noite</div>
     <div class="tot" id="total">R$ 0,00</div>
     <div class="grid" id="resumo"></div>
@@ -123,7 +123,7 @@ label{font-size:13px;color:var(--mut);flex:1}
 
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center"><b id="ultTit">Últimas entradas</b><span><button class="link" id="desfazer" hidden style="margin-right:12px">↩️ Desfazer a última</button><button class="link dono" id="limpar" hidden>Apagar todas</button></span></div>
-    <div id="lista" class="dono" hidden></div>
+    <div id="lista" class="ver" hidden></div>
   </div>
 
   <div class="card dono" hidden>
@@ -137,6 +137,7 @@ label{font-size:13px;color:var(--mut);flex:1}
   </div>
 
   <div class="card dono" hidden style="text-align:center">
+    <label style="display:flex;gap:10px;align-items:flex-start;text-align:left;margin:0 0 10px;font-size:14px;color:var(--tx)"><input type="checkbox" id="tudoChk" style="width:22px;height:22px;flex:none;margin-top:2px"><span><b>👥 Equipe vê a portaria toda</b><br><small style="color:var(--mut)">Quem você compartilhar vê todas as entradas da noite, quem saiu, quem está dentro, a lista e os totais. Desligado: cada um vê só o que lançou.</small></span></label>
     <button class="btn" id="qrBtn" style="margin-top:0">📱 QR Code para a equipe</button>
     <div id="qrBox" hidden>
       <div class="sub" style="margin:10px 0">Aponte a câmera do celular (iPhone ou Android) para abrir só a portaria</div>
@@ -171,7 +172,8 @@ const cent=v=>Math.round((Number(String(v??0).replace(',','.'))||0)*100);
 const soma=a=>a.reduce((s,e)=>s+cent(e.valor),0)/100;
 // A noite vira só às 6h da manhã, para o movimento depois da meia-noite contar na mesma noite
 const noiteDe=t=>new Date(t-6*3600e3).toLocaleDateString("sv-SE");
-let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false,me='',saidas=[],unsubSai=null;
+let db=null,precos={turista:0,morador:0,clan:0,lista:0},ents=[],pg="dinheiro",noite=noiteDe(Date.now()),ver=noiteDe(Date.now()),unsub=null,unsubLog=null,logs=[],owner=false,me='',saidas=[],unsubSai=null,tudo=false;
+const vt=()=>owner||tudo; // vê a portaria toda (dono, ou equipe quando o dono libera)
 const preco=k=>k==="clan"?0:(Number(precos[k])||0);
 const escN=t=>String(t||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -196,22 +198,24 @@ function render(){
    $("#confere").style.color=ok?"var(--ok)":"#b45309"}
   $("#precos").textContent=CATS.map(([k,n])=>n+": "+(k==="clan"||!preco(k)?"Grátis":brl(precos[k]))).join(" · ");
   const ls=ents.filter(e=>e.cat==="lista").sort((a,b)=>a.ts-b.ts);
-  $("#listaCard").hidden=!ls.length||!owner;
+  $("#listaCard").hidden=!ls.length||!vt();
   $("#listaNomes").innerHTML=ls.map((e,i)=>`<div class="item"><span>${i+1}. <b>${escN(e.nome||"(sem nome)")}</b> · ${new Date(e.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span><span>${brl(e.valor)}</span></div>`).join("");
   $("#listaQtd").textContent=ls.length;
   const rec=[...ents].sort((a,b)=>b.ts-a.ts).slice(0,15);
   $("#lista").innerHTML=rec.length?rec.map(e=>{
     const h=new Date(e.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
     const c=CATS.find(x=>x[0]===e.cat)[1],p=PGS.find(x=>x[0]===e.pg)[1];
-    return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}</span><span>${brl(e.valor)} <button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button></span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
+    return `<div class="item"><span>${h} · ${c}${e.nome?" · <b>"+escN(e.nome)+"</b>":""} · ${p}${!owner&&e.quem?" · "+escN(e.quem):""}</span><span>${brl(e.valor)} ${owner||(me&&e.u===me)?`<button data-del="${e.id}" aria-label="Dar baixa nesta entrada">✕</button>`:""}</span></div>`}).join(""):`<div class="msg">Nenhuma entrada ainda</div>`;
   const lan=logs.filter(l=>l.tipo==="lancou"),apg=logs.filter(l=>l.tipo==="apagou");
   const sm=a=>soma(a);
   {const nL=ents.length+apg.length,vL=Math.round((soma(ents)+sm(apg))*100)/100;$("#audit").innerHTML=`<div><b>${nL}</b><span>Lançadas · ${brl(vL)}</span></div><div><b>${apg.length}</b><span>Apagadas · ${brl(sm(apg))}</span></div><div><b>${brl(soma(ents))}</b><span>Saldo</span></div>`}
   $("#apagadas").innerHTML=apg.sort((a,b)=>b.ts-a.ts).slice(0,10).map(l=>{const h=new Date(l.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});const c=(CATS.find(x=>x[0]===l.cat)||[0,"?"])[1];return `<div class="item"><span>🗑 ${h} · ${c}${l.nome?" · "+escN(l.nome):""}${l.quem?" · por <b>"+escN(l.quem)+"</b>":""}</span><span>${brl(l.valor)}</span></div>`}).join("");
   document.querySelectorAll(".dono").forEach(el=>el.hidden=!owner);
-  {const minha=[...ents].filter(e=>me&&e.u===me).sort((a,b)=>b.ts-a.ts)[0]||[...ents].sort((a,b)=>b.ts-a.ts)[0];const d=$("#desfazer");d.hidden=!minha||ver!==noite;if(minha)d.dataset.alvo=minha.id}
-  $("#msgDono").hidden=owner;
-  $("#ultTit").textContent=owner?"Últimas entradas":"Você lançou "+ents.length+(ents.length===1?" entrada":" entradas")+" hoje";
+  document.querySelectorAll(".ver").forEach(el=>el.hidden=!vt());
+  {const ck=$("#tudoChk");if(ck)ck.checked=tudo;}
+  {const minha=[...ents].filter(e=>me&&e.u===me).sort((a,b)=>b.ts-a.ts)[0]||(owner?[...ents].sort((a,b)=>b.ts-a.ts)[0]:null);const d=$("#desfazer");d.hidden=!minha||ver!==noite;if(minha)d.dataset.alvo=minha.id}
+  $("#msgDono").hidden=vt();
+  $("#ultTit").textContent=vt()?"Últimas entradas":"Você lançou "+ents.length+(ents.length===1?" entrada":" entradas")+" hoje";
 }
 
 let armed=null;
@@ -310,7 +314,7 @@ document.addEventListener("click",async ev=>{
         $("#listaBox").hidden=true;$("#listaAviso").textContent="";
       }
       const free=cat==="clan"||pg==="cortesia"||(cat==="lista"&&!preco(cat));
-      const en={cat,pg:free?"cortesia":pg,valor:free?0:cent(preco(cat))/100,noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;
+      const en={cat,pg:free?"cortesia":pg,valor:free?0:cent(preco(cat))/100,noite,ts:Date.now()};if(nome)en.nome=nome;if(me)en.u=me;{const q=(localStorage.getItem("bar-nome")||"").trim();if(q)en.quem=q.slice(0,30)}
       // 💳 cartão com a maquininha da portaria ligada: manda o valor e só lança quando aprovar
       if(!free&&pg==="cartao"&&en.valor>0&&mpPortaria()){if(mpCob){$("#status").textContent="Termine a cobrança aberta na maquininha primeiro.";return}mpCobrarEntrada(en);return}
       await db.collection("entradas").add(en);
@@ -366,7 +370,8 @@ document.addEventListener("click",async ev=>{
   const sub=()=>{
     if(unsub)unsub();if(unsubLog)unsubLog();
     // Equipe (não é dono): só enxerga o que ela mesma lançou; o registro e os totais são do dono.
-    const daNoite=c=>{const q=db.collection(c).where("noite","==",ver);return owner?q:q.where("u","==",me)};
+    // com a portaria liberada pelo dono, a equipe também vê tudo da noite
+    const daNoite=c=>{const q=db.collection(c).where("noite","==",ver);return vt()?q:q.where("u","==",me)};
     unsubLog=owner?db.collection("log").where("noite","==",ver).onSnapshot(s=>{logs=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{}):null;
     if(unsubSai)unsubSai();unsubSai=daNoite("saidas").onSnapshot(s=>{saidas=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{});
     unsub=daNoite("entradas").onSnapshot(s=>{
@@ -375,6 +380,9 @@ document.addEventListener("click",async ev=>{
     },e=>{clearTimeout(timer);$("#status").textContent="Erro ao ler entradas"});
   };
   sub();
+  // 👥 chave do dono: equipe vê a portaria toda
+  db.doc("config/acesso").onSnapshot(s=>{const t=!!(s.exists&&s.data().tudo);if(t!==tudo){tudo=t;if(!owner){ents=[];saidas=[];sub()}render()}},e=>{});
+  $("#tudoChk").addEventListener("change",async ev=>{if(!owner){ev.target.checked=tudo;return}try{await db.doc("config/acesso").set({tudo:ev.target.checked,t:Date.now()});$("#status").textContent=ev.target.checked?"👥 Equipe agora vê a portaria toda":"Equipe vê só o que lançou"}catch(e){ev.target.checked=tudo;$("#status").textContent="Não consegui salvar (confira as regras do Firebase)"}});
   $("#dia").addEventListener("change",ev=>{ver=ev.target.value||noite;ents=[];logs=[];sub();render()});
 })();
 </script>

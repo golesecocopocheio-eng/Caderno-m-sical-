@@ -23,6 +23,12 @@ service cloud.firestore {
     }
     function meuNovo() { return logado() && request.resource.data.u == eu(); }
     function meu() { return logado() && resource.data.u == eu(); }
+    // dono ligou "👥 Equipe vê a portaria toda": todo mundo do bar lê as entradas e saídas da noite
+    function equipeTudo(codigo) {
+      return logado()
+        && exists(/databases/$(database)/documents/bares/$(codigo)/portaria_config/acesso)
+        && get(/databases/$(database)/documents/bares/$(codigo)/portaria_config/acesso).data.get('tudo', false) == true;
+    }
 
     match /bares/{codigo} {
       // Quem sabe o código lê quem é o dono; o documento é criado uma vez e nunca alterado.
@@ -62,12 +68,14 @@ service cloud.firestore {
 
       // Portaria: entradas e saídas. A equipe só vê, lança e desfaz as próprias.
       match /portaria_entradas/{doc} {
-        allow read, delete: if dono(codigo) || meu();
+        allow read: if dono(codigo) || meu() || equipeTudo(codigo);
+        allow delete: if dono(codigo) || meu();
         allow create: if dono(codigo) || meuNovo();
         allow update: if dono(codigo);
       }
       match /portaria_saidas/{doc} {
-        allow read, delete: if dono(codigo) || meu();
+        allow read: if dono(codigo) || meu() || equipeTudo(codigo);
+        allow delete: if dono(codigo) || meu();
         allow create: if dono(codigo) || meuNovo();
         allow update: if dono(codigo);
       }

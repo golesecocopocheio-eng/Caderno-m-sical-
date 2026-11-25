@@ -443,6 +443,16 @@
    * O Caixa vem do próprio celular (é onde ele grava primeiro); Portaria e Estoque vêm
    * do Firebase, se estiver ligado, ou do banco deste aparelho. */
   const COLECOES = { portaria: ['entradas', 'log', 'config', 'saidas'], estoque: ['items', 'mov', 'meta', 'price', 'pg', 'cont'], cardapio: ['itens', 'vendas', 'config'] };
+  // Totais da portaria de uma noite (para o fechamento do Caixa puxar sozinho): dinheiro, pix, cartão
+  window.__barPortariaNoite = async function (noite) {
+    const c = await iniciarCore().catch(() => null);
+    let ents = [];
+    if (c) { const s = await c.bar.collection('portaria_entradas').where('noite', '==', noite).get(); ents = s.docs.map((d) => d.data()); }
+    else { let local = {}; try { local = JSON.parse(localStorage.getItem('app-bar-db:portaria.html')) || {}; } catch (e) {} ents = Object.values(local.entradas || {}).filter((e) => e.noite === noite); }
+    const t = { dinheiro: 0, pix: 0, cartao: 0 }; let cort = 0;
+    ents.forEach((e) => { const v = Math.round((Number(e.valor) || 0) * 100); if (e.pg in t) t[e.pg] += v; else if (e.pg === 'cortesia') cort++; });
+    return { n: ents.length, pd: t.dinheiro / 100, pp: t.pix / 100, pc: t.cartao / 100, cort, mp: ents.filter((e) => e.mp).length };
+  };
   window.__barExportar = async function () {
     const apps = {};
     const t = Date.now();

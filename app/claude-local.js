@@ -453,6 +453,16 @@
     ents.forEach((e) => { const v = Math.round((Number(e.valor) || 0) * 100); if (e.pg in t) t[e.pg] += v; else if (e.pg === 'cortesia') cort++; });
     return { n: ents.length, pd: t.dinheiro / 100, pp: t.pix / 100, pc: t.cartao / 100, cort, mp: ents.filter((e) => e.mp).length };
   };
+  // Totais das vendas do bar (aba Cardápio) de uma noite: dinheiro, pix e cartão (crédito + débito)
+  window.__barVendasNoite = async function (noite) {
+    const c = await iniciarCore().catch(() => null);
+    let vs = [];
+    if (c) { const s = await c.bar.collection('cardapio_vendas').where('noite', '==', noite).get(); vs = s.docs.map((d) => d.data()); }
+    else { let local = {}; try { local = JSON.parse(localStorage.getItem('app-bar-db:cardapio.html')) || {}; } catch (e) {} vs = Object.values(local.vendas || {}).filter((v) => v.noite === noite); }
+    const t = { dinheiro: 0, pix: 0, cartao: 0 };
+    vs.forEach((v) => { const x = Math.round((Number(v.total) || 0) * 100); if (v.pg === 'dinheiro') t.dinheiro += x; else if (v.pg === 'pix') t.pix += x; else if (v.pg === 'credito' || v.pg === 'debito') t.cartao += x; });
+    return { n: vs.length, bd: t.dinheiro / 100, bp: t.pix / 100, bc: t.cartao / 100, mp: vs.filter((v) => v.mp).length };
+  };
   window.__barExportar = async function () {
     const apps = {};
     const t = Date.now();

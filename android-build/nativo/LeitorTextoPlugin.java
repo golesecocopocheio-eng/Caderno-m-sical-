@@ -29,6 +29,10 @@ import com.google.mlkit.vision.text.Text;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 
 /**
  * Scanner do cardápio com o Google ML Kit.
@@ -127,6 +131,23 @@ public class LeitorTextoPlugin extends Plugin {
         }
         r.put("linhas", linhas);
         return r;
+    }
+
+    /** lerQR(): abre o leitor de QR Code do Google (não precisa de permissão de câmera) e devolve {texto}. */
+    @PluginMethod
+    public void lerQR(PluginCall call) {
+        try {
+            GmsBarcodeScannerOptions opcoes = new GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build();
+            GmsBarcodeScanner leitorQR = GmsBarcodeScanning.getClient(getActivity(), opcoes);
+            leitorQR.startScan()
+                .addOnSuccessListener(b -> { JSObject r = new JSObject(); r.put("texto", b.getRawValue()); call.resolve(r); })
+                .addOnCanceledListener(() -> call.reject("CANCELADO"))
+                .addOnFailureListener(e -> call.reject("falha no leitor: " + e.getMessage()));
+        } catch (Exception e) {
+            call.reject("leitor de QR indisponível: " + e.getMessage());
+        }
     }
 
     @PluginMethod

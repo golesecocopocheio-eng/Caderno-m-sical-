@@ -262,35 +262,66 @@ async function mpCobrarEntrada(en){
     if(mpCob){mpMostra("Tempo esgotado. Se aprovou na maquininha, toque em <b>Lançar sem a maquininha</b>.")}
   }catch(e){mpMostra("❌ "+(e.message||e)+". Confira se a maquininha da portaria está ligada e no modo integrado.")}
 }
+// código do dono (BARMP1-…): chave + qual maquininha é a da portaria
+const mpCodigo=()=>{const d=MPP.dev();if(!d||!MPP.tk())return"";return "BARMP1-"+btoa(unescape(encodeURIComponent(JSON.stringify({tk:MPP.tk(),dev:d,nome:(MPP.papeis()[d]||{}).nome||""}))))};
+function mpAplicarCodigo(v){v=String(v||"").trim();const i=v.indexOf("BARMP1-");if(i<0)return false;v=v.slice(i).split(/\s/)[0];
+  const j=JSON.parse(decodeURIComponent(escape(atob(v.slice(7)))));localStorage.setItem("mp-token",j.tk);const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});o[j.dev]={...(o[j.dev]||{}),papel:"portaria",nome:j.nome||""};localStorage.setItem("mp-papeis",JSON.stringify(o));mpTrocar=false;return true}
+const leitorQR=()=>{try{const C=window.parent.Capacitor||window.Capacitor;return C&&C.isPluginAvailable&&C.isPluginAvailable("LeitorTexto")?C.Plugins.LeitorTexto:null}catch(e){return null}};
+let mpQRVer=false;
 async function mpCfgDesenhar(devs,msg){
-  const tk=MPP.tk(),dev=MPP.dev(),o=MPP.papeis();
-  $("#mpCfgSt").textContent=mpPortaria()?"· ✅ ligada ("+((o[dev]||{}).nome||dev.slice(-6))+")":"· não ligada";
+  const tk=MPP.tk(),dev=MPP.dev(),o=MPP.papeis(),nomeDev=(o[dev]||{}).nome||("Maquininha "+dev.slice(-6));
+  $("#mpCfgSt").textContent=mpPortaria()?"· ✅ ligada ("+nomeDev+")":"· não ligada";
   const app=!!(window.parent.Capacitor||window.Capacitor);
-  let h=app?"":`<div class="msg" style="font-weight:600;color:#b45309;text-align:left">⚠️ Para cobrar na maquininha, este celular precisa do <b>app Bar Conect instalado</b> (o navegador não deixa falar com o Mercado Pago). Baixe em: <a href="https://github.com/golesecocopocheio-eng/Caderno-m-sical-/releases/latest/download/BarConect.apk">BarConect.apk</a></div>`;
-  if(mpPortaria()&&!devs&&!mpTrocar){ // já ligada: não pede nada, só mostra que está pronta
-    $("#mpCfgCorpo").innerHTML=h+`<div class="msg" style="font-weight:600;color:var(--ok);text-align:left">✅ Ligada sozinha neste celular: escolha 💳 Cartão e toque na entrada. O valor vai para a maquininha e entra no fechamento da portaria.</div>${msg?`<div class="msg">${msg}</div>`:""}<button class="link" id="mpTrocarP" style="margin-top:6px">Trocar a maquininha</button>`;return}
-  h+=`<label style="display:block;margin-top:10px">Código da maquininha (o dono manda pelo WhatsApp) ou Access Token<input id="mpTkP" type="password" autocomplete="off" autocapitalize="none" placeholder="Cole aqui BARMP1-… ou APP_USR-…" value="${tk?"••••••••":""}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)"></label>
-    <button class="btn" id="mpBuscaP">🔌 Ligar a maquininha</button>`;
-  if(msg)h+=`<div class="msg" style="font-weight:600;color:var(--tx)">${msg}</div>`;
-  if(devs)h+=devs.map(d=>{const p=(o[d.id]||{}).papel,pdv=d.operating_mode==="PDV";return `<div style="border:1px solid ${p==="portaria"?"var(--ok)":"var(--bd)"};border-radius:12px;padding:10px;margin-top:8px"><b>💳 ${(o[d.id]||{}).nome||"Maquininha "+d.id.slice(-6)}</b> <small style="color:${pdv?"var(--ok)":"#b45309"}">${pdv?"✅ integrado":"⚠️ "+(d.operating_mode||"?")}</small>${p&&p!=="portaria"?`<small style="display:block;color:var(--mut)">hoje usada no 🍸 bar</small>`:""}
-      <div class="row" style="margin-top:6px">${pdv?"":`<button class="btn" data-mpativa="${d.id}" style="margin-top:0;background:#b45309">⚡ Ativar integrado</button>`}<button class="btn" data-mpusa="${d.id}" style="margin-top:0;${p==="portaria"?"background:var(--ok)":"background:#009ee3"}">${p==="portaria"?"✅ É a da portaria":"🚪 Usar na portaria"}</button></div></div>`}).join("");
-  if(mpPortaria())h+=`<button class="link" id="mpTiraP" style="margin-top:10px;color:#b42318">Não usar maquininha na portaria</button>`;
+  const B=(id,txt,cor,extra)=>`<button class="btn" id="${id}" style="${cor?"background:"+cor+";color:#fff;":""}${extra||""}">${txt}</button>`;
+  const passo=(n,t)=>`<div style="display:flex;gap:10px;align-items:flex-start;margin-top:12px"><b style="flex:none;width:26px;height:26px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-size:14px">${n}</b><div style="flex:1;text-align:left">${t}</div></div>`;
+  let h=app?"":`<div class="msg" style="font-weight:600;color:#b45309;text-align:left">⚠️ Este celular está no <b>site</b>. Para cobrar na maquininha precisa do <b>app Bar Conect</b>: <a href="https://github.com/golesecocopocheio-eng/Caderno-m-sical-/releases/latest/download/BarConect.apk">baixar o app</a>.</div>`;
+  if(msg)h+=`<div class="msg" style="font-weight:600;color:var(--tx);text-align:left">${msg}</div>`;
+  // ✅ JÁ LIGADA: não pede nada
+  if(mpPortaria()&&!devs&&!mpTrocar){
+    h+=`<div class="msg" style="font-weight:700;color:var(--ok);text-align:left;font-size:15px">✅ ${nomeDev} ligada neste celular.</div><div class="sub" style="text-align:left;margin:2px 0 0">Para cobrar: escolha <b>💳 Cartão</b> e toque na entrada. O valor vai para a maquininha e entra sozinho no fechamento da portaria.</div>`;
+    h+=B("mpQRMostra",mpQRVer?"Esconder o QR Code":"🔳 Ligar outro celular (mostrar QR Code)","#334155");
+    if(mpQRVer){let img="";try{const q=qrcode(0,"L");q.addData(mpCodigo());q.make();img=q.createImgTag(4,8)}catch(e){img="(não consegui gerar o QR)"}
+      h+=`<div style="text-align:center;margin-top:10px">${img}</div><div class="sub" style="text-align:left">No <b>outro celular</b> (com o app): 🚪 Portaria → 💳 Maquininha → <b>📷 Ler o QR do dono</b> e aponte para esta tela.<br>🔒 Esse QR liga a sua conta Mercado Pago: mostre só para quem trabalha na portaria.</div>`}
+    h+=`<button class="link" id="mpTrocarP" style="margin-top:10px">Trocar a maquininha</button> · <button class="link" id="mpTiraP" style="color:#b42318">Desligar</button>`;
+    $("#mpCfgCorpo").innerHTML=h;return}
+  // 📋 lista de maquininhas da conta (quem tem a chave)
+  if(devs){h+=`<div class="sub" style="text-align:left;margin-top:8px"><b>Toque na maquininha da portaria:</b></div>`+devs.map(d=>{const p=(o[d.id]||{}).papel,pdv=d.operating_mode==="PDV";return `<div style="border:1px solid ${p==="portaria"?"var(--ok)":"var(--bd)"};border-radius:12px;padding:10px;margin-top:8px;text-align:left"><b>💳 ${(o[d.id]||{}).nome||"Maquininha"}</b> <small style="color:var(--mut)">nº ${d.id.split("__").pop()}</small> <small style="color:${pdv?"var(--ok)":"#b45309"}">${pdv?"✅ integrado":"⚠️ precisa ativar"}</small>${p==="bar"?`<small style="display:block;color:var(--mut)">hoje é a do 🍸 bar</small>`:""}
+      <div class="row" style="margin-top:6px">${pdv?"":`<button class="btn" data-mpativa="${d.id}" style="margin-top:0;background:#b45309">⚡ Ativar</button>`}<button class="btn" data-mpusa="${d.id}" style="margin-top:0;background:${p==="portaria"?"var(--ok)":"#009ee3"}">${p==="portaria"?"✅ É a da portaria":"🚪 Usar na portaria"}</button></div></div>`}).join("");
+    $("#mpCfgCorpo").innerHTML=h;return}
+  // 🔌 NÃO LIGADA: passo a passo
+  if(tk){ // este celular já tem a chave (celular do dono): escolher a maquininha ou digitar o número
+    h+=passo(1,`Toque para ver as maquininhas da sua conta e escolher a da portaria:${B("mpBuscaP","🔎 Mostrar minhas maquininhas","#009ee3","margin-top:6px")}`);
+    h+=passo(2,`Ou digite o <b>número de série</b> que está atrás da maquininha da portaria:<input id="mpNum" inputmode="text" autocapitalize="characters" placeholder="ex.: 8701012345" style="width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)">${B("mpNumOk","🔌 Ligar por esse número","#009ee3","margin-top:6px")}`);
+  }else{ // celular da equipe: ler o QR do dono
+    h+=passo(1,`No <b>celular do dono</b>: 🚪 Portaria → 💳 Maquininha → <b>🔳 Ligar outro celular (mostrar QR Code)</b>.`);
+    h+=passo(2,`Neste celular, toque e aponte a câmera para o QR:${leitorQR()&&typeof leitorQR().lerQR==="function"?B("mpLerQR","📷 Ler o QR do dono","#009ee3","margin-top:6px;font-size:17px;padding:14px"):`<div class="sub">(atualize o app para ler o QR)</div>`}`);
+    h+=`<details style="margin-top:12px;text-align:left"><summary class="sub" style="cursor:pointer">Não tem como ler o QR? Colar o código ou a chave</summary>
+      <input id="mpTkP" type="password" autocomplete="off" autocapitalize="none" placeholder="Cole aqui BARMP1-… ou APP_USR-…" style="width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)">${B("mpColaOk","🔌 Ligar","#009ee3","margin-top:6px")}</details>`;
+  }
+  if(mpTrocar&&mpPortaria())h+=`<button class="link" id="mpVoltaP" style="margin-top:10px">Voltar</button>`;
   $("#mpCfgCorpo").innerHTML=h;
 }
-async function mpBuscarP(){const v=($("#mpTkP")||{value:""}).value.trim();
-  // código do dono: já traz a chave e qual é a maquininha da portaria
-  if(/^BARMP1-/.test(v)){try{const j=JSON.parse(decodeURIComponent(escape(atob(v.slice(7)))));localStorage.setItem("mp-token",j.tk);const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});o[j.dev]={...(o[j.dev]||{}),papel:"portaria",nome:j.nome||""};localStorage.setItem("mp-papeis",JSON.stringify(o));mpTrocar=false;mpCfgDesenhar(null,"✅ Maquininha da portaria ligada neste celular.");return}catch(e){mpCfgDesenhar(null,"❌ Código inválido. Peça para o dono mandar de novo.");return}}
-  if(v&&!/^•+$/.test(v))localStorage.setItem("mp-token",v);if(!MPP.tk()){mpCfgDesenhar(null,"Cole o Access Token primeiro.");return}
-  mpCfgDesenhar(null,"Buscando…");try{const d=await mpReq("GET","/point/integration-api/devices");const ds=(d&&d.devices)||[];mpCfgDesenhar(ds,ds.length?"Escolha a maquininha da portaria:":"Nenhuma maquininha nessa conta.")}catch(e){mpCfgDesenhar(null,"❌ "+(e.message||e)+(window.parent.Capacitor||window.Capacitor?"":" (só funciona no app instalado)"))}}
+async function mpBuscarP(){if(!MPP.tk()){mpCfgDesenhar(null,"Este celular ainda não tem a chave.");return}
+  mpCfgDesenhar(null,"Buscando suas maquininhas…");try{const d=await mpReq("GET","/point/integration-api/devices");const ds=(d&&d.devices)||[];if(!ds.length){mpCfgDesenhar(null,"Nenhuma maquininha apareceu nessa conta Mercado Pago.");return}mpCfgDesenhar(ds)}catch(e){mpCfgDesenhar(null,"❌ "+(e.message||e)+(window.parent.Capacitor||window.Capacitor?"":" (só funciona no app instalado)"))}}
+function mpUsar(id){const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});o[id]={...(o[id]||{}),papel:"portaria"};localStorage.setItem("mp-papeis",JSON.stringify(o));mpTrocar=false}
 mpCfgDesenhar();
 // a configuração feita na aba Cardápio → Receber aparece aqui na hora
 addEventListener("storage",e=>{if(!e.key||/^mp-/.test(e.key))mpCfgDesenhar()});
 document.getElementById("mpCfg").addEventListener("toggle",()=>{if(document.getElementById("mpCfg").open&&!document.querySelector("[data-mpusa]"))mpCfgDesenhar()});
 document.addEventListener("click",async ev=>{
-  {const b=ev.target.closest&&ev.target.closest("#mpBuscaP,[data-mpusa],[data-mpativa],#mpTiraP,#mpCancela,#mpSem,#mpTrocarP");if(b){
-    if(b.id==="mpTrocarP"){mpTrocar=true;mpCfgDesenhar();return}
+  {const b=ev.target.closest&&ev.target.closest("#mpBuscaP,[data-mpusa],[data-mpativa],#mpTiraP,#mpCancela,#mpSem,#mpTrocarP,#mpVoltaP,#mpQRMostra,#mpLerQR,#mpColaOk,#mpNumOk");if(b){
+    if(b.id==="mpTrocarP"){mpTrocar=true;mpQRVer=false;mpCfgDesenhar();return}
+    if(b.id==="mpVoltaP"){mpTrocar=false;mpCfgDesenhar();return}
+    if(b.id==="mpQRMostra"){mpQRVer=!mpQRVer;mpCfgDesenhar();return}
+    if(b.id==="mpLerQR"){try{const r=await leitorQR().lerQR();if(mpAplicarCodigo(r&&r.texto))mpCfgDesenhar(null,"✅ Pronto! Maquininha da portaria ligada neste celular.");else mpCfgDesenhar(null,"❌ Esse QR não é o da maquininha. Peça ao dono para mostrar o QR em 💳 Maquininha.")}catch(e){if(!/CANCEL/i.test((e&&(e.code||""))+(e&&e.message||"")))mpCfgDesenhar(null,"❌ Não consegui ler: "+(e.message||e))}return}
+    if(b.id==="mpColaOk"){const v=($("#mpTkP")||{value:""}).value.trim();if(!v){mpCfgDesenhar(null,"Cole o código ou a chave.");return}try{if(mpAplicarCodigo(v)){mpCfgDesenhar(null,"✅ Pronto! Maquininha da portaria ligada neste celular.");return}}catch(e){mpCfgDesenhar(null,"❌ Código inválido. Peça ao dono de novo.");return}localStorage.setItem("mp-token",v);mpBuscarP();return}
+    if(b.id==="mpNumOk"){const n=($("#mpNum")||{value:""}).value.replace(/[^0-9A-Za-z]/g,"").toUpperCase();if(n.length<4){mpCfgDesenhar(null,"Digite o número de série da maquininha (pelo menos 4 dígitos).");return}
+      try{const d=await mpReq("GET","/point/integration-api/devices");const ds=(d&&d.devices)||[];const acha=ds.filter(x=>x.id.replace(/[^0-9A-Za-z]/g,"").toUpperCase().includes(n));
+        if(acha.length===1){mpUsar(acha[0].id);mpCfgDesenhar(null,"✅ Maquininha nº "+acha[0].id.split("__").pop()+" ligada na portaria."+(acha[0].operating_mode==="PDV"?"":" ⚠️ Ela ainda não está no modo integrado: toque em Trocar a maquininha → ⚡ Ativar."));}
+        else if(!acha.length)mpCfgDesenhar(null,"❌ Nenhuma maquininha com esse número nesta conta. Confira o número atrás da maquininha.");
+        else mpCfgDesenhar(acha,"Achei mais de uma, toque na certa:")}catch(e){mpCfgDesenhar(null,"❌ "+(e.message||e))}return}
     if(b.id==="mpBuscaP"){mpBuscarP();return}
-    if(b.dataset.mpusa){const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});o[b.dataset.mpusa]={...(o[b.dataset.mpusa]||{}),papel:"portaria"};localStorage.setItem("mp-papeis",JSON.stringify(o));mpTrocar=false;mpCfgDesenhar(null,"✅ Maquininha da portaria escolhida.");return}
+    if(b.dataset.mpusa){mpUsar(b.dataset.mpusa);mpCfgDesenhar(null,"✅ Maquininha da portaria escolhida.");return}
     if(b.dataset.mpativa){try{await mpReq("PATCH","/point/integration-api/devices/"+encodeURIComponent(b.dataset.mpativa),{operating_mode:"PDV"});await mpBuscarP();$("#mpCfgCorpo").insertAdjacentHTML("afterbegin",'<div class="msg" style="font-weight:600;color:var(--ok)">✅ Modo integrado ativado. Desligue e ligue a maquininha.</div>')}catch(e){mpCfgDesenhar(null,"❌ Não consegui ativar: "+(e.message||e))}return}
     if(b.id==="mpTiraP"){const o=MPP.papeis();Object.keys(o).forEach(k=>{if(o[k].papel==="portaria")o[k].papel=""});localStorage.setItem("mp-papeis",JSON.stringify(o));mpCfgDesenhar();return}
     if(b.id==="mpCancela"){const c=mpCob;mpCob=null;$("#mpBox").hidden=true;if(c&&c.id){try{await mpReq("DELETE","/point/integration-api/devices/"+encodeURIComponent(MPP.dev())+"/payment-intents/"+encodeURIComponent(c.id))}catch(e){}}$("#status").textContent="Cobrança cancelada. Nada foi lançado.";return}
